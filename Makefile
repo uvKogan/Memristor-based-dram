@@ -31,13 +31,13 @@ dbg: DBG += -ggdb -g
 dbg: $(target)
 
 $(target) : $(OBJ)
-	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
+	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@ -std=c++14
 
 clean :
 	$(RM) $(target) $(dep_file) $(OBJ)
 
 .cpp.o :
-	$(CXX) $(CXXFLAGS) $(DBG) $(INC) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(DBG) $(INC) -c $< -o $@ -std=c++14
 
 depend $(DEP):
 	@echo Makefile - creating dependencies for: $(SRC)
