@@ -1,6 +1,0 @@
-User-defined configuration file (reram_22nm_1t1r.cfg) is loaded
-
-Memory Cell: Multi-Level Cell NAND Flash
-Cell Area (F^2)    : 100.000 (10.000Fx10.000F)
-Cell Aspect Ratio  : 1.000
-[ERROR] MLC NAND flash model is still under development
