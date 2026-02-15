@@ -1,0 +1,3 @@
+[submodule "simulators/nvmain"]
+	path = simulators/nvmain
+	url = https://github.com/SEAL-UCSB/NVmain.git
