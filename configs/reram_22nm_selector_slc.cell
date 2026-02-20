@@ -1,0 +1,29 @@
+# Physical bit-cell definition for Cross-point (1S1R) architecture
+
+-MemCellType: ReRAM
+
+-ProcessNode: 22
+
+-CellArea (F^2): 4.0          # Minimal theoretical cell size
+-CellAspectRatio: 1.0         # Symmetrical layout for crossbar density
+
+-ResistanceOn (ohm): 100000   # Aligned with digital memory resistance targets
+-ResistanceOff (ohm): 1000000000
+
+-ReadLatency: 5
+-SetLatency: 10
+-ResetLatency: 10
+-ReadEnergy: 0.2
+-SetEnergy: 2.0
+-ResetEnergy: 2.0
+
+-ReadMode: current
+-ReadVoltage (V): 1.35        # Higher V_read to overcome selector threshold
+
+-ResetPulse (ns): 5           # Short pulse for high-density endurance
+
+-SetPulse (ns): 5
+
+#-AccessType: diode            # NVSim keyword for two-terminal Selectors/Diodes
+-AccessType: CrossPoint            # NVSim keyword for two-terminal Selectors/Diodes
+-Nonlinearity (Kr): 1000000   # Kr=10^6 targets FAST selector performance
