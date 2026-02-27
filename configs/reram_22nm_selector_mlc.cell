@@ -4,6 +4,8 @@
 
 -ProcessNode: 22
 
+-SelectorType: UserDefined
+
 -CellArea (F^2): 4.0          # Minimal theoretical cell size
 -CellAspectRatio: 1.0         # Symmetrical layout for crossbar density
 
@@ -24,6 +26,5 @@
 
 -SetPulse (ns): 5
 
-#-AccessType: diode            # NVSim keyword for two-terminal Selectors/Diodes
--AccessType: CrossPoint            # NVSim keyword for two-terminal Selectors/Diodes
+-AccessType: diode            # NVSim keyword for two-terminal Selectors/Diodes
 -Nonlinearity (Kr): 1000000   # Kr=10^6 targets FAST selector performance

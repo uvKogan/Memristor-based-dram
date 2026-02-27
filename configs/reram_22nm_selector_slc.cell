@@ -4,6 +4,8 @@
 
 -ProcessNode: 22
 
+SelectorType: UserDefined
+
 -CellArea (F^2): 4.0          # Minimal theoretical cell size
 -CellAspectRatio: 1.0         # Symmetrical layout for crossbar density
 
