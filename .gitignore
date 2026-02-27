@@ -1,0 +1,17 @@
+cd /home/yuvalk/MBMM
+cat <<EOF > .gitignore
+# Binaries and Object files
+*.o
+*.dep
+nvsim
+nvmain
+
+# Simulation Results
+*_results.txt
+*.csv
+*.log
+
+# System files
+__pycache__/
+.DS_Store
+EOF
