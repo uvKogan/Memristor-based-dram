@@ -1,0 +1,16 @@
+{
+    "1t1r_slc": {
+        "read_latency_ns": 2.07,
+        "write_latency_ns": 10.06,
+        "read_energy_nj": 0.195,
+        "write_energy_nj": 13.06,
+        "area_mm2": 10.495
+    },
+    "selector_slc": {
+        "read_latency_ns": 2.63,
+        "write_latency_ns": 10.06,
+        "read_energy_nj": 0.195,
+        "write_energy_nj": 13.06,
+        "area_mm2": 2.122
+    }
+}

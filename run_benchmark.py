@@ -1,15 +1,17 @@
 import subprocess
 import os
 import csv
-import re
+import math
+import shutil
+import time
 
-# Paths
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-NVSIM_EXE = os.path.join(BASE_DIR, "simulators/nvsim/nvsim")
+# --- CONFIGURATION ---
+BASE_DIR = "/home/yuvalk/MBMM"
 CONFIG_DIR = os.path.join(BASE_DIR, "configs")
-OUTPUT_DB = os.path.join(BASE_DIR, "simulation_results.csv")
+NVSIM_EXE = os.path.join(BASE_DIR, "simulators/nvsim/nvsim")
+CLOCK_NS = 1.25
+OUTPUT_CSV = "simulation_results.csv"
 
-# The 4 Hardware Tracks
 MODELS = [
     "reram_22nm_1t1r_slc",
     "reram_22nm_1t1r_mlc",
@@ -17,60 +19,72 @@ MODELS = [
     "reram_22nm_selector_mlc"
 ]
 
-def parse_value(pattern, text):
-    match = re.search(pattern, text)
-    return match.group(1).strip() if match else "N/A"
+def save_results(results):
+    with open(OUTPUT_CSV, mode='w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(["Model", "Read Latency (ns)", "Write Latency (ns)", "Read Cycles", "Write Cycles"])
+        writer.writerows(results)
+    print(f"\n[!] Final results saved to: {OUTPUT_CSV}")
 
 def run_simulations():
-    fieldnames = ["Model", "Area (mm^2)", "Read Latency", "Write Latency", "Read Energy", "Write Energy", "Leakage Power"]
-    db_rows = []
-
-    print("[*] Rebuilding NVSim engine...")
-    subprocess.run(["make"], cwd=os.path.dirname(NVSIM_EXE), capture_output=True)
-
-    print("="*60)
-    print("MBMM RESEARCH PIPELINE: BATCH EXECUTION")
-    print("="*60)
+    results = []
+    NVSIM_CSV_NAME = "output_131072K_64_1_IN_CUR.csv"
+    nvsim_dir = os.path.dirname(NVSIM_EXE)
+    csv_full_path = os.path.join(nvsim_dir, NVSIM_CSV_NAME)
 
     for model in MODELS:
-        cfg_file = os.path.abspath(os.path.join(CONFIG_DIR, f"{model}.cfg"))
-        print(f"[*] Running {model}...")
+        print(f"\n{'='*60}")
+        print(f"[*] STARTING SIMULATION: {model}")
+        print(f"{'='*60}")
+        
+        if os.path.exists(csv_full_path):
+            os.remove(csv_full_path)
 
-        # Run NVSim and capture output
+        cfg_path = os.path.join(CONFIG_DIR, f"{model}.cfg")
+        
+        # Use check_output or capture_output to see what NVSim is saying
         try:
-            # We run from the simulator directory to avoid path issues
             result = subprocess.run(
-                ["./nvsim", cfg_file],
-                capture_output=True, text=True, check=True,
-                cwd=os.path.dirname(NVSIM_EXE)
+                [NVSIM_EXE, cfg_path],
+                cwd=nvsim_dir,
+                capture_output=True,
+                text=True
             )
-            output = result.stdout
-            
-            # Extract Metrics using Regex
-            data = {
-                "Model": model,
-                "Area (mm^2)": parse_value(r"Total Area = .* = (.*mm\^2)", output),
-                "Read Latency": parse_value(r"Read Latency = (.*s)", output),
-                "Write Latency": parse_value(r"Write Latency = (.*s)", output),
-                "Read Energy": parse_value(r"Read Dynamic Energy = (.*J)", output),
-                "Write Energy": parse_value(r"Write Dynamic Energy = (.*J)", output),
-                "Leakage Power": parse_value(r"Leakage Power = (.*W)", output)
-            }
-            db_rows.append(data)
-            print(f"    [+] Success. Area: {data['Area (mm^2)']}")
+            # Print the simulator's actual output to the terminal
+            print(result.stdout)
+            if result.stderr:
+                print(f"DEBUG STDERR: {result.stderr}")
+                
+        except Exception as e:
+            print(f"[!] Subprocess execution failed: {e}")
+            continue
 
-        except subprocess.CalledProcessError as e:
-            print(f"    [!] Error running {model}: {e}")
+        # Check if CSV exists after the run
+        if os.path.exists(csv_full_path):
+            with open(csv_full_path, mode='r') as f:
+                content = f.read().splitlines()
+                if content:
+                    data = content[0].split(',')
+                    raw_r = float(data[21]) / 1000.0 # Convert ps to ns
+                    raw_w = float(data[24]) / 1000.0
+                    r_cyc = math.ceil(raw_r / CLOCK_NS)
+                    w_cyc = math.ceil((raw_w + 10.0) / CLOCK_NS)
+                    
+                    print(f"===> RESULT FOUND: R={raw_r:.2f}ns, W={raw_w:.2f}ns")
+                    results.append([model, raw_r, raw_w, r_cyc, w_cyc])
+        else:
+            print(f"\n[!] FAILURE: {model} did not generate a CSV result.")
+            print(f"[!] Review the output above to find the electrical or range error.")
 
-    # Write to "Database" (CSV)
-    with open(OUTPUT_DB, mode='w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(db_rows)
-
-    print("="*60)
-    print(f"DONE. Database updated: {OUTPUT_DB}")
-    print("="*60)
+    save_results(results)
 
 if __name__ == "__main__":
+    # Ensure cell files are in the simulator directory
+    print("============================================================")
+    print("MBMM RESEARCH PIPELINE: HARDWARE-TO-SYSTEM BRIDGE")
+    print("============================================================")
+    for f in os.listdir(CONFIG_DIR):
+        if f.endswith(".cell"):
+            shutil.copy(os.path.join(CONFIG_DIR, f), os.path.dirname(NVSIM_EXE))
+    
     run_simulations()

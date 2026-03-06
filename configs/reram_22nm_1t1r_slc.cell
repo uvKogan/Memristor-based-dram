@@ -1,32 +1,36 @@
-# Physical bit-cell definition for 1T1R architecture
+-MemCellType: memristor
 
--MemCellType: ReRAM           # Defines the material class as Resistive RAM
+-CellArea (F^2): 4
+-CellAspectRatio: 1
 
--ProcessNode: 22              # Targets the 22nm node (Intel/TSMC standard)
+-ResistanceOnAtSetVoltage (ohm): 100000
+-ResistanceOffAtSetVoltage (ohm): 10000000
+-ResistanceOnAtResetVoltage (ohm): 100000
+-ResistanceOffAtResetVoltage (ohm): 10000000
+-ResistanceOnAtReadVoltage (ohm): 1000000
+-ResistanceOffAtReadVoltage (ohm): 10000000
+-ResistanceOnAtHalfResetVoltage (ohm): 500000
 
-#-CellArea (F^2): 100.0        # Commercial 22nm 1T1R area (~0.048 um^2)
--CellArea (F^2): 20.0        # Commercial 22nm 1T1R area (~0.048 um^2)
--CellAspectRatio: 1.0         # Balanced bit-cell layout
+-CapacitanceOn (F): 1e-16
+-CapacitanceOff (F): 1e-16
 
--ResistanceOn (ohm): 100000   # LRS: 10^5 ohm to mitigate IR-drop
--ResistanceOff (ohm): 1000000000 # HRS: 10^9 ohm for high signal margin
+-ReadMode: current
+-ReadVoltage (V): 0.4
+-ReadPower (uW): 0.16
 
--ReadLatency: 5
--SetLatency: 10
--ResetLatency: 10
--ReadEnergy: 0.1
--SetEnergy: 1.0
--ResetEnergy: 1.0
+-ResetMode: voltage
+-ResetVoltage (V): 2.0
+-ResetPulse (ns): 10
+-ResetEnergy (pJ): 0.6
 
--ReadMode: current            # Sensing current vs a reference
--ReadVoltage (V): 0.4         # Voltage applied to the bit-line during read
+-SetMode: voltage
+-SetVoltage (V): 2.0
+-SetPulse (ns): 10
+-SetEnergy (pJ): 0.6
 
--ResetMode: voltage           # RESET triggered by voltage polarity
--ResetVoltage (V): 2.0        # Voltage required to rupture the filament
--ResetPulse (ns): 5           # State-of-the-art 5ns timing
+-AccessType: None
+//-AccessType: diode
+//-VoltageDropAccessDevice (V): 0.5
 
--SetMode: voltage             # SET triggered by voltage polarity
--SetVoltage (V): 1.0          # Voltage required to form the filament
--SetPulse (ns): 5             # Fast 5ns SET time
+-ReadFloating: false
 
--AccessType: CMOS             # Identifies this as a 1-Transistor 1-Resistor cell
