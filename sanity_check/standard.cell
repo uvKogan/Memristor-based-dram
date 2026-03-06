@@ -1,0 +1,15 @@
+-MemCellType: memristor
+-ProcessNode: 65
+-CellArea (F^2): 4.0
+-CellAspectRatio: 1.0
+-ResistanceOn (ohm): 10000
+-ResistanceOff (ohm): 1000000
+-ReadLatency (ns): 1.0
+-WriteLatency (ns): 10.0
+-ReadEnergy (pJ): 0.01
+-WriteEnergy (pJ): 1.0
+-ReadMode: current
+-WriteMode: voltage
+-ReadVoltage (V): 0.4
+-WriteVoltage (V): 2.0
+-AccessType: CMOS
