@@ -8,7 +8,7 @@ from pathlib import Path
 # --- PROJECT BASELINE DATA ---
 PROJECT_NAME = "MBMM: ReRAM Hardware-to-System Research Pipeline"
 LAST_UPDATED = "March 07, 2026"
-CURRENT_STATUS = "STABLE - Pipeline fully modularized with dedicated results directory structure."
+CURRENT_STATUS = "STABLE - Pipeline fully modularized with parameter pass-through for traces/cycles."
 
 def get_project_root():
     return Path(__file__).parent.absolute()
@@ -77,6 +77,10 @@ def setup_args():
     parser.add_argument("--models", nargs="+", help="Run the full pipeline for specific model names.")
     parser.add_argument("--all", action="store_true", help="Run the full pipeline for all models in configs/.")
     
+    # NEW: Trace and Cycle pass-through arguments
+    parser.add_argument("--trace", default="test_reram.nvt", help="Trace file to use for simulation (default: test_reram.nvt).")
+    parser.add_argument("--cycles", type=int, default=50000, help="Simulation cycles (default: 50000).")
+    
     # Documentation Flags
     parser.add_argument("--readme", action="store_true", help="Print project objectives, status, and history.")
     parser.add_argument("--sims", action="store_true", help="Detailed info on NVSim and NVMain usage.")
@@ -86,13 +90,13 @@ def setup_args():
     parser.add_argument("--freq", type=int, default=800, help="Override target frequency in MHz (default: 800).")
     return parser.parse_args()
 
-def run_pipeline(models, freq):
-    """Executes the 5-stage pipeline sequentially."""
+def run_pipeline(models, freq, trace, cycles):
+    """Executes the 5-stage pipeline sequentially with parameter pass-through."""
     root = get_project_root()
     
     for model in models:
         print(f"\n\n{'#'*80}")
-        print(f"### FULL PIPELINE EXECUTION: {model}")
+        print(f"### FULL PIPELINE EXECUTION: {model} | Trace: {trace}")
         print(f"{'#'*80}")
         
         try:
@@ -105,8 +109,13 @@ def run_pipeline(models, freq):
             # Stage 3: Config Gen
             subprocess.run([sys.executable, "3_gen_nvmain_config.py", "--freq", str(freq)], check=True)
             
-            # Stage 4: Simulation
-            subprocess.run([sys.executable, "4_execute_simulation.py", "--models", model], check=True)
+            # Stage 4: Simulation (Now with Trace and Cycle variables)
+            subprocess.run([
+                sys.executable, "4_execute_simulation.py", 
+                "--models", model,
+                "--trace", trace,
+                "--cycles", str(cycles)
+            ], check=True)
             
             # Stage 5: Report
             subprocess.run([sys.executable, "5_summary_report.py", "--latest"], check=True)
@@ -127,7 +136,6 @@ def main():
         return
 
     if args.extended_help:
-        # Display individual script help descriptions
         print("\nPIPELINE SUB-SCRIPT DOCUMENTATION:")
         scripts = ["1_run_nvsim_hardware.py", "2_extract_hardware_metrics.py", "3_gen_nvmain_config.py", "4_execute_simulation.py", "5_summary_report.py"]
         for s in scripts:
@@ -141,7 +149,8 @@ def main():
         if args.all:
             target_models = [f.stem for f in (root / "configs").glob("*.cfg")]
         
-        run_pipeline(target_models, args.freq)
+        # Pass the trace and cycles into the execution loop
+        run_pipeline(target_models, args.freq, args.trace, args.cycles)
     else:
         print(f"\n{PROJECT_NAME}")
         print("Use --help for usage, --readme for status, or --models to run.")

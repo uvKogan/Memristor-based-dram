@@ -18,7 +18,6 @@ Execution Examples:
   python3 3_gen_nvmain_config.py --freq 1000 --input results/custom_metrics.json
         """
     )
-    # UPDATED: Default input now points to the results directory
     parser.add_argument("--input", default="results/hardware_metrics.json", help="Input JSON file from Step 2.")
     parser.add_argument("--freq", type=int, default=800, help="Target memory frequency in MHz (default: 800).")
     return parser.parse_args()
@@ -32,7 +31,9 @@ def generate_nvmain_config(name, hw_metrics, target_freq_mhz, output_dir):
     tREAD = math.ceil(hw_metrics.get('read_latency_ns', 32.0) / cycle_time_ns)
     tWRITE = math.ceil(hw_metrics.get('write_latency_ns', 32.0) / cycle_time_ns)
     
-    # Prepare content with the verified 'pos(8)' stability fix
+    # --- STABILITY FIX: Long-form AddressMappingScheme ---
+    mapping_scheme = "SA:R:BK:RK:CH:C"
+
     config_content = f"""
 ; --- MBMM SYSTEM ARCHITECTURE CONFIGURATION ---
 ; Model: {name}
@@ -42,15 +43,15 @@ def generate_nvmain_config(name, hw_metrics, target_freq_mhz, output_dir):
 MAP_ADDRESS true
 DECODER MigratingDecoder
 INTERCONNECT OffChipBus
-; STATS_OUT remains here, but Script 4 redirection is the primary capture method
 STATS_OUT nvmain_stats_{name}.out
 CPUFreq {target_freq_mhz}
 
 ; --- Clock and Controller ---
 CLK {target_freq_mhz}
 MEM_CTL FRFCFS
-; Verified Mapping R:BK:CH:C ensures bit-string size remains > 8
-AddressMappingScheme R:BK:CH:C
+
+; --- Address Mapping (Stability Fix: Long-form string) ---
+AddressMappingScheme {mapping_scheme}
 BusWidth 64
 DeviceWidth 8
 RATE 2
@@ -71,6 +72,7 @@ WriteEnergy {hw_metrics.get('write_energy_nj', 1.7)}
 StandbyPower {hw_metrics.get('leakage_mw', 794.0)}
 
 ; --- Stable Geometry (Prevents Address Slicing Underflow) ---
+; Standard geometry ensures bit-depth satisfies the translator
 ROWS 65536
 COLS 1024
 CHANNELS 1
@@ -93,13 +95,12 @@ def main():
     args = setup_args()
     root_dir = get_project_root()
     
-    # UPDATED: Use absolute path for input to ensure no assumptions on working directory
+    # Use absolute path for input to ensure no assumptions on working directory
     input_path = root_dir / args.input
     output_dir = root_dir / "simulators" / "nvmain" / "Config"
 
     if not input_path.exists():
         print(f"[!] Input metrics file not found: {input_path}")
-        print("    Did you run Step 2 (2_extract_hardware_metrics.py) successfully?")
         return
 
     os.makedirs(output_dir, exist_ok=True)
@@ -118,7 +119,7 @@ def main():
         print(f"    [OK] Saved to: simulators/nvmain/Config/{config_file.name}")
 
     print("\n" + "=" * 60)
-    print(f"SUCCESS: {len(all_metrics)} configurations generated in simulators/nvmain/Config/")
+    print(f"SUCCESS: {len(all_metrics)} configurations generated.")
     print("=" * 60)
 
 if __name__ == "__main__":

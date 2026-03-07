@@ -21,9 +21,22 @@ Execution Examples:
     )
     parser.add_argument("--models", nargs="+", help="Path to one or more NVSim .cfg files.")
     parser.add_argument("--all", action="store_true", help="Run simulation for all .cfg files in configs/.")
-    parser.add_argument("--rebuild", action="store_true", help="Clean and rebuild NVSim engine.")
+    parser.add_argument("--rebuild", action="store_true", help="Force clean and rebuild NVSim engine.")
     parser.add_argument("--skip_sanity", action="store_true", help="Skip the engine sanity check.")
     return parser.parse_args()
+
+def build_nvsim(nvsim_dir):
+    """Internal helper to compile the NVSim engine."""
+    print(f"\n>>> Building NVSim engine in {nvsim_dir}...")
+    try:
+        # Perform a clean build to ensure C++11 fixes are active
+        subprocess.run(["make", "clean"], cwd=nvsim_dir, capture_output=True, check=False)
+        subprocess.run(["make"], cwd=nvsim_dir, capture_output=True, check=True)
+        print("--- NVSim Engine Build: SUCCESS ---")
+        return True
+    except Exception as e:
+        print(f"!!! ERROR: Build failed. Check your compiler and Makefile.\n{e}")
+        return False
 
 def run_nvsim_hardware():
     args = setup_args()
@@ -39,15 +52,11 @@ def run_nvsim_hardware():
     print("MBMM STEP 1: NVSIM HARDWARE SIMULATION")
     print("=" * 60)
 
-    # 1. Rebuild Engine if requested
-    if args.rebuild:
-        print(f"\n>>> Rebuilding NVSim engine in {nvsim_dir}...")
-        try:
-            subprocess.run(["make", "clean"], cwd=nvsim_dir, capture_output=True, check=True)
-            subprocess.run(["make"], cwd=nvsim_dir, capture_output=True, check=True)
-            print("--- NVSim Engine Build: SUCCESS ---")
-        except Exception as e:
-            print(f"!!! ERROR: Build failed. Check Makefile.\n{e}")
+    # 1. Automatic Build Logic: Build if missing or if --rebuild is requested
+    if not nvsim_exe.exists() or args.rebuild:
+        if not nvsim_exe.exists():
+            print(f"[!] NVSim binary not found at {nvsim_exe}.")
+        if not build_nvsim(nvsim_dir):
             sys.exit(1)
 
     # 2. Engine Sanity Check
@@ -85,7 +94,6 @@ def run_nvsim_hardware():
         
         # We define success as having produced a result table in stdout
         if "RESULT" in process.stdout and "Area:" in process.stdout:
-            # Save output for Step 2 (Aggregator)
             output_filename = hw_results_dir / f"{cfg.stem}_results.txt"
             with open(output_filename, "w") as f:
                 f.write(process.stdout)
