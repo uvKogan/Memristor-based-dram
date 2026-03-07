@@ -3,10 +3,13 @@ cat <<EOF > .gitignore
 # Binaries and Object files
 *.o
 *.dep
-nvsim
-nvmain
+simulators/nvsim/nvsim
+simulators/nvmain/nvmain.fast
 
 # Simulation Results
+results/hardware/*
+results/system/*
+results/*.json
 *_results.txt
 *.csv
 *.log
