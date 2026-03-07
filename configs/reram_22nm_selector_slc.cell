@@ -1,17 +1,19 @@
 -MemCellType: memristor
 -ProcessNode: 22
--AccessType: Diode                // Optimized solver for crossbar logic
+-AccessType: Diode                // Engaging optimized crossbar solver
 -SelectorType: UserDefined
--CellArea (F^2): 4.0               // Idealized Cross-point limit
+-CellArea (F^2): 4.0               // Targeted idealized cross-point area
 -CellAspectRatio: 1.0
--ResistanceOn (ohm): 100000        // 1.0e5 (Matsui 2025)
--ResistanceOff (ohm): 1000000000   // 1.0e9 (Matsui 2025)
+-ResistanceOnAtReadVoltage (ohm): 100000    // LRS 1.0e5 target
+-ResistanceOffAtReadVoltage (ohm): 1000000000 // HRS 1.0e9 target
+-ResistanceOnAtWriteVoltage (ohm): 100000
+-ResistanceOffAtWriteVoltage (ohm): 1000000000
 -ReadLatency (ns): 5
--WriteLatency (ns): 10
--ReadEnergy (pJ): 0.2              // Higher energy due to sneak-path parasitics
+-WriteLatency (ns): 10             // Standardized 10ns write pulse
+-ReadEnergy (pJ): 0.2
 -WriteEnergy (pJ): 2.0
 -ReadMode: current
 -WriteMode: voltage
--ReadVoltage (V): 1.4              // Forced to 1.4V for LOP margin
+-ReadVoltage (V): 1.4              // Boosted for LOP convergence
 -WriteVoltage (V): 2.0
 -Nonlinearity (Kr): 1000000       // Selectivity target (10^6)
