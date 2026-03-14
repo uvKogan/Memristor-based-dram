@@ -8,3 +8,5 @@ results/
 *.nvt
 *_raw.txt
 simulators/gem5/m5out/
+benchmarks/spec2017/505.mcf
+simulators/gem5/
