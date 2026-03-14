@@ -1,7 +1,10 @@
 m5out/
 *.nvt
+build/
+results/
 *.fo
 *.fast
-build/
-simulators/nvmain/build/
-simulators/gem5/build/
+*.o
+*.nvt
+*_raw.txt
+simulators/gem5/m5out/
