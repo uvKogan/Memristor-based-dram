@@ -1,20 +1,7 @@
-cd /home/yuvalk/MBMM
-cat <<EOF > .gitignore
-# Binaries and Object files
-*.o
-*.dep
-simulators/nvsim/nvsim
-simulators/nvmain/nvmain.fast
-
-# Simulation Results
-results/hardware/*
-results/system/*
-results/*.json
-*_results.txt
-*.csv
-*.log
-
-# System files
-__pycache__/
-.DS_Store
-EOF
+m5out/
+*.nvt
+*.fo
+*.fast
+build/
+simulators/nvmain/build/
+simulators/gem5/build/
