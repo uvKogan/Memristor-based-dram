@@ -1,19 +1,34 @@
 -MemCellType: memristor
--ProcessNode: 22
--AccessType: Diode                // Engaging optimized crossbar solver
--SelectorType: UserDefined
--CellArea (F^2): 4.0               // Targeted idealized cross-point area
--CellAspectRatio: 1.0
--ResistanceOnAtReadVoltage (ohm): 100000    // LRS 1.0e5 target
--ResistanceOffAtReadVoltage (ohm): 1000000000 // HRS 1.0e9 target
--ResistanceOnAtWriteVoltage (ohm): 100000
--ResistanceOffAtWriteVoltage (ohm): 1000000000
--ReadLatency (ns): 5
--WriteLatency (ns): 10             // Standardized 10ns write pulse
--ReadEnergy (pJ): 0.2
--WriteEnergy (pJ): 2.0
+
+-CellArea (F^2): 4.0
+-CellAspectRatio: 1
+
+-ResistanceOnAtSetVoltage (ohm): 100000
+-ResistanceOffAtSetVoltage (ohm): 1000000000
+-ResistanceOnAtResetVoltage (ohm): 100000
+-ResistanceOffAtResetVoltage (ohm): 1000000000
+-ResistanceOnAtReadVoltage (ohm): 100000
+-ResistanceOffAtReadVoltage (ohm): 1000000000
+-ResistanceOnAtHalfResetVoltage (ohm): 500000
+
+-CapacitanceOn (F): 1e-16
+-CapacitanceOff (F): 1e-16
+
 -ReadMode: current
--WriteMode: voltage
--ReadVoltage (V): 1.4              // Boosted for LOP convergence
--WriteVoltage (V): 2.0
--Nonlinearity (Kr): 1000000       // Selectivity target (10^6)
+-ReadVoltage (V): 1.4
+-ReadPower (uW): 19.6
+
+-ResetMode: voltage
+-ResetVoltage (V): 2.0
+-ResetPulse (ns): 10
+-ResetEnergy (pJ): 1.0
+
+-SetMode: voltage
+-SetVoltage (V): 2.0
+-SetPulse (ns): 10
+-SetEnergy (pJ): 1.0
+
+-AccessType: diode
+-VoltageDropAccessDevice (V): 0.15
+
+-ReadFloating: false
