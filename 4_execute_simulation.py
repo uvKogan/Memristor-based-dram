@@ -42,7 +42,7 @@ def run_simulations():
     nvsim_exe = root_dir / "simulators" / "nvsim" / "nvsim"
     nvmain_exe = root_dir / "simulators" / "nvmain" / "nvmain.fast"
     
-    # 1. SEARCH FOR TRACE (Do this BEFORE defining trace_name)
+    # 1. SEARCH FOR TRACE
     trace_path = find_trace_path(root_dir, args.trace)
     
     if trace_path is None:
@@ -50,7 +50,7 @@ def run_simulations():
         sys.exit(1)
 
     # 2. DEFINE FILENAME TAG
-    trace_name = trace_path.stem  # This is the 'stream' or 'hello_world' tag
+    trace_name = trace_path.stem 
 
     hw_results_dir.mkdir(parents=True, exist_ok=True)
     sys_results_dir.mkdir(parents=True, exist_ok=True)
@@ -75,11 +75,13 @@ def run_simulations():
     for model in target_models:
         print(f"\n>>> PROCESSING MODEL: {model}")
         
-        is_dram = "DRAM" in model
+        # ARCHITECTURAL BYPASS LOGIC
+        is_dram = "DRAM" in model.upper()
+        is_mlc = "_mlc" in model.lower()
         
-        # --- PHASE 1: NVSIM (Bypass for DRAM) ---
-        if is_dram:
-            print(f"    [SKIP] Phase 1: DRAM detected. Using native NVMain timings.")
+        # --- PHASE 1: NVSIM (Bypass for DRAM and Analytical MLC) ---
+        if is_dram or is_mlc:
+            print(f"    [SKIP] Phase 1: {'DRAM baseline' if is_dram else 'Analytical MLC'} detected. Using native/pre-generated timings.")
         else:
             nvsim_cfg = config_dir / f"{model}.cfg"
             if not nvsim_cfg.exists():
@@ -109,7 +111,7 @@ def run_simulations():
             continue
 
         print(f"    [2/2] Running NVMain System Phase...")
-        # CRITICAL FIX: Tagging stats file with benchmark name [cite: 1, 151]
+        # Tagging stats file with benchmark name
         stats_file = sys_results_dir / f"stats_{model}_{trace_name}.out"
         
         try:

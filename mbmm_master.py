@@ -7,8 +7,8 @@ from pathlib import Path
 
 # --- PROJECT BASELINE DATA ---
 PROJECT_NAME = "MBMM: ReRAM Hardware-to-System Research Pipeline"
-LAST_UPDATED = "March 07, 2026"
-CURRENT_STATUS = "STABLE - Pipeline fully modularized with parameter pass-through for traces/cycles."
+LAST_UPDATED = "March 17, 2026"
+CURRENT_STATUS = "STABLE - Analytical MLC bypassing enabled to avoid NVSim overflow bugs."
 
 def get_project_root():
     return Path(__file__).parent.absolute()
@@ -28,20 +28,16 @@ OBJECTIVES:
 
 PROJECT STATUS:
 - [DONE] NVSim build repaired for C++11 compatibility.
-- [DONE] NVMain 'std::out_of_range' bit-slicing bug fixed via R:BK:CH:C mapping.
-- [DONE] Pipeline fully automated through 5 stages.
-- [DONE] Unified directory structure (configs/, results/, simulators/).
+- [DONE] NVMain deallocation fixed in FlipNWrite.cpp.
+- [DONE] Analytical MLC Bridge implemented to bypass NVSim 22nm sensing bugs.
+- [DONE] Split-view visualization for Latency and Power comparison.
 
 PIPELINE ARCHITECTURE:
-Stage 1: Hardware Simulation (1_run_nvsim_hardware.py)
-Stage 2: Metric Extraction (2_extract_hardware_metrics.py)
+Stage 1: Hardware Simulation (1_run_nvsim_hardware.py) - Skipped for MLC/DRAM.
+Stage 2: Metric Extraction (2_extract_hardware_metrics.py) - Programmatic SLC->MLC generation.
 Stage 3: Config Generation (3_gen_nvmain_config.py)
 Stage 4: System Simulation (4_execute_simulation.py)
 Stage 5: Final Report (5_summary_report.py)
-
-IMPORTANT INFO:
-- Trace Format: 5-column hexadecimal (Cycle R/W 0xAddr 0xData ThreadID).
-- Geometry: Fixed 65536 Rows/1024 Cols to satisfy NVMain address translation.
 {'='*80}
 """
     print(readme_text)
@@ -55,15 +51,11 @@ SIMULATOR KNOWLEDGE BASE
 
 NVSIM (Hardware-Level):
 - Purpose: Models area, timing, and energy of non-volatile memory chips.
-- Inputs: .cfg file (cell parameters) and .cell file (electrical properties).
-- Typical Command: ./nvsim <config_file>
-- Expectations: Requires high electrical convergence; outputs results to stdout.
+- Bypassing: Skipped for MLC due to 22nm sensing overflow bugs.
 
 NVMAIN (System-Level):
 - Purpose: Cycle-accurate memory controller and architecture simulator.
-- Inputs: .config file (architecture settings) and .nvt file (memory trace).
-- Typical Command: ./nvmain.fast <config> <trace> <cycles>
-- Key Fix: AddressMappingScheme must provide enough bit-width for the trace address.
+- MLC Implementation: Uses analytical multipliers (3x Read / 4x Write).
 {'='*80}
 """
     print(sim_info)
@@ -73,25 +65,18 @@ def setup_args():
         description=f"{PROJECT_NAME} - Master Controller",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    # Primary Functionality
     parser.add_argument("--models", nargs="+", help="Run the full pipeline for specific model names.")
     parser.add_argument("--all", action="store_true", help="Run the full pipeline for all models in configs/.")
-    
-    # NEW: Trace and Cycle pass-through arguments
-    parser.add_argument("--trace", default="test_reram.nvt", help="Trace file to use for simulation (default: test_reram.nvt).")
-    parser.add_argument("--cycles", type=int, default=50000, help="Simulation cycles (default: 50000).")
-    
-    # Documentation Flags
-    parser.add_argument("--readme", action="store_true", help="Print project objectives, status, and history.")
-    parser.add_argument("--sims", action="store_true", help="Detailed info on NVSim and NVMain usage.")
-    parser.add_argument("--extended_help", action="store_true", help="Describe every sub-script in the pipeline.")
-    
-    # Custom Overrides
-    parser.add_argument("--freq", type=int, default=800, help="Override target frequency in MHz (default: 800).")
+    parser.add_argument("--trace", default="test_reram.nvt", help="Trace file to use for simulation.")
+    parser.add_argument("--cycles", type=int, default=50000, help="Simulation cycles.")
+    parser.add_argument("--readme", action="store_true", help="Print status and history.")
+    parser.add_argument("--sims", action="store_true", help="Detailed info on simulators.")
+    parser.add_argument("--extended_help", action="store_true", help="Describe every sub-script.")
+    parser.add_argument("--freq", type=int, default=800, help="Override target frequency in MHz.")
     return parser.parse_args()
 
 def run_pipeline(models, freq, trace, cycles):
-    """Executes the 5-stage pipeline sequentially with parameter pass-through."""
+    """Executes the pipeline with conditional logic for MLC/DRAM tracks."""
     root = get_project_root()
     
     for model in models:
@@ -99,30 +84,59 @@ def run_pipeline(models, freq, trace, cycles):
         print(f"### FULL PIPELINE EXECUTION: {model} | Trace: {trace}")
         print(f"{'#'*80}")
         
+        # ARCHITECTURAL LOGIC: Identify tracks that bypass raw hardware simulation
+        is_dram = "dram" in model.lower()
+        is_mlc = "_mlc" in model.lower()
+        
         try:
-            # Stage 1: Hardware
-            subprocess.run([sys.executable, "1_run_nvsim_hardware.py", "--models", f"configs/{model}.cfg"], check=True)
+            # Stage 1: Hardware Simulation (Conditional)
+            if is_dram or is_mlc:
+                print(f">>> PROCESSING MODEL: {model}")
+                print(f"    [SKIP] Stage 1: {'DRAM baseline' if is_dram else 'Analytical MLC'} detected. No NVSim phase required.")
+            else:
+                print(f">>> PROCESSING MODEL: {model}")
+                print(f"    [1/5] Running NVSim Hardware Phase...")
+                subprocess.run([sys.executable, "1_run_nvsim_hardware.py", "--models", f"configs/{model}.cfg"], check=True)
             
-            # Stage 2: Extraction
-            subprocess.run([sys.executable, "2_extract_hardware_metrics.py", "--all"], check=True)
+            # Stage 2: Extraction (Now performs programatic SLC->MLC generation)
+            subprocess.run([sys.executable, "2_extract_hardware_metrics.py"], check=True)
             
-            # Stage 3: Config Gen
+            # Stage 3: Config Generation
             subprocess.run([sys.executable, "3_gen_nvmain_config.py", "--freq", str(freq)], check=True)
             
-            # Stage 4: Simulation (Now with Trace and Cycle variables)
-            subprocess.run([
-                sys.executable, "4_execute_simulation.py", 
-                "--models", model,
-                "--trace", trace,
-                "--cycles", str(cycles)
-            ], check=True)
+            # --- THE PATCH: ARCHITECTURE LOOP ---
+            # Define the 4 architectures generated by Step 3
+            architectures = ["single", "8chip", "16chip", "full_dimm"]
             
-            # Stage 5: Report
+            for arch in architectures:
+                # Construct the specific system model name generated by Step 3
+                sys_model = f"{model}_{arch}"
+                print(f"\n>>> PROCESSING SYSTEM VARIANT: {sys_model}")
+                
+                # Verify the config exists before attempting simulation
+                config_path = root / "simulators" / "nvmain" / "Config" / f"{sys_model}.config"
+                if not config_path.exists():
+                    print(f"    [!] Skipping {sys_model}: Config not found.")
+                    continue
+                
+                # Stage 4: System Simulation (Iterates for all 4 architectures)
+                subprocess.run([
+                    sys.executable, "4_execute_simulation.py", 
+                    "--models", sys_model,  # Use the architecture-specific name here
+                    "--trace", trace,
+                    "--cycles", str(cycles)
+                ], check=True)
+            
+            # Stage 5: Report Generation
             subprocess.run([sys.executable, "5_summary_report.py", "--latest"], check=True)
+            
+            # Stage 6: Call the visualization script to update graphs
+            subprocess.run([sys.executable, "visualize_results.py"], check=False)
             
         except subprocess.CalledProcessError as e:
             print(f"\n[CRITICAL] Pipeline failed at Stage: {e.cmd}")
-            break
+            # Continue to next model instead of breaking the entire batch
+            continue
 
 def main():
     args = setup_args()
@@ -144,16 +158,70 @@ def main():
         return
 
     if args.models or args.all:
+        import shutil # Required for copying the cfg files
         root = get_project_root()
-        target_models = args.models
-        if args.all:
-            target_models = [f.stem for f in (root / "configs").glob("*.cfg")]
         
-        # Pass the trace and cycles into the execution loop
-        run_pipeline(target_models, args.freq, args.trace, args.cycles)
+        reram_bases = ["reram_22nm_1t1r_slc", "reram_22nm_selector_slc"]
+        dram_models = ["2D_DRAM_example", "3D_DRAM_example"]
+        
+        print("\n" + "="*80)
+        print("STAGE 1 & 2: RERAM HARDWARE EXTRACTION (SLC & MLC)")
+        print("="*80)
+        for base in reram_bases:
+            subprocess.run([sys.executable, "1_run_nvsim_hardware.py", "--models", f"configs/{base}.cfg"])
+        
+        subprocess.run([sys.executable, "2_extract_hardware_metrics.py"])
+        
+        print("\n" + "="*80)
+        print("STAGE 3: ARCHITECTURE FACTORY (RERAM ONLY)")
+        print("="*80)
+        subprocess.run([sys.executable, "3_gen_nvmain_config.py", "--freq", str(args.freq)])
+        
+        print("\n" + "="*80)
+        print("STAGE 4: UNIFIED SYSTEM SIMULATION")
+        print("="*80)
+        
+        architectures = ["single", "8chip", "16chip", "full_dimm"]
+        factory_bases = [
+            "reram_22nm_1t1r_slc", "reram_22nm_1t1r_mlc",
+            "reram_22nm_selector_slc", "reram_22nm_selector_mlc"
+        ]
+        
+        for base in factory_bases:
+            for arch in architectures:
+                sys_model = f"{base}_{arch}"
+                
+                # THE HACK: Duplicate base NVSim configs for SLC so Stage 4 doesn't abort
+                if "slc" in base:
+                    base_cfg = root / "configs" / f"{base}.cfg"
+                    arch_cfg = root / "configs" / f"{sys_model}.cfg"
+                    if base_cfg.exists() and not arch_cfg.exists():
+                        shutil.copy(base_cfg, arch_cfg)
+                
+                print(f"\n>>> RUNNING RERAM VARIANT: {sys_model}")
+                subprocess.run([
+                    sys.executable, "4_execute_simulation.py", 
+                    "--models", sys_model, "--trace", args.trace, "--cycles", str(args.cycles)
+                ])
+                    
+        # Run DRAM natively
+        for dram in dram_models:
+            print(f"\n>>> RUNNING NATIVE DRAM: {dram}")
+            subprocess.run([
+                sys.executable, "4_execute_simulation.py", 
+                "--models", dram, "--trace", args.trace, "--cycles", str(args.cycles)
+            ])
+            
+        print("\n" + "="*80)
+        print("STAGE 5 & 6: SUMMARY AND VISUALIZATION")
+        print("="*80)
+        # Generate summary (removed --latest so it aggregates everything)
+        subprocess.run([sys.executable, "5_summary_report.py"])
+        subprocess.run([sys.executable, "visualize_results.py"])
+        
     else:
         print(f"\n{PROJECT_NAME}")
-        print("Use --help for usage, --readme for status, or --models to run.")
+        print("Use --help for usage, --readme for status, or --all to run full batch.")
 
 if __name__ == "__main__":
     main()
