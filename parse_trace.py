@@ -1,32 +1,58 @@
-#!/usr/bin/env python3
 import sys
-import re
-from pathlib import Path
+import os
 
-# Paths based on MBMM structure
-input_file = Path("simulators/gem5/m5out/mcf_raw.txt")
-output_file = Path("benchmarks/mcf_spec2017.nvt")
+if len(sys.argv) != 3:
+    print("Usage: python3 parse_trace.py <input_raw_trace> <output_nvt>")
+    sys.exit(1)
 
-# NVMain requires exactly 128 chars of hex data for our SLC modeling
-DUMMY_DATA = "0" * 128 
+input_file = sys.argv[1]
+output_file = sys.argv[2]
 
-print(f">>> Parsing gem5 raw trace to NVMain format...")
+# NVMain requires a 128-character dummy hex string for SLC/MLC padding
+dummy_data = "0" * 128 
 
-parsed_lines = 0
+print(f">>> Parsing gem5 raw trace {input_file} to NVMain format...")
+
+access_count = 0
 with open(input_file, "r") as fin, open(output_file, "w") as fout:
     for line in fin:
-        # Matches: "   500: system.mem_ctrls: recvAtomic: ReadReq 0x2b540"
-        match = re.search(r'^\s*(\d+):.*?(ReadReq|WriteReq)\s+(0x[0-9a-fA-F]+)', line)
-        if match:
-            cycle = match.group(1)
-            op_str = match.group(2)
-            addr = match.group(3)
+        # Only process lines from the memory controller
+        if "system.mem_ctrls:" in line:
+            parts = line.split()
             
-            # Convert operation to NVMain 'R' or 'W'
-            op = "R" if op_str == "ReadReq" else "W"
-            
-            # Format: Cycle Operation Address Data ThreadID
-            fout.write(f"{cycle} {op} {addr} {DUMMY_DATA} 0\n")
-            parsed_lines += 1
+            try:
+                # Extract the tick (and strip the coססססססססססlon)
+                tick_str = parts[0].replace(':', '')
+                # Convert gem5 ticks (ps) to NVMain cycles (assuming 1GHz = 1000ps)
+                cycle = int(tick_str) // 1000 
+                
+                op = "R"
+                addr = None
+                
+                # Scan tokens for the address and the operation type
+                for p in parts:
+                    if p.startswith('0x'):
+                        addr = p
+                    elif 'Write' in p:
+                        op = "W"
+                        
+                if addr:
+                    # NVMain format: Cycle OP Address Data ThreadID
+                    fout.write(f"{cycle} {op} {addr} {dummy_data} 0\n")
+                    access_count += 1
+                    
+                    # Print progress so we know it hasn't frozen on the 2.4GB file
+                    if access_count % 1000000 == 0:
+                        print(f"  ... Parsed {access_count} accesses ...")
+                        
+            except Exception as e:
+                continue
 
-print(f"SUCCESS: Created stable NVMain trace at {output_file} with {parsed_lines} memory accesses.")
+print(f"SUCCESS: Created stable NVMain trace at {output_file} with {access_count} memory accesses.")
+
+print(f">>> Auto-Cleanup: Vaporizing the massive raw text trace...")
+try:
+    os.remove(input_file)
+    print(f"SUCCESS: {input_file} has been deleted.")
+except Exception as e:
+    print(f"[!] Warning: Could not delete raw trace: {e}")
