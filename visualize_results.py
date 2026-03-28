@@ -4,11 +4,11 @@ import seaborn as sns
 import glob
 import os
 import re
+import numpy as np
 
 def parse_nvmain_stats():
     data = []
     
-    # Locate all stat files
     search_paths = ["stats_*.out", "results/stats_*.out", "results/system/stats_*.out"]
     stat_files = []
     for p in search_paths:
@@ -49,51 +49,34 @@ def parse_nvmain_stats():
             elif "full_dimm" in filename: arch = "full_dimm"
             else: arch = "single"
 
-        bench = "unknown"
-        if "spec2017" in filename: bench = "spec2017"
+        match = re.search(r'_([a-zA-Z0-9]+)_spec2017\.out', filename)
+        if match:
+            bench = match.group(1) 
         elif "stream" in filename: bench = "stream"
         elif "world" in filename: bench = "world"
+        else: bench = "unknown"
 
         latency, power = 0.0, 0.0
-        
-        # Check if the file is physically empty (NVMain Crash)
         file_size = os.path.getsize(filepath)
-        if file_size == 0:
-            print(f"[EMPTY] {filename} is 0 bytes. (NVMain Simulation Aborted)")
-            continue
+        if file_size == 0: continue
 
-        # FOOLPROOF LINE-BY-LINE PARSER
         with open(filepath, 'r') as f:
             for line in f:
                 line_lower = line.lower()
-                
-                # Extract Latency
                 if 'latency' in line_lower and 'average' in line_lower:
                     nums = re.findall(r'[\d\.\-eE]+', line)
-                    if nums: latency = float(nums[-1]) # Grab the last number on the line
-                
-                # Extract Power
+                    if nums: latency = float(nums[-1]) 
                 if 'totalpower' in line_lower:
                     nums = re.findall(r'[\d\.\-eE]+', line)
                     if nums: power = float(nums[-1])
 
-        # Verification
         if latency > 0 or power > 0:
-            print(f"[OK] {filename} -> Latency: {latency} | Power: {power}")
-            data.append({
-                "Base_Model": base_model,
-                "Architecture": arch,
-                "Benchmark": bench,
-                "Latency": latency,
-                "Power": power
-            })
-        else:
-            print(f"[FAILED] {filename} -> Has {file_size} bytes, but no Latency/Power numbers found.")
+            print(f"[OK] {filename} -> Latency: {latency:.2f} | Power: {power:.4f} (Bench: {bench})")
+            data.append({"Base_Model": base_model, "Architecture": arch, "Benchmark": bench, "Latency": latency, "Power": power})
         
     return pd.DataFrame(data), target_order
 
 def generate_charts(df, target_order):
-    os.makedirs("results", exist_ok=True)
     sns.set_theme(style="whitegrid")
     
     df['Base_Model'] = pd.Categorical(df['Base_Model'], categories=target_order, ordered=True)
@@ -106,19 +89,30 @@ def generate_charts(df, target_order):
         bench_df = df[df['Benchmark'] == bench]
         if bench_df.empty: continue
 
+        bench_dir = f"results/{bench}"
+        os.makedirs(bench_dir, exist_ok=True)
+
         # ==========================================
-        # 1. FULL ARCHITECTURE LATENCY
+        # 1. FULL ARCHITECTURE LATENCY (DYNAMIC SPLIT)
         # ==========================================
-        max_lat = bench_df['Latency'].max()
-        if pd.notna(max_lat) and max_lat > 350:
+        reram_df = bench_df[~bench_df['Base_Model'].str.contains("DRAM")]
+        max_reram_lat = reram_df['Latency'].max() if not reram_df.empty else 0
+        max_all_lat = bench_df['Latency'].max()
+
+        if pd.notna(max_all_lat) and pd.notna(max_reram_lat) and max_all_lat > max_reram_lat * 3:
+            # DYNAMIC CUTOFF LOGIC
+            split_point = max_reram_lat * 1.15
+            top_min = max_all_lat * 0.85
+            top_max = max_all_lat * 1.05
+
             fig, (ax_top, ax_bottom) = plt.subplots(2, 1, sharex=True, figsize=(14, 8), gridspec_kw={'height_ratios': [1, 3]})
             fig.subplots_adjust(hspace=0.05)
 
             sns.barplot(data=bench_df, x="Base_Model", y="Latency", hue="Architecture", hue_order=arch_order, palette="viridis", ax=ax_top)
             sns.barplot(data=bench_df, x="Base_Model", y="Latency", hue="Architecture", hue_order=arch_order, palette="viridis", ax=ax_bottom)
 
-            ax_bottom.set_ylim(0, 350)
-            ax_top.set_ylim(max_lat * 0.95, max_lat * 1.05)
+            ax_bottom.set_ylim(0, split_point)
+            ax_top.set_ylim(top_min, top_max)
 
             ax_top.spines['bottom'].set_visible(False)
             ax_bottom.spines['top'].set_visible(False)
@@ -130,9 +124,9 @@ def generate_charts(df, target_order):
                 for container in ax_target.containers:
                     labels = [f'{v.get_height():.0f}' if v.get_height() > 0 else '' for v in container]
                     if ax_target == ax_top:
-                        labels = [l if (l and float(l) >= 350) else '' for l in labels]
+                        labels = [l if (l and float(l) >= split_point) else '' for l in labels]
                     else:
-                        labels = [l if (l and float(l) < 350) else '' for l in labels]
+                        labels = [l if (l and float(l) < split_point) else '' for l in labels]
                     ax_target.bar_label(container, labels=labels, padding=3, fontsize=9)
 
             d = .015
@@ -151,10 +145,10 @@ def generate_charts(df, target_order):
             ax_bottom.legend(title="Architecture Scale", loc='upper left')
             for label in ax_bottom.get_xticklabels(): label.set_rotation(45); label.set_ha('right')
 
-            plt.savefig(f"results/Latency_All_Architectures_{bench}.png", bbox_inches='tight', dpi=300)
+            plt.savefig(f"{bench_dir}/Latency_All_Architectures_{bench}.png", bbox_inches='tight', dpi=300)
             plt.close(fig)
             
-        elif pd.notna(max_lat) and max_lat > 0:
+        elif pd.notna(max_all_lat) and max_all_lat > 0:
             plt.figure(figsize=(14, 6))
             ax = sns.barplot(data=bench_df, x="Base_Model", y="Latency", hue="Architecture", hue_order=arch_order, palette="viridis")
             for container in ax.containers:
@@ -163,7 +157,7 @@ def generate_charts(df, target_order):
             plt.ylabel("Average Latency (Cycles)", fontweight='bold')
             plt.xticks(rotation=45, ha='right')
             plt.legend(title="Architecture Scale", loc='upper left')
-            plt.savefig(f"results/Latency_All_Architectures_{bench}.png", bbox_inches='tight', dpi=300)
+            plt.savefig(f"{bench_dir}/Latency_All_Architectures_{bench}.png", bbox_inches='tight', dpi=300)
             plt.close()
 
         # ==========================================
@@ -177,7 +171,7 @@ def generate_charts(df, target_order):
         plt.ylabel("Power (Watts)", fontweight='bold')
         plt.xticks(rotation=45, ha='right')
         plt.legend(title="Architecture Scale", loc='upper left')
-        plt.savefig(f"results/Power_All_Architectures_{bench}.png", bbox_inches='tight', dpi=300)
+        plt.savefig(f"{bench_dir}/Power_All_Architectures_{bench}.png", bbox_inches='tight', dpi=300)
         plt.close()
 
         # ==========================================
@@ -193,7 +187,7 @@ def generate_charts(df, target_order):
             plt.title(f"[{bench.upper()}] Baseline Latency (Full DIMM / Native DRAM)", fontweight='bold', fontsize=14)
             plt.ylabel("Latency (Cycles) [Log Scale]", fontweight='bold')
             plt.xticks(rotation=45, ha='right')
-            plt.savefig(f"results/Comparison_Full_DIMM_Latency_{bench}.png", bbox_inches='tight', dpi=300)
+            plt.savefig(f"{bench_dir}/Comparison_Full_DIMM_Latency_{bench}.png", bbox_inches='tight', dpi=300)
             plt.close()
 
             plt.figure(figsize=(10, 6))
@@ -203,7 +197,7 @@ def generate_charts(df, target_order):
             plt.title(f"[{bench.upper()}] Baseline Power (Full DIMM / Native DRAM)", fontweight='bold', fontsize=14)
             plt.ylabel("Power (Watts)", fontweight='bold')
             plt.xticks(rotation=45, ha='right')
-            plt.savefig(f"results/Comparison_Full_DIMM_Power_{bench}.png", bbox_inches='tight', dpi=300)
+            plt.savefig(f"{bench_dir}/Comparison_Full_DIMM_Power_{bench}.png", bbox_inches='tight', dpi=300)
             plt.close()
 
 if __name__ == "__main__":
@@ -215,9 +209,4 @@ if __name__ == "__main__":
         print("ANALYSIS COMPLETE. CHARTS GENERATED:")
         print("="*60)
         for bench in sorted(df['Benchmark'].unique()):
-            print(f"\n[{bench.upper()}]")
-            for chart in sorted(glob.glob("results/*.png")):
-                if bench in chart:
-                    print(f"    {os.path.basename(chart).split('.')[0]}:  {cwd}/{chart}")
-    else:
-        print("\n[!] VISUALIZATION ABORTED. No data could be plotted.")
+            print(f"\n>>> [{bench.upper()}] directory created: {cwd}/results/{bench}/")
