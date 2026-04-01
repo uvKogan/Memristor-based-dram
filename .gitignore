@@ -10,3 +10,11 @@ results/
 simulators/gem5/m5out/
 benchmarks/spec2017/505.mcf
 simulators/gem5/
+
+# Session 19 - ML Workloads & SCALE-Sim
+benchmarks/ml_trace_output/
+benchmarks/downloaded_ml_trace.txt
+benchmarks/*.tar.gz
+benchmarks/polybench-c-4.2.1-beta/
+benchmarks/bin/
+simulators/SCALE-Sim/

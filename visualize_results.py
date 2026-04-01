@@ -49,12 +49,11 @@ def parse_nvmain_stats():
             elif "full_dimm" in filename: arch = "full_dimm"
             else: arch = "single"
 
-        match = re.search(r'_([a-zA-Z0-9]+)_spec2017\.out', filename)
-        if match:
-            bench = match.group(1) 
-        elif "stream" in filename: bench = "stream"
-        elif "world" in filename: bench = "world"
-        else: bench = "unknown"
+        prefix_to_remove = f"stats_{base_model}_{arch}_"
+        if filename.startswith(prefix_to_remove):
+            bench = filename[len(prefix_to_remove):].replace('.out', '')
+        else:
+            bench = "unknown"
 
         latency, power = 0.0, 0.0
         file_size = os.path.getsize(filepath)
