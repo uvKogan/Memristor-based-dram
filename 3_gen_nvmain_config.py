@@ -43,9 +43,10 @@ def generate_nvmain_config(base_name, hw_metrics, target_freq_mhz, output_dir, a
     rows_per_chip = int(bits_per_chip / (cols * current_device_width * banks))
     system_rows = max(rows_per_chip * ranks, 65536)
 
-    # FIX: Pass raw device leakage. Do not multiply by total_devices.
-    # NVMain handles architecture-level scaling internally.
-    base_leakage_w = hw_metrics.get('leakage_mw', 10.0) / 1000.0    
+    # FIX: Pre-scale the leakage by device count in the Python factory.
+    # This ensures the correct total power is written to the config before NVMain reads it.
+    base_leakage_w = hw_metrics.get('leakage_mw', 10.0) / 1000.0
+    scaled_leakage_w = base_leakage_w * devices_per_rank
 
     r_energy = hw_metrics.get('read_energy_nj', 1.1)
     w_energy = hw_metrics.get('write_energy_nj', 1.7)
@@ -69,9 +70,10 @@ INTERCONNECT OffChipBus
 STATS_OUT nvmain_stats_{sys_model_name}.out
 CPUFreq {target_freq_mhz}
 
-; --- Clock and Controller ---
+; --- Clock, Controller and Scaling ---
 CLK {target_freq_mhz}
 MEM_CTL FRFCFS
+DEVICES_PER_RANK {devices_per_rank}
 
 ; --- Address Mapping ---
 AddressMappingScheme {mapping}
@@ -92,7 +94,7 @@ tCMD 1
 ; --- Energy and Power ---
 ReadEnergy {r_energy}
 WriteEnergy {w_energy}
-StandbyPower {base_leakage_w}
+StandbyPower {scaled_leakage_w}
 
 ; --- Geometry Scaling ---
 ROWS {system_rows}

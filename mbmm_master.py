@@ -3,15 +3,82 @@ import subprocess
 import os
 import argparse
 import sys
+import logging
 from pathlib import Path
+from datetime import datetime
 
 # --- PROJECT BASELINE DATA ---
 PROJECT_NAME = "MBMM: ReRAM Hardware-to-System Research Pipeline"
 LAST_UPDATED = "March 17, 2026"
 CURRENT_STATUS = "STABLE - Analytical MLC bypassing enabled to avoid NVSim overflow bugs."
 
+# Global tracking
+execution_log = []
+execution_errors = []
+execution_summary = {
+    "stages_run": [], 
+    "models_completed": 0, 
+    "models_failed": 0,
+    "graph_dirs": [],
+    "log_file": None
+}
+
 def get_project_root():
     return Path(__file__).parent.absolute()
+
+def setup_logging():
+    """Setup logging to file (overwrites on each run)."""
+    root = get_project_root()
+    log_dir = root / "results"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    
+    log_file = log_dir / "mbmm_execution.log"
+    
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s | %(levelname)s | %(message)s',
+        handlers=[
+            logging.FileHandler(log_file, mode='w')
+        ],
+        force=True
+    )
+    return log_file
+
+def log_event(message, level="INFO"):
+    """Log message to file and execution log."""
+    execution_log.append(f"[{level}] {message}")
+    if level == "INFO":
+        logging.info(message)
+    elif level == "ERROR":
+        logging.error(message)
+        execution_errors.append(message)
+    elif level == "WARNING":
+        logging.warning(message)
+
+def run_subprocess(cmd, description=""):
+    """Run subprocess, capture output, log it, and return success status."""
+    log_event(f"Executing: {' '.join(cmd)}")
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600)
+        
+        # Log captured output
+        if result.stdout:
+            logging.info(f"--- STDOUT: {description} ---")
+            logging.info(result.stdout)
+        if result.stderr:
+            logging.warning(f"--- STDERR: {description} ---")
+            logging.warning(result.stderr)
+        
+        if result.returncode != 0:
+            log_event(f"Command failed with exit code {result.returncode}: {description}", "ERROR")
+            return False
+        return True
+    except subprocess.TimeoutExpired:
+        log_event(f"Command timed out: {description}", "ERROR")
+        return False
+    except Exception as e:
+        log_event(f"Command error: {str(e)}", "ERROR")
+        return False
 
 def print_readme():
     """Project Status and Objective Tracker."""
@@ -139,6 +206,15 @@ def run_pipeline(models, freq, trace, cycles):
             continue
 
 def main():
+    global execution_summary
+    
+    # Setup logging first
+    log_file = setup_logging()
+    execution_summary["log_file"] = log_file
+    
+    log_event(f"Starting {PROJECT_NAME}")
+    log_event(f"Status: {CURRENT_STATUS}")
+    
     args = setup_args()
     
     if args.readme:
@@ -150,11 +226,12 @@ def main():
         return
 
     if args.extended_help:
+        log_event("Extended help requested")
         print("\nPIPELINE SUB-SCRIPT DOCUMENTATION:")
         scripts = ["1_run_nvsim_hardware.py", "2_extract_hardware_metrics.py", "3_gen_nvmain_config.py", "4_execute_simulation.py", "5_summary_report.py"]
         for s in scripts:
             print(f"\n--- {s} ---")
-            subprocess.run([sys.executable, s, "--help"])
+            run_subprocess([sys.executable, s, "--help"], s)
         return
 
     if args.models or args.all:
@@ -162,66 +239,129 @@ def main():
         root = get_project_root()
         
         reram_bases = ["reram_22nm_1t1r_slc", "reram_22nm_selector_slc"]
-        dram_models = ["2D_DRAM_example", "3D_DRAM_example"]
+        dram_models = ["2D_DRAM_example", "3D_DRAM_example", "DDR5_4800_DRAM"]
         
-        print("\n" + "="*80)
-        print("STAGE 1 & 2: RERAM HARDWARE EXTRACTION (SLC & MLC)")
-        print("="*80)
-        for base in reram_bases:
-            subprocess.run([sys.executable, "1_run_nvsim_hardware.py", "--models", f"configs/{base}.cfg"])
+        log_event(f"Starting pipeline execution with trace: {args.trace}, cycles: {args.cycles}")
         
-        subprocess.run([sys.executable, "2_extract_hardware_metrics.py"])
-        
-        print("\n" + "="*80)
-        print("STAGE 3: ARCHITECTURE FACTORY (RERAM ONLY)")
-        print("="*80)
-        subprocess.run([sys.executable, "3_gen_nvmain_config.py", "--freq", str(args.freq)])
-        
-        print("\n" + "="*80)
-        print("STAGE 4: UNIFIED SYSTEM SIMULATION")
-        print("="*80)
-        
-        architectures = ["single", "8chip", "16chip", "full_dimm"]
-        factory_bases = [
-            "reram_22nm_1t1r_slc", "reram_22nm_1t1r_mlc",
-            "reram_22nm_selector_slc", "reram_22nm_selector_mlc"
-        ]
-        
-        for base in factory_bases:
-            for arch in architectures:
-                sys_model = f"{base}_{arch}"
-                
-                # THE HACK: Duplicate base NVSim configs for SLC so Stage 4 doesn't abort
-                if "slc" in base:
-                    base_cfg = root / "configs" / f"{base}.cfg"
-                    arch_cfg = root / "configs" / f"{sys_model}.cfg"
-                    if base_cfg.exists() and not arch_cfg.exists():
-                        shutil.copy(base_cfg, arch_cfg)
-                
-                print(f"\n>>> RUNNING RERAM VARIANT: {sys_model}")
-                subprocess.run([
-                    sys.executable, "4_execute_simulation.py", 
-                    "--models", sys_model, "--trace", args.trace, "--cycles", str(args.cycles)
-                ])
-                    
-        # Run DRAM natively
-        for dram in dram_models:
-            print(f"\n>>> RUNNING NATIVE DRAM: {dram}")
-            subprocess.run([
-                sys.executable, "4_execute_simulation.py", 
-                "--models", dram, "--trace", args.trace, "--cycles", str(args.cycles)
-            ])
+        try:
+            log_event("=" * 80)
+            log_event("STAGE 1 & 2: RERAM HARDWARE EXTRACTION (SLC & MLC)")
+            log_event("=" * 80)
+            execution_summary["stages_run"].append("Stage 1 & 2: RERAM Hardware Extraction")
+            for base in reram_bases:
+                log_event(f"Running NVSim for {base}")
+                run_subprocess([sys.executable, "1_run_nvsim_hardware.py", "--models", f"configs/{base}.cfg"], f"NVSim {base}")
             
-        print("\n" + "="*80)
-        print("STAGE 5 & 6: SUMMARY AND VISUALIZATION")
-        print("="*80)
-        # Generate summary (removed --latest so it aggregates everything)
-        subprocess.run([sys.executable, "5_summary_report.py"])
-        subprocess.run([sys.executable, "visualize_results.py"])
+            log_event("Running metric extraction")
+            run_subprocess([sys.executable, "2_extract_hardware_metrics.py"], "Hardware Metric Extraction")
+            
+            log_event("=" * 80)
+            log_event("STAGE 3: ARCHITECTURE FACTORY (RERAM ONLY)")
+            log_event("=" * 80)
+            execution_summary["stages_run"].append("Stage 3: Architecture Factory")
+            run_subprocess([sys.executable, "3_gen_nvmain_config.py", "--freq", str(args.freq)], "Architecture Factory")
+            
+            log_event("=" * 80)
+            log_event("STAGE 4: UNIFIED SYSTEM SIMULATION")
+            log_event("=" * 80)
+            execution_summary["stages_run"].append("Stage 4: System Simulation")
+            
+            architectures = ["single", "8chip", "16chip", "full_dimm"]
+            factory_bases = [
+                "reram_22nm_1t1r_slc", "reram_22nm_1t1r_mlc",
+                "reram_22nm_selector_slc", "reram_22nm_selector_mlc"
+            ]
+            
+            for base in factory_bases:
+                for arch in architectures:
+                    sys_model = f"{base}_{arch}"
+                    
+                    # THE HACK: Duplicate base NVSim configs for SLC so Stage 4 doesn't abort
+                    if "slc" in base:
+                        base_cfg = root / "configs" / f"{base}.cfg"
+                        arch_cfg = root / "configs" / f"{sys_model}.cfg"
+                        if base_cfg.exists() and not arch_cfg.exists():
+                            shutil.copy(base_cfg, arch_cfg)
+                    
+                    log_event(f"Running RERAM variant: {sys_model}")
+                    success = run_subprocess([
+                        sys.executable, "4_execute_simulation.py", 
+                        "--models", sys_model, "--trace", args.trace, "--cycles", str(args.cycles)
+                    ], f"System Simulation: {sys_model}")
+                    
+                    if success:
+                        execution_summary["models_completed"] += 1
+                    else:
+                        execution_summary["models_failed"] += 1
+                        log_event(f"FAILED: {sys_model}", "ERROR")
+                        
+            # Run DRAM natively
+            for dram in dram_models:
+                log_event(f"Running NATIVE DRAM: {dram}")
+                success = run_subprocess([
+                    sys.executable, "4_execute_simulation.py", 
+                    "--models", dram, "--trace", args.trace, "--cycles", str(args.cycles)
+                ], f"System Simulation: {dram}")
+                
+                if success:
+                    execution_summary["models_completed"] += 1
+                else:
+                    execution_summary["models_failed"] += 1
+                    log_event(f"FAILED: {dram}", "ERROR")
+            
+            log_event("=" * 80)
+            log_event("STAGE 5 & 6: SUMMARY AND VISUALIZATION")
+            log_event("=" * 80)
+            execution_summary["stages_run"].append("Stage 5 & 6: Summary & Visualization")
+            
+            run_subprocess([sys.executable, "5_summary_report.py"], "Summary Report Generation")
+            run_subprocess([sys.executable, "visualize_results.py"], "Visualization Generation")
+            
+            log_event("Pipeline execution completed successfully")
+            
+            # Collect graph directories
+            results_dir = root / "results"
+            if results_dir.exists():
+                for item in results_dir.iterdir():
+                    if item.is_dir() and item.name not in ["hardware", "system", "unknown"]:
+                        execution_summary["graph_dirs"].append(item)
+            
+        except Exception as e:
+            log_event(f"Pipeline execution failed: {str(e)}", "ERROR")
         
     else:
-        print(f"\n{PROJECT_NAME}")
-        print("Use --help for usage, --readme for status, or --all to run full batch.")
+        log_event(f"No execution mode selected")
+    
+    # Print final summary to terminal only
+    print("\n" + "="*80)
+    print("MBMM EXECUTION COMPLETE")
+    print("="*80)
+    print(f"\nLog File:")
+    print(f"  {execution_summary['log_file']}")
+    
+    if execution_summary["graph_dirs"]:
+        print(f"\nGenerated Result Directories:")
+        for graph_dir in sorted(execution_summary["graph_dirs"]):
+            print(f"  📊 {graph_dir}")
+    
+    print(f"\nExecution Summary:")
+    print(f"  Stages Executed: {len(execution_summary['stages_run'])}")
+    for stage in execution_summary["stages_run"]:
+        print(f"    ✓ {stage}")
+    
+    print(f"\n  Models Processed:")
+    print(f"    ✓ Completed: {execution_summary['models_completed']}")
+    if execution_summary['models_failed'] > 0:
+        print(f"    ✗ Failed: {execution_summary['models_failed']}")
+    
+    if execution_errors:
+        print(f"\nErrors Encountered ({len(execution_errors)}):")
+        for i, error in enumerate(execution_errors, 1):
+            print(f"  {i}. {error}")
+    else:
+        print(f"\n✓ No errors encountered")
+    
+    print("="*80 + "\n")
 
 if __name__ == "__main__":
     main()

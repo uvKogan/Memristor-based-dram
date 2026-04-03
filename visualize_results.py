@@ -21,7 +21,8 @@ def parse_nvmain_stats():
         "reram_22nm_selector_slc", 
         "reram_22nm_selector_mlc", 
         "2D_DRAM_example", 
-        "3D_DRAM_example"
+        "3D_DRAM_example",
+        "DDR5_4800_DRAM"
     ]
 
     print("\n" + "="*60)
@@ -42,20 +43,25 @@ def parse_nvmain_stats():
                 break
         if not base_model: continue
 
-        if "DRAM" in base_model: arch = "full_dimm" 
+        if "DRAM" in base_model: 
+            arch = "full_dimm"
+            # DRAM filenames don't include architecture suffix
+            prefix_to_remove = f"stats_{base_model}_"
         else:
             if "8chip" in filename: arch = "8chip"
             elif "16chip" in filename: arch = "16chip"
             elif "full_dimm" in filename: arch = "full_dimm"
             else: arch = "single"
+            # ReRAM filenames include architecture suffix
+            prefix_to_remove = f"stats_{base_model}_{arch}_"
 
-        prefix_to_remove = f"stats_{base_model}_{arch}_"
         if filename.startswith(prefix_to_remove):
             bench = filename[len(prefix_to_remove):].replace('.out', '')
         else:
             bench = "unknown"
 
         latency, power = 0.0, 0.0
+        latency_values = []  # Collect all latency values for averaging (e.g., dual-channel DDR5)
         file_size = os.path.getsize(filepath)
         if file_size == 0: continue
 
@@ -64,10 +70,15 @@ def parse_nvmain_stats():
                 line_lower = line.lower()
                 if 'latency' in line_lower and 'average' in line_lower:
                     nums = re.findall(r'[\d\.\-eE]+', line)
-                    if nums: latency = float(nums[-1]) 
+                    if nums: 
+                        latency_values.append(float(nums[-1]))
                 if 'totalpower' in line_lower:
                     nums = re.findall(r'[\d\.\-eE]+', line)
                     if nums: power = float(nums[-1])
+        
+        # Average all collected latency values (handles dual-channel DDR5 with multiple metrics)
+        if latency_values:
+            latency = np.mean(latency_values)
 
         if latency > 0 or power > 0:
             print(f"[OK] {filename} -> Latency: {latency:.2f} | Power: {power:.4f} (Bench: {bench})")
