@@ -18,3 +18,5 @@ benchmarks/*.tar.gz
 benchmarks/polybench-c-4.2.1-beta/
 benchmarks/bin/
 simulators/SCALE-Sim/
+results/
+*.out

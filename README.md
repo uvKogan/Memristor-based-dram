@@ -49,3 +49,5 @@ python3 visualize_results.py
 - [x] **AI Workload Integration**: Implemented MLPerf inference traces via SCALE-Sim to benchmark backpressure limits and evaluate ReRAM's strength in read-heavy, dense parallel operations.
 - [ ] **Power Scaling Resolution**: Audit NVMain configurations to resolve the StandbyPower leakage paradox across multi-chip DIMMs.
 - [ ] **Rank Interleaving Analysis**: Investigate custom rank/bank topologies and memory controller queue depth
+- [x] **LLM Workload Integration:** Added pure GEMM traces (GPT-2) via SCALE-Sim to test parallel inference read-storms.
+- [x] **Modern Baselines:** Engineered a JEDEC-compliant DDR5-4800 dual-channel baseline for direct ReRAM comparison.
