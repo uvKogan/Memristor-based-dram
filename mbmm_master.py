@@ -134,7 +134,7 @@ def setup_args():
     )
     parser.add_argument("--models", nargs="+", help="Run the full pipeline for specific model names.")
     parser.add_argument("--all", action="store_true", help="Run the full pipeline for all models in configs/.")
-    parser.add_argument("--trace", default="test_reram.nvt", help="Trace file to use for simulation.")
+    parser.add_argument("--trace", nargs="+", default=["test_reram.nvt"], help="Trace file(s) to use for simulation.")
     parser.add_argument("--cycles", type=int, default=50000, help="Simulation cycles.")
     parser.add_argument("--readme", action="store_true", help="Print status and history.")
     parser.add_argument("--sims", action="store_true", help="Detailed info on simulators.")
@@ -197,8 +197,22 @@ def run_pipeline(models, freq, trace, cycles):
             # Stage 5: Report Generation
             subprocess.run([sys.executable, "5_summary_report.py", "--latest"], check=True)
             
-            # Stage 6: Call the visualization script to update graphs
+            # Stage 6: Triple-track Visualization (Diagnostic bar charts + Pareto analysis + Hero graphs)
+            print("\n" + "="*80)
+            print("STAGE 6: TRIPLE-TRACK VISUALIZATION")
+            print("="*80)
+            
+            print("\n[EXECUTION] Generating Diagnostic Bar Charts...")
             subprocess.run([sys.executable, "visualize_results.py"], check=False)
+            
+            print("\n[EXECUTION] Generating Pareto Frontiers...")
+            subprocess.run([sys.executable, "visualize_pareto.py"], check=False)
+            
+            print("\n[EXECUTION] Generating Hero Graphs...")
+            subprocess.run([sys.executable, "visualize_hero_graphs.py"], check=False)
+            
+            print("\n[EXECUTION] Stage 6 visualization complete")
+            print("="*80)
             
         except subprocess.CalledProcessError as e:
             print(f"\n[CRITICAL] Pipeline failed at Stage: {e.cmd}")
@@ -241,7 +255,7 @@ def main():
         reram_bases = ["reram_22nm_1t1r_slc", "reram_22nm_selector_slc"]
         dram_models = ["2D_DRAM_example", "3D_DRAM_example", "DDR5_4800_DRAM"]
         
-        log_event(f"Starting pipeline execution with trace: {args.trace}, cycles: {args.cycles}")
+        log_event(f"Starting pipeline execution with {len(args.trace)} trace(s): {', '.join(args.trace)}, cycles: {args.cycles}")
         
         try:
             log_event("=" * 80)
@@ -261,63 +275,79 @@ def main():
             execution_summary["stages_run"].append("Stage 3: Architecture Factory")
             run_subprocess([sys.executable, "3_gen_nvmain_config.py", "--freq", str(args.freq)], "Architecture Factory")
             
-            log_event("=" * 80)
-            log_event("STAGE 4: UNIFIED SYSTEM SIMULATION")
-            log_event("=" * 80)
-            execution_summary["stages_run"].append("Stage 4: System Simulation")
-            
-            architectures = ["single", "8chip", "16chip", "full_dimm"]
-            factory_bases = [
-                "reram_22nm_1t1r_slc", "reram_22nm_1t1r_mlc",
-                "reram_22nm_selector_slc", "reram_22nm_selector_mlc"
-            ]
-            
-            for base in factory_bases:
-                for arch in architectures:
-                    sys_model = f"{base}_{arch}"
-                    
-                    # THE HACK: Duplicate base NVSim configs for SLC so Stage 4 doesn't abort
-                    if "slc" in base:
-                        base_cfg = root / "configs" / f"{base}.cfg"
-                        arch_cfg = root / "configs" / f"{sys_model}.cfg"
-                        if base_cfg.exists() and not arch_cfg.exists():
-                            shutil.copy(base_cfg, arch_cfg)
-                    
-                    log_event(f"Running RERAM variant: {sys_model}")
+            # STAGE 4: LOOP THROUGH EACH TRACE
+            for trace_file in args.trace:
+                log_event("=" * 80)
+                log_event(f"STAGE 4: UNIFIED SYSTEM SIMULATION - TRACE: {trace_file}")
+                log_event("=" * 80)
+                if trace_file not in execution_summary["stages_run"]:
+                    execution_summary["stages_run"].append(f"Stage 4: System Simulation ({trace_file})")
+                
+                architectures = ["single", "8chip", "16chip", "full_dimm"]
+                factory_bases = [
+                    "reram_22nm_1t1r_slc", "reram_22nm_1t1r_mlc",
+                    "reram_22nm_selector_slc", "reram_22nm_selector_mlc"
+                ]
+                
+                for base in factory_bases:
+                    for arch in architectures:
+                        sys_model = f"{base}_{arch}"
+                        
+                        # THE HACK: Duplicate base NVSim configs for SLC so Stage 4 doesn't abort
+                        if "slc" in base:
+                            base_cfg = root / "configs" / f"{base}.cfg"
+                            arch_cfg = root / "configs" / f"{sys_model}.cfg"
+                            if base_cfg.exists() and not arch_cfg.exists():
+                                shutil.copy(base_cfg, arch_cfg)
+                        
+                        log_event(f"Running RERAM variant: {sys_model} with {trace_file}")
+                        success = run_subprocess([
+                            sys.executable, "4_execute_simulation.py", 
+                            "--models", sys_model, "--trace", trace_file, "--cycles", str(args.cycles)
+                        ], f"System Simulation: {sys_model} ({trace_file})")
+                        
+                        if success:
+                            execution_summary["models_completed"] += 1
+                        else:
+                            execution_summary["models_failed"] += 1
+                            log_event(f"FAILED: {sys_model} ({trace_file})", "ERROR")
+                            
+                # Run DRAM natively for this trace
+                for dram in dram_models:
+                    log_event(f"Running NATIVE DRAM: {dram} with {trace_file}")
                     success = run_subprocess([
                         sys.executable, "4_execute_simulation.py", 
-                        "--models", sys_model, "--trace", args.trace, "--cycles", str(args.cycles)
-                    ], f"System Simulation: {sys_model}")
+                        "--models", dram, "--trace", trace_file, "--cycles", str(args.cycles)
+                    ], f"System Simulation: {dram} ({trace_file})")
                     
                     if success:
                         execution_summary["models_completed"] += 1
                     else:
                         execution_summary["models_failed"] += 1
-                        log_event(f"FAILED: {sys_model}", "ERROR")
-                        
-            # Run DRAM natively
-            for dram in dram_models:
-                log_event(f"Running NATIVE DRAM: {dram}")
-                success = run_subprocess([
-                    sys.executable, "4_execute_simulation.py", 
-                    "--models", dram, "--trace", args.trace, "--cycles", str(args.cycles)
-                ], f"System Simulation: {dram}")
-                
-                if success:
-                    execution_summary["models_completed"] += 1
-                else:
-                    execution_summary["models_failed"] += 1
-                    log_event(f"FAILED: {dram}", "ERROR")
+                        log_event(f"FAILED: {dram} ({trace_file})", "ERROR")
             
             log_event("=" * 80)
-            log_event("STAGE 5 & 6: SUMMARY AND VISUALIZATION")
+            log_event("STAGE 5 & 6: SUMMARY AND TRIPLE-TRACK VISUALIZATION")
             log_event("=" * 80)
-            execution_summary["stages_run"].append("Stage 5 & 6: Summary & Visualization")
+            execution_summary["stages_run"].append("Stage 5 & 6: Summary & Triple-Track Visualization")
             
             run_subprocess([sys.executable, "5_summary_report.py"], "Summary Report Generation")
-            run_subprocess([sys.executable, "visualize_results.py"], "Visualization Generation")
+            
+            # TRIPLE-TRACK VISUALIZATION (Stage 6)
+            log_event("Executing visualization stage - Track 1: Diagnostic bar charts")
+            print("\n[EXECUTION] Generating Diagnostic Bar Charts...")
+            run_subprocess([sys.executable, "visualize_results.py"], "Diagnostic Bar Charts (Latency, Power, EDP)")
+            
+            log_event("Executing visualization stage - Track 2: Pareto frontier analysis")
+            print("\n[EXECUTION] Generating Pareto Frontiers...")
+            run_subprocess([sys.executable, "visualize_pareto.py"], "Pareto Frontier Visualization (Technology × Architecture)")
+            
+            log_event("Executing visualization stage - Track 3: Hero graphs")
+            print("\n[EXECUTION] Generating Hero Graphs...")
+            run_subprocess([sys.executable, "visualize_hero_graphs.py"], "Hero Graphs (Area Density & Global EDP)")
             
             log_event("Pipeline execution completed successfully")
+
             
             # Collect graph directories
             results_dir = root / "results"
