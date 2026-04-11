@@ -46,7 +46,8 @@ def generate_nvmain_config(base_name, hw_metrics, target_freq_mhz, output_dir, a
     # FIX: Pre-scale the leakage by device count in the Python factory.
     # This ensures the correct total power is written to the config before NVMain reads it.
     base_leakage_w = hw_metrics.get('leakage_mw', 10.0) / 1000.0
-    scaled_leakage_w = base_leakage_w * devices_per_rank
+    total_devices = ranks * devices_per_rank
+    scaled_leakage_w = base_leakage_w * total_devices
 
     r_energy = hw_metrics.get('read_energy_nj', 1.1)
     w_energy = hw_metrics.get('write_energy_nj', 1.7)
