@@ -20,3 +20,6 @@ benchmarks/bin/
 simulators/SCALE-Sim/
 results/
 *.out
+*.out
+*.nvt
+*.csv
