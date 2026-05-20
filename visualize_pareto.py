@@ -66,7 +66,7 @@ TECHNOLOGY_CONFIGS = {
         'patterns': [r'ddr5.*4800.*dram', r'ddr5'],
         'marker': 'D',
         'color': '#0044FF',  # Vibrant Blue
-        'label': 'DDR5',
+        'label': 'DDR5-4800 (Dual Channel)',
         'size_base': 120
     },
     '2D_DRAM': {
@@ -88,8 +88,8 @@ TECHNOLOGY_CONFIGS = {
 # Architecture scale affects marker size and edge properties
 ARCHITECTURE_SCALES = {
     'single': {'size_base': 150, 'alpha': 0.6, 'edgewidth': 1.5},
-    '8chip': {'size_base': 300, 'alpha': 0.7, 'edgewidth': 1.5},
-    '16chip': {'size_base': 450, 'alpha': 0.85, 'edgewidth': 1.5},
+    '8chip': {'size_base': 300, 'alpha': 0.6, 'edgewidth': 1.5},
+    '16chip': {'size_base': 450, 'alpha': 0.6, 'edgewidth': 1.5},
     'full_dimm': {'size_base': 600, 'alpha': 1.0, 'edgewidth': 2.0, 'edgecolor': 'black'}
 }
 
@@ -253,20 +253,20 @@ def create_gold_master_plot(benchmark, data_points):
         # Add text label with (Latency, Power) coordinates for EVERY point using annotate
         label_text = f"({latency:.0f}, {power:.3f})"
         
-        # Intelligent offset based on position to avoid overlaps
-        # Offset consistently to avoid marker overlap
-        xytext_offset = (5, 5)  # Slight offset from marker
+        # Intelligent offset to avoid marker overlap - increased offset for better clarity
+        # Dynamic offset: larger offset for better label separation
+        xytext_offset = (20, 20)  # Offset from marker to prevent collisions
         
         annotation = ax.annotate(
             label_text,
             xy=(latency, power),
-            xytext=(15, 15),
+            xytext=xytext_offset,
             textcoords='offset points',
             fontsize=9,
             fontweight='bold',
             ha='left',
             va='bottom',
-            bbox=dict(facecolor='white', edgecolor='none', alpha=0.7),
+            bbox=dict(facecolor='white', edgecolor='none', alpha=0.8, pad=2),
             zorder=5
         )
         all_texts.append(annotation)
@@ -274,7 +274,10 @@ def create_gold_master_plot(benchmark, data_points):
     # Use adjust_text to prevent label overlaps if available
     if HAS_ADJUST_TEXT and all_texts:
         try:
-            adjust_text(all_texts, ax=ax, arrowprops=dict(arrowstyle='-', lw=0.5, color='gray', alpha=0.3))
+            adjust_text(all_texts, ax=ax, 
+                       arrowprops=dict(arrowstyle='-', lw=0.5, color='gray', alpha=0.5),
+                       expand_points=(1.5, 1.5), expand_text=(1.2, 1.2),
+                       force_points=(0.5, 0.5))
         except Exception as e:
             print(f"  Warning: adjust_text failed - {str(e)}. Using default positioning.")
     
@@ -319,7 +322,7 @@ def create_gold_master_plot(benchmark, data_points):
     
     # Create legend with dynamic placement
     ax.legend(handles=legend_elements, loc='best', fontsize=9, 
-              title='Technology & Architecture', framealpha=0.95, 
+              title='Architecture & Capacity Scaling', framealpha=0.95, 
               edgecolor='black', title_fontsize=10)
     
     # Formatting
@@ -335,10 +338,9 @@ def create_gold_master_plot(benchmark, data_points):
         ax.set_xlim(left=50)
         ax.set_xlabel('Average Total Latency (Cycles)', fontsize=12, fontweight='bold')
     
+    # Set fixed Y-axis range for consistent cross-comparison
     ax.set_ylim(0, 1.2)
-    
-    # Add 15% top margin to prevent data points from hugging top border
-    ax.margins(y=0.15)
+    # Do NOT apply margins that would override the fixed y-axis range
     
     ax.grid(True, which='both', alpha=0.25, linestyle='-', linewidth=0.5)
     
@@ -356,14 +358,18 @@ def main():
     
     total_points = sum(len(points) for points in benchmark_data.values())
     print(f"\n{'=' * 100}")
-    print(f"GOLD MASTER ANALYSIS SUMMARY:")
+    print(f"GOLD MASTER ANALYSIS SUMMARY (BATCH 2 FINALIZATION):")
     print(f"  Benchmarks identified: {len(benchmark_data)}")
     print(f"  Total data points: {total_points}")
     print(f"  Output directory: /home/yuvalk/MBMM/results/final_graphs/pareto/")
     print(f"  Output naming: Pareto_[Benchmark].png")
     print(f"  Axis strategy: LOG for gcc_spec2017, mcf_spec2017 | LINEAR [50, ∞) for others")
+    print(f"  Y-Axis (Power): Fixed range [0, 1.2] for consistent cross-comparison")
     print(f"  Point labeling: UNIVERSAL - all points annotated with (X, Y) coordinates")
-    print(f"  Marker differentiation: 8+ technology variants with distinct glyphs")
+    print(f"  Label positioning: adjust_text with anti-collision algorithm")
+    print(f"  Marker transparency: Full-DIMM (alpha=1.0) vs Non-DIMM (alpha=0.6) for visual hierarchy")
+    print(f"  Baseline labeling: DDR5-4800 (Dual Channel) for clarity on comparison standard")
+    print(f"  Legend title: 'Architecture & Capacity Scaling' for research emphasis")
     print(f"{'=' * 100}\n")
     
     # Generate plots

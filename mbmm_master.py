@@ -7,6 +7,41 @@ import logging
 from pathlib import Path
 from datetime import datetime
 
+# --- ARCHIVE OLD GRAPHS ---
+def archive_old_graphs(output_dir="/home/yuvalk/MBMM/results/final_graphs"):
+    """Archive existing .png and .pdf files before generating new plots."""
+    import os
+    import shutil
+    from datetime import datetime
+    from pathlib import Path
+    
+    output_path = Path(output_dir)
+    if not output_path.exists():
+        return  # No output dir yet, nothing to archive
+    
+    # Find all .png and .pdf files in output_dir and subdirectories
+    graph_files = []
+    for ext in ['*.png', '*.pdf']:
+        graph_files.extend(output_path.rglob(ext))
+    
+    if not graph_files:
+        return  # No old graphs to archive
+    
+    # Create archive folder with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    archive_dir = output_path.parent / f"archive_{timestamp}"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Move all graph files to archive
+    for graph_file in graph_files:
+        relative_path = graph_file.relative_to(output_path)
+        dest_file = archive_dir / relative_path
+        dest_file.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(graph_file), str(dest_file))
+        print(f"[ARCHIVE] Moved: {relative_path} → archive_{timestamp}/")
+    
+    print(f"[ARCHIVE] Created archive folder: {archive_dir.name}\n")
+
 # --- PROJECT BASELINE DATA ---
 PROJECT_NAME = "MBMM: ReRAM Hardware-to-System Research Pipeline"
 LAST_UPDATED = "March 17, 2026"
@@ -326,6 +361,8 @@ def main():
                         execution_summary["models_failed"] += 1
                         log_event(f"FAILED: {dram} ({trace_file})", "ERROR")
             
+            archive_old_graphs()
+
             log_event("=" * 80)
             log_event("STAGE 5 & 6: SUMMARY AND TRIPLE-TRACK VISUALIZATION")
             log_event("=" * 80)
@@ -333,18 +370,19 @@ def main():
             
             run_subprocess([sys.executable, "5_summary_report.py"], "Summary Report Generation")
             
-            # TRIPLE-TRACK VISUALIZATION (Stage 6)
-            log_event("Executing visualization stage - Track 1: Diagnostic bar charts")
-            print("\n[EXECUTION] Generating Diagnostic Bar Charts...")
-            run_subprocess([sys.executable, "visualize_results.py"], "Diagnostic Bar Charts (Latency, Power, EDP)")
+            # STAGE 6: TRIPLE-TRACK VISUALIZATION
+            print("\n" + "="*80)
+            print("STAGE 6: VISUALIZATION")
+            print("="*80)
             
-            log_event("Executing visualization stage - Track 2: Pareto frontier analysis")
-            print("\n[EXECUTION] Generating Pareto Frontiers...")
-            run_subprocess([sys.executable, "visualize_pareto.py"], "Pareto Frontier Visualization (Technology × Architecture)")
+            print("\nGenerating Diagnostic Bar Charts...")
+            subprocess.run(['python3', 'visualize_results.py'], check=True)
             
-            log_event("Executing visualization stage - Track 3: Hero graphs")
-            print("\n[EXECUTION] Generating Hero Graphs...")
-            run_subprocess([sys.executable, "visualize_hero_graphs.py"], "Hero Graphs (Area Density & Global EDP)")
+            print("\nGenerating Pareto Frontiers...")
+            subprocess.run(['python3', 'visualize_pareto.py'], check=True)
+            
+            print("\nGenerating Hero Graphs...")
+            subprocess.run(['python3', 'visualize_hero_graphs.py'], check=True)
             
             log_event("Pipeline execution completed successfully")
 
