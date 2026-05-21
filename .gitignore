@@ -23,3 +23,10 @@ results/
 *.out
 *.nvt
 *.csv
+
+# DevOps & Pipeline Hygiene (Phase 1-4 Refactor)
+*.log
+processed_*.csv
+archive_*/
+__pycache__/
+*.pyc

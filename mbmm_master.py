@@ -7,38 +7,68 @@ import logging
 from pathlib import Path
 from datetime import datetime
 
-# --- ARCHIVE OLD GRAPHS ---
-def archive_old_graphs(output_dir="/home/yuvalk/MBMM/results/final_graphs"):
-    """Archive existing .png and .pdf files before generating new plots."""
+# --- ARCHIVE OLD GRAPHS, LOGS, AND METRICS ---
+def archive_old_graphs(output_dir="/home/yuvalk/MBMM/results/final_graphs",
+                       logs_dir="/home/yuvalk/MBMM/results/logs",
+                       metrics_dir="/home/yuvalk/MBMM/results"):
+    """Archive existing .png/.pdf files, .log files, and processed_*.csv files before generating new plots."""
     import os
     import shutil
     from datetime import datetime
     from pathlib import Path
     
     output_path = Path(output_dir)
-    if not output_path.exists():
-        return  # No output dir yet, nothing to archive
+    logs_path = Path(logs_dir)
+    metrics_path = Path(metrics_dir)
+    
+    # Collect files to archive
+    files_to_archive = []
     
     # Find all .png and .pdf files in output_dir and subdirectories
-    graph_files = []
     for ext in ['*.png', '*.pdf']:
-        graph_files.extend(output_path.rglob(ext))
+        files_to_archive.extend(output_path.rglob(ext))
     
-    if not graph_files:
-        return  # No old graphs to archive
+    # Find all .log files in logs directory
+    if logs_path.exists():
+        files_to_archive.extend(logs_path.glob('*.log'))
+    
+    # Find all processed_*.csv files in metrics directory
+    files_to_archive.extend(metrics_path.glob('processed_*.csv'))
+    
+    if not files_to_archive:
+        return  # Nothing to archive
     
     # Create archive folder with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     archive_dir = output_path.parent / f"archive_{timestamp}"
     archive_dir.mkdir(parents=True, exist_ok=True)
     
-    # Move all graph files to archive
-    for graph_file in graph_files:
-        relative_path = graph_file.relative_to(output_path)
-        dest_file = archive_dir / relative_path
-        dest_file.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(graph_file), str(dest_file))
-        print(f"[ARCHIVE] Moved: {relative_path} → archive_{timestamp}/")
+    # Create subdirectories in archive for organization
+    (archive_dir / "graphs").mkdir(exist_ok=True)
+    (archive_dir / "logs").mkdir(exist_ok=True)
+    (archive_dir / "metrics").mkdir(exist_ok=True)
+    
+    # Move all files to archive with proper organization
+    for file_to_move in files_to_archive:
+        try:
+            if file_to_move.suffix in ['.png', '.pdf']:
+                # Graph files with directory structure
+                relative_path = file_to_move.relative_to(output_path)
+                dest_file = archive_dir / "graphs" / relative_path
+                dest_file.parent.mkdir(parents=True, exist_ok=True)
+            elif file_to_move.suffix == '.log':
+                # Log files to logs subdirectory
+                dest_file = archive_dir / "logs" / file_to_move.name
+            elif file_to_move.suffix == '.csv':
+                # CSV files to metrics subdirectory
+                dest_file = archive_dir / "metrics" / file_to_move.name
+            else:
+                continue
+            
+            shutil.move(str(file_to_move), str(dest_file))
+            print(f"[ARCHIVE] Moved: {file_to_move.name} → archive_{timestamp}/")
+        except Exception as e:
+            print(f"[ARCHIVE] Warning: Could not move {file_to_move.name}: {e}")
     
     print(f"[ARCHIVE] Created archive folder: {archive_dir.name}\n")
 
@@ -232,9 +262,20 @@ def run_pipeline(models, freq, trace, cycles):
             # Stage 5: Report Generation
             subprocess.run([sys.executable, "5_summary_report.py", "--latest"], check=True)
             
-            # Stage 6: Triple-track Visualization (Diagnostic bar charts + Pareto analysis + Hero graphs)
+            # Archive old graphs before generating new metrics
+            archive_old_graphs()
+            
+            # Stage 6: Centralized Metrics Processing (Single source of truth for all calculations)
             print("\n" + "="*80)
-            print("STAGE 6: TRIPLE-TRACK VISUALIZATION")
+            print("STAGE 6: CENTRALIZED METRICS PROCESSING")
+            print("="*80)
+            
+            print("\n[EXECUTION] Processing metrics and generating CSVs...")
+            subprocess.run([sys.executable, "process_metrics.py"], check=True)
+            
+            # Stage 7: Triple-track Visualization (Bar charts + Pareto analysis + Hero graphs)
+            print("\n" + "="*80)
+            print("STAGE 7: TRIPLE-TRACK VISUALIZATION (Reading pre-calculated metrics)")
             print("="*80)
             
             print("\n[EXECUTION] Generating Diagnostic Bar Charts...")
@@ -246,7 +287,7 @@ def run_pipeline(models, freq, trace, cycles):
             print("\n[EXECUTION] Generating Hero Graphs...")
             subprocess.run([sys.executable, "visualize_hero_graphs.py"], check=False)
             
-            print("\n[EXECUTION] Stage 6 visualization complete")
+            print("\n[EXECUTION] Stage 7 visualization complete")
             print("="*80)
             
         except subprocess.CalledProcessError as e:
@@ -364,25 +405,34 @@ def main():
             archive_old_graphs()
 
             log_event("=" * 80)
-            log_event("STAGE 5 & 6: SUMMARY AND TRIPLE-TRACK VISUALIZATION")
+            log_event("STAGE 5 & 6: SUMMARY AND CENTRALIZED METRICS PROCESSING")
             log_event("=" * 80)
-            execution_summary["stages_run"].append("Stage 5 & 6: Summary & Triple-Track Visualization")
+            execution_summary["stages_run"].append("Stage 5 & 6: Summary & Metrics Processing")
             
             run_subprocess([sys.executable, "5_summary_report.py"], "Summary Report Generation")
             
-            # STAGE 6: TRIPLE-TRACK VISUALIZATION
+            # STAGE 6: CENTRALIZED METRICS PROCESSING
             print("\n" + "="*80)
-            print("STAGE 6: VISUALIZATION")
+            print("STAGE 6: CENTRALIZED METRICS PROCESSING")
             print("="*80)
             
+            print("\nProcessing metrics and generating CSVs...")
+            run_subprocess([sys.executable, "process_metrics.py"], "Centralized Metrics Processing")
+            
+            # STAGE 7: TRIPLE-TRACK VISUALIZATION
+            print("\n" + "="*80)
+            print("STAGE 7: TRIPLE-TRACK VISUALIZATION (Reading pre-calculated metrics)")
+            print("="*80)
+            execution_summary["stages_run"].append("Stage 7: Triple-Track Visualization")
+            
             print("\nGenerating Diagnostic Bar Charts...")
-            subprocess.run(['python3', 'visualize_results.py'], check=True)
+            run_subprocess([sys.executable, "visualize_results.py"], "Bar Chart Visualization")
             
             print("\nGenerating Pareto Frontiers...")
-            subprocess.run(['python3', 'visualize_pareto.py'], check=True)
+            run_subprocess([sys.executable, "visualize_pareto.py"], "Pareto Visualization")
             
             print("\nGenerating Hero Graphs...")
-            subprocess.run(['python3', 'visualize_hero_graphs.py'], check=True)
+            run_subprocess([sys.executable, "visualize_hero_graphs.py"], "Hero Graphs Visualization")
             
             log_event("Pipeline execution completed successfully")
 
