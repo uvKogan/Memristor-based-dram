@@ -24,6 +24,12 @@ results/
 *.nvt
 *.csv
 
+# Thesis source material (papers, lectures, project book) — not code
+resources/
+
+# Machine-local Claude Code settings
+.claude/settings.local.json
+
 # DevOps & Pipeline Hygiene (Phase 1-4 Refactor)
 *.log
 processed_*.csv

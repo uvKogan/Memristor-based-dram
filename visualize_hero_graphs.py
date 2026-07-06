@@ -30,14 +30,15 @@ GEOMETRIC_MEANS_FILE = "/home/yuvalk/MBMM/results/processed_geometric_means.csv"
 # Gold Master color palette (exact hex codes)
 TECHNOLOGY_COLORS = {
     'DDR5_4800': '#0044FF',              # Vibrant Blue
-    '2D_DRAM_example': '#00FFFF',        # Cyan
-    '3D_DRAM_example': '#FF8800',        # Bright Orange
     'pcm_microsoft_2009': '#FF0000',     # Pure Red
     '1T1R_SLC': '#32CD32',               # Forest Green
     '1S1R_SLC': '#00FF00',               # Neon Green
     '1T1R_MLC': '#8A2BE2',               # Dark Violet
     '1S1R_MLC': '#FF00FF'                # Magenta
 }
+
+# Generic DRAM examples dropped — narrative focuses on literature-backed baselines only
+EXCLUDED_TECHNOLOGIES = {'2D_DRAM_example', '3D_DRAM_example'}
 
 
 # ============================================================================
@@ -68,7 +69,7 @@ def load_geometric_means():
         return None
     
     df = pd.read_csv(GEOMETRIC_MEANS_FILE)
-    geom_means = dict(zip(df['Technology'], df['Geometric_Mean_EDP']))
+    geom_means = dict(zip(df['Technology'], df['Geometric_Mean_PDP']))
     
     logger.info(f"Loaded geometric means for {len(geom_means)} technologies\n")
     return geom_means
@@ -93,15 +94,16 @@ def generate_hero_area_density(df_metrics):
     
     # Get unique technologies and their area density ratios
     # Average area density per technology (in case of multiple benchmarks/archs)
+    df_metrics = df_metrics[~df_metrics['Technology'].isin(EXCLUDED_TECHNOLOGIES)]
     area_by_tech = df_metrics.groupby('Technology')['Area_Density_Ratio'].mean()
     
-    # Sort by area density
-    area_by_tech = area_by_tech.sort_values(ascending=True)
-    
+    # Sort descending — higher ratio = denser = better
+    area_by_tech = area_by_tech.sort_values(ascending=False)
+
     technologies = area_by_tech.index.tolist()
     values = area_by_tech.values
     colors = [TECHNOLOGY_COLORS.get(tech, '#808080') for tech in technologies]
-    
+
     # Create display labels
     display_labels = []
     for tech in technologies:
@@ -115,35 +117,35 @@ def generate_hero_area_density(df_metrics):
             display_labels.append('3D DRAM')
         else:
             display_labels.append(tech.replace('_', ' '))
-    
+
     # Create figure
     fig, ax = plt.subplots(figsize=(14, 8))
-    
+
     # Create bars
     bars = ax.bar(range(len(technologies)), values, color=colors, edgecolor='black',
                   linewidth=2.0, alpha=0.85)
-    
+
     # Add value labels on top of bars
     for bar, val in zip(bars, values):
         height = bar.get_height()
         ax.text(bar.get_x() + bar.get_width()/2., height,
                f'{val:.2f}',
                ha='center', va='bottom', fontsize=12, fontweight='bold')
-    
+
     # Formatting
-    ax.set_ylabel('Normalized Area per GB (Lower is Better)', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Normalized Area Density (vs DDR5) — Higher is Better', fontsize=14, fontweight='bold')
     ax.set_xlabel('Memory Technology', fontsize=14, fontweight='bold')
-    ax.set_title('Silicon Density Comparison: Normalized Area per GB (Hybrid-Empirical)',
+    ax.set_title('Silicon Density Comparison: Normalized Area Density (Hybrid-Empirical)',
                 fontsize=15, fontweight='bold', pad=20)
     ax.set_xticks(range(len(technologies)))
     ax.set_xticklabels(display_labels, rotation=45, ha='right', fontsize=11)
     ax.grid(axis='y', alpha=0.3)
     ax.set_ylim(0, max(values) * 1.15)
-    
+
     # Add source caption
     fig.text(0.5, 0.02,
-            'Normalized architectural scaling based on $20F^2$ (1T1R) and $4F^2$ (1S1R) cell dimensions @ 22nm. '
-            'Hybrid-empirical approach: DDR5 baseline = 35 mm²/GB; ReRAM extracted from NVSim.',
+            'Normalized area density = DDR5 baseline (35 mm²/GB) ÷ technology mm²/GB. '
+            'Values > 1.0 indicate denser integration than DDR5. ReRAM area extracted from NVSim @ 22nm.',
             ha='center', fontsize=9, style='italic')
     
     plt.tight_layout(rect=[0, 0.04, 1, 1])
@@ -157,14 +159,16 @@ def generate_hero_area_density(df_metrics):
 # HERO GRAPH 2: GLOBAL AVERAGE EDP
 # ============================================================================
 
-def generate_hero_average_edp(geometric_means):
-    """Generate Hero Graph 2: Overall System Efficiency (Geometric Mean EDP)."""
-    
+def generate_hero_average_pdp(geometric_means):
+    """Generate Hero Graph 2: Overall System Efficiency (Geometric Mean PDP)."""
+
     logger.info("="*80)
-    logger.info("HERO GRAPH 2: Overall System Efficiency (Geometric Mean EDP)")
+    logger.info("HERO GRAPH 2: Overall System Efficiency (Geometric Mean PDP)")
     logger.info("="*80)
     
-    # Sort by EDP (ascending = better efficiency)
+    # Sort by EDP (ascending = better efficiency), excluding generic DRAM examples
+    geometric_means = {k: v for k, v in geometric_means.items()
+                       if k not in EXCLUDED_TECHNOLOGIES}
     sorted_techs = sorted(geometric_means.items(), key=lambda x: x[1])
     technologies = [tech for tech, _ in sorted_techs]
     values = [edp for _, edp in sorted_techs]
@@ -201,14 +205,14 @@ def generate_hero_average_edp(geometric_means):
     min_val = min(values)
     if max_val > 0 and min_val > 0 and max_val / min_val > 10:
         ax.set_yscale('log')
-        ylabel = 'Efficiency Index (Geometric Mean EDP - Lower is Better) — Log Scale'
+        ylabel = 'Average PDP (Cycle-Watts) — Lower is Better — Log Scale'
     else:
-        ylabel = 'Efficiency Index (Geometric Mean EDP - Lower is Better)'
+        ylabel = 'Average PDP (Cycle-Watts) — Lower is Better'
     
     # Formatting
     ax.set_ylabel(ylabel, fontsize=14, fontweight='bold')
     ax.set_xlabel('Memory Technology', fontsize=14, fontweight='bold')
-    ax.set_title('Overall System Efficiency (Geometric Mean EDP)',
+    ax.set_title('Overall System Efficiency (Geometric Mean PDP)',
                 fontsize=15, fontweight='bold', pad=20)
     ax.set_xticks(range(len(technologies)))
     ax.set_xticklabels(display_labels, rotation=45, ha='right', fontsize=11)
@@ -217,11 +221,12 @@ def generate_hero_average_edp(geometric_means):
     # Add source caption
     fig.text(0.5, 0.02,
             'Data generated via MBMM Pipeline (NVSim + NVMain 2.0). '
-            'EDP = Total Execution Cycles × Total System Power. Geometric mean across all benchmarks.',
+            'PDP = Total Execution Cycles × Total System Power. '
+            'Geometric mean across all benchmarks — Full DIMM (64-chip) configuration.',
             ha='center', fontsize=10, style='italic')
     
     plt.tight_layout(rect=[0, 0.04, 1, 1])
-    output_file = os.path.join(OUTPUT_DIR, "Hero_Average_EDP.png")
+    output_file = os.path.join(OUTPUT_DIR, "Hero_Average_PDP.png")
     plt.savefig(output_file, dpi=300, bbox_inches='tight')
     logger.info(f"✓ Saved: {output_file}\n")
     plt.close(fig)
@@ -251,15 +256,15 @@ def main():
     
     # Generate graphs
     generate_hero_area_density(df_hero)
-    generate_hero_average_edp(geometric_means)
-    
+    generate_hero_average_pdp(geometric_means)
+
     logger.info("="*80)
     logger.info("✅ HERO GRAPHS GENERATION COMPLETE")
     logger.info("="*80)
     logger.info(f"\nOutput directory: {OUTPUT_DIR}/")
     logger.info(f"Generated files:")
     logger.info(f"  1. Hero_Normalized_Area.png (Hybrid-Empirical)")
-    logger.info(f"  2. Hero_Average_EDP.png (Empirical)\n")
+    logger.info(f"  2. Hero_Average_PDP.png (Empirical)\n")
     
     return True
 
