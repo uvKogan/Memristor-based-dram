@@ -3,4 +3,4 @@
 	url = https://github.com/SEAL-UCSB/NVmain.git
 [submodule "simulators/nvsim"]
 	path = simulators/nvsim
-	url = https://github.com/uvKogan/NVSim.git
+	url = https://github.com/uvKogan/MBMM.git
