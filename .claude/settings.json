@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read",
+      "Write",
+      "Bash(python3 *)",
+      "Bash(python *)",
+      "Bash(make*)",
+      "Bash(scons*)",
+      "Bash(cat *)",
+      "Bash(grep *)"
+    ],
+    "deny": [
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(rm -rf /*)"
+    ]
+  }
+}
