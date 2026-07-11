@@ -13,6 +13,7 @@ All calculations performed in process_metrics.py.
 
 import os
 import re
+import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -35,8 +36,12 @@ except ImportError:
 # CONFIGURATION
 # ============================================================================
 
+# Overridable via --metrics-file/--output-dir (see main()); defaults unchanged.
 METRICS_FILE = "/home/yuvalk/MBMM/results/processed_pareto_metrics.csv"
 OUTPUT_DIR = "/home/yuvalk/MBMM/results/final_graphs/pareto"
+
+UNGATED_CAVEAT = ('Ungated static power (NVMain power-down disabled); module-sum '
+                   'semantics; real per-technology leakage (see fidelity audit).')
 
 # Technology marker configurations (exact hex codes matching bar charts)
 TECHNOLOGY_CONFIGS = {
@@ -232,9 +237,20 @@ def create_pareto_plot(benchmark, data_points):
         x_pad = 0.10 * (max_lat - min_lat)
         ax.set_xlim(min_lat - x_pad, max_lat + 0.05 * (max_lat - min_lat))
 
-    # Linear Y scale with tight symmetric headroom so the 0.06–0.15 W band
-    # spreads across the full vertical canvas with auto tick marks.
-    ax.set_ylim(min_pwr * 0.90, max_pwr * 1.10)
+    # Y (power) axis: same >10x-spread convention already used for X (latency)
+    # above. With real, ungated, per-technology leakage the power range can
+    # span orders of magnitude (e.g. 1T1R full_dimm ~50W vs DDR5 ~0.5W) --
+    # under a linear axis every non-1T1R point collapses to the bottom edge,
+    # so log is chosen automatically whenever the same threshold is crossed;
+    # otherwise linear with tight headroom, as before.
+    y_is_log = min_pwr > 0 and max_pwr / min_pwr > 10
+    if y_is_log:
+        ax.set_yscale('log')
+        ax.set_ylim(min_pwr * 0.8, max_pwr * 1.25)
+        logger.info(f"  [AXIS] {benchmark} Pareto Y (power): log scale "
+                   f"(range {min_pwr:.4f}-{max_pwr:.4f} W, {max_pwr/min_pwr:.0f}x spread > 10x threshold)")
+    else:
+        ax.set_ylim(min_pwr * 0.90, max_pwr * 1.10)
 
     # ── Legend: outside the axes to the right ──────────────────────────────
     legend_elements = []
@@ -278,14 +294,23 @@ def create_pareto_plot(benchmark, data_points):
 
     # ── Labels & grid ───────────────────────────────────────────────────────
     ax.set_xlabel('Latency (ns)', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Total System Power (W)', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Total System Power (W)' + (' — Log Scale' if y_is_log else ''),
+                 fontsize=12, fontweight='bold')
     ax.set_title(f'Pareto Frontier — Latency vs. Power: {benchmark}',
                  fontsize=13, fontweight='bold', pad=12)
     ax.grid(True, alpha=0.3, linestyle='--')
 
-    # Reserve 30 % of canvas width for the outside legend — no tight_layout
-    plt.subplots_adjust(right=0.70)
-    return fig, lgd
+    caveat_text = fig.text(0.5, 0.025, UNGATED_CAVEAT, ha='center', fontsize=7,
+                          style='italic', color='gray')
+
+    # Reserve 30 % of canvas width for the outside legend, and bottom margin
+    # for the caveat footnote — no tight_layout (would fight the fixed legend
+    # position), so both margins have to be reserved explicitly. caveat_text
+    # is passed back to main() so it can be added to bbox_extra_artists --
+    # savefig(bbox_inches='tight') does not reliably auto-discover fig.text()
+    # artists the way it does axes-child artists.
+    plt.subplots_adjust(right=0.70, bottom=0.11)
+    return fig, lgd, caveat_text
 
 
 # ============================================================================
@@ -294,11 +319,22 @@ def create_pareto_plot(benchmark, data_points):
 
 def main():
     """Execute Pareto visualization pipeline."""
-    
+
+    global METRICS_FILE, OUTPUT_DIR
+
+    parser = argparse.ArgumentParser(description="MBMM Step 7B: Pareto Frontier Visualization")
+    parser.add_argument("--metrics-file", default=METRICS_FILE,
+                        help="Path to processed_pareto_metrics.csv (default: results/).")
+    parser.add_argument("--output-dir", default=OUTPUT_DIR,
+                        help="Output directory for Pareto plots (default: results/final_graphs/pareto).")
+    args = parser.parse_args()
+    METRICS_FILE = args.metrics_file
+    OUTPUT_DIR = args.output_dir
+
     logger.info("="*100)
     logger.info("STAGE 7B: PARETO FRONTIER VISUALIZATION")
     logger.info("="*100 + "\n")
-    
+
     # Load metrics
     benchmark_data = load_pareto_metrics()
     
@@ -314,10 +350,10 @@ def main():
     
     for benchmark in sorted(benchmark_data.keys()):
         logger.info(f"  Creating: Pareto_{benchmark}.png")
-        fig, lgd = create_pareto_plot(benchmark, benchmark_data[benchmark])
+        fig, lgd, caveat_text = create_pareto_plot(benchmark, benchmark_data[benchmark])
         output_file = Path(OUTPUT_DIR) / f'Pareto_{benchmark}.png'
         fig.savefig(output_file, dpi=150, bbox_inches='tight',
-                    bbox_extra_artists=(lgd,))
+                    bbox_extra_artists=(lgd, caveat_text))
         logger.info(f"    ✓ Saved: {output_file}")
         plt.close(fig)
     

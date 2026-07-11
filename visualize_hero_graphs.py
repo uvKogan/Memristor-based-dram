@@ -10,6 +10,7 @@ This is a 'dumb plotter' - zero math, zero stat parsing.
 All calculations performed in process_metrics.py.
 """
 
+import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,9 +24,13 @@ logger = setup_logging("visualize_hero_graphs")
 # CONFIGURATION
 # ============================================================================
 
+# Overridable via CLI flags (see main()); defaults unchanged.
 OUTPUT_DIR = "/home/yuvalk/MBMM/results/final_graphs/hero"
 HERO_METRICS_FILE = "/home/yuvalk/MBMM/results/processed_hero_metrics.csv"
 GEOMETRIC_MEANS_FILE = "/home/yuvalk/MBMM/results/processed_geometric_means.csv"
+
+UNGATED_CAVEAT = ('Ungated static power (NVMain power-down disabled); module-sum '
+                   'semantics; real per-technology leakage (see fidelity audit).')
 
 # Gold Master color palette (exact hex codes)
 TECHNOLOGY_COLORS = {
@@ -200,14 +205,21 @@ def generate_hero_average_pdp(geometric_means):
                f'{val:.2f}',
                ha='center', va='bottom', fontsize=12, fontweight='bold')
     
-    # Determine if log scale needed
+    # Axis choice: log when the spread exceeds 10x -- same convention used for
+    # every latency/PDP chart in this pipeline. With real, ungated leakage the
+    # geometric-mean PDP spread is now large (~38 to ~49,000+ W*ns across
+    # technologies), so this reliably triggers; a linear axis would flatten
+    # every technology except 1T1R to an indistinguishable sliver near zero.
     max_val = max(values)
     min_val = min(values)
-    if max_val > 0 and min_val > 0 and max_val / min_val > 10:
+    use_log = max_val > 0 and min_val > 0 and max_val / min_val > 10
+    if use_log:
         ax.set_yscale('log')
-        ylabel = 'Average PDP (Cycle-Watts) — Lower is Better — Log Scale'
+        ylabel = 'Average PDP (W·ns) — Lower is Better — Log Scale'
+        logger.info(f"  [AXIS] Hero_Average_PDP: log scale "
+                   f"(range {min_val:.1f}-{max_val:.1f} W*ns, {max_val/min_val:.0f}x spread > 10x threshold)")
     else:
-        ylabel = 'Average PDP (Cycle-Watts) — Lower is Better'
+        ylabel = 'Average PDP (W·ns) — Lower is Better'
     
     # Formatting
     ax.set_ylabel(ylabel, fontsize=14, fontweight='bold')
@@ -221,9 +233,10 @@ def generate_hero_average_pdp(geometric_means):
     # Add source caption
     fig.text(0.5, 0.02,
             'Data generated via MBMM Pipeline (NVSim + NVMain 2.0). '
-            'PDP = Total Execution Cycles × Total System Power. '
-            'Geometric mean across all benchmarks — Full DIMM (64-chip) configuration.',
-            ha='center', fontsize=10, style='italic')
+            'PDP = Average Request Latency (ns) × Total System Power (W·ns = nJ). '
+            'Geometric mean across all benchmarks — Full DIMM (64-chip) configuration.\n'
+            + UNGATED_CAVEAT,
+            ha='center', fontsize=9, style='italic')
     
     plt.tight_layout(rect=[0, 0.04, 1, 1])
     output_file = os.path.join(OUTPUT_DIR, "Hero_Average_PDP.png")
@@ -238,11 +251,25 @@ def generate_hero_average_pdp(geometric_means):
 
 def main():
     """Execute hero graphs visualization pipeline."""
-    
+
+    global OUTPUT_DIR, HERO_METRICS_FILE, GEOMETRIC_MEANS_FILE
+
+    parser = argparse.ArgumentParser(description="MBMM Step 7C: Hero Graphs Generation")
+    parser.add_argument("--hero-metrics-file", default=HERO_METRICS_FILE,
+                        help="Path to processed_hero_metrics.csv (default: results/).")
+    parser.add_argument("--geometric-means-file", default=GEOMETRIC_MEANS_FILE,
+                        help="Path to processed_geometric_means.csv (default: results/).")
+    parser.add_argument("--output-dir", default=OUTPUT_DIR,
+                        help="Output directory for hero graphs (default: results/final_graphs/hero).")
+    args = parser.parse_args()
+    HERO_METRICS_FILE = args.hero_metrics_file
+    GEOMETRIC_MEANS_FILE = args.geometric_means_file
+    OUTPUT_DIR = args.output_dir
+
     logger.info("\n" + "="*80)
     logger.info("STAGE 7C: HERO GRAPHS GENERATION")
     logger.info("="*80 + "\n")
-    
+
     # Create output directory
     create_output_directory()
     
