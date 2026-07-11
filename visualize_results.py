@@ -11,6 +11,7 @@ This is a 'dumb plotter' - zero math, zero stat parsing.
 All calculations performed in process_metrics.py.
 """
 
+import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -24,11 +25,21 @@ logger = setup_logging("visualize_bar_charts")
 # CONFIGURATION
 # ============================================================================
 
+# Overridable via --output-dir/--metrics-file (see main()) for isolated dataset
+# runs (e.g. the v2/module-sum repair validation) without touching the
+# documented-ground-truth final_graphs/ and processed_bar_chart_metrics.csv.
+# Defaults are unchanged from the original pipeline.
 BASE_OUTPUT_DIR = "/home/yuvalk/MBMM/results/final_graphs"
 LATENCY_DIR = os.path.join(BASE_OUTPUT_DIR, "latency")
 POWER_DIR = os.path.join(BASE_OUTPUT_DIR, "power")
 PDP_DIR = os.path.join(BASE_OUTPUT_DIR, "pdp")
 METRICS_FILE = "/home/yuvalk/MBMM/results/processed_bar_chart_metrics.csv"
+
+# Caveat footnote required on every power/PDP figure once static power reflects
+# real, ungated, per-technology NVSim leakage (module-summed across all ranks)
+# instead of the old fixed-ratio/single-rank-max approximation.
+UNGATED_CAVEAT = ('Ungated static power (NVMain power-down disabled); module-sum '
+                   'semantics; real per-technology leakage (see fidelity audit).')
 
 # Gold Master color palette (exact hex codes)
 TECHNOLOGY_COLORS = {
@@ -253,57 +264,66 @@ def generate_bar_charts(df):
         plt.close(fig)
         
         # ====================================================================
-        # 2. POWER BAR CHART (Dynamic vs. Static)
+        # 2. POWER BAR CHART (stacked: Static / Dynamic / Refresh)
         # ====================================================================
         fig, ax = plt.subplots(figsize=(14, 7))
-        
-        x = range(len(bench_df))
-        bar_width = 0.35
-        
-        dyn_power_vals = bench_df['Dynamic_Power'].values
-        stat_power_vals = bench_df['Static_Power'].values
-        colors_list = [TECHNOLOGY_COLORS.get(t, '#808080') for t in bench_df['Technology']]
-        
-        bars1 = ax.bar([i - bar_width/2 for i in x], dyn_power_vals, bar_width,
-                      label='Dynamic Power (Active + Burst)',
-                      color=colors_list, edgecolor='black', linewidth=1.5, alpha=0.85)
-        bars2 = ax.bar([i + bar_width/2 for i in x], stat_power_vals, bar_width,
-                      label='Static Power (Leakage + Refresh)',
-                      color=colors_list, edgecolor='black', linewidth=1.5, alpha=0.55, hatch='//')
-        
-        # Add value labels
-        for bar in bars1:
-            height = bar.get_height()
-            if height > 0.0001:
-                ax.text(bar.get_x() + bar.get_width()/2., height,
-                       f'{height:.3f}',
-                       ha='center', va='bottom', fontsize=9, fontweight='bold', rotation=0)
 
-        for bar in bars2:
-            height = bar.get_height()
-            if height > 0.0001:
-                ax.text(bar.get_x() + bar.get_width()/2., height,
-                       f'{height:.3f}',
-                       ha='center', va='bottom', fontsize=9, fontweight='bold', rotation=0)
-        
+        x = list(range(len(bench_df)))
+
+        stat_power_vals = bench_df['Static_Power'].values
+        dyn_power_vals = bench_df['Dynamic_Power'].values
+        refresh_power_vals = bench_df['Refresh_Power'].values
+        colors_list = [TECHNOLOGY_COLORS.get(t, '#808080') for t in bench_df['Technology']]
+
+        bars_static = ax.bar(x, stat_power_vals, color=colors_list,
+                            edgecolor='black', linewidth=1.5, alpha=0.9,
+                            label='Static / Leakage Power')
+        bars_dynamic = ax.bar(x, dyn_power_vals, bottom=stat_power_vals,
+                             color=colors_list, edgecolor='black', linewidth=1.5,
+                             alpha=0.55, hatch='//', label='Dynamic Access Power')
+        bars_refresh = ax.bar(x, refresh_power_vals,
+                             bottom=stat_power_vals + dyn_power_vals,
+                             color=colors_list, edgecolor='black', linewidth=1.5,
+                             alpha=0.25, hatch='xx', label='Refresh Power')
+
+        # Total-height label on top of each stack
+        totals = stat_power_vals + dyn_power_vals + refresh_power_vals
+        for xi, total in zip(x, totals):
+            if total > 0.0001:
+                ax.text(xi, total, f'{total:.3f}',
+                       ha='center', va='bottom', fontsize=9, fontweight='bold')
+
         ax.set_yscale('linear')
-        ax.set_ylim(0, 0.25)
-        
+        ax.set_ylim(0, max(totals) * 1.2 if max(totals) > 0 else 0.25)
+
         ax.set_ylabel('Power Consumption (Watts)', fontsize=12, fontweight='bold')
         ax.set_xlabel('Memory Technology', fontsize=12, fontweight='bold')
         formatted_bench = format_benchmark_name(benchmark)
-        ax.set_title(f'Power Breakdown (Dynamic vs. Static): {formatted_bench}',
+        ax.set_title(f'Power Breakdown (Static + Dynamic + Refresh): {formatted_bench}',
                     fontsize=14, fontweight='bold', pad=15)
-        
+
         ax.set_xticks(x)
         ax.set_xticklabels(display_techs, rotation=45, ha='right', fontsize=10)
         ax.grid(axis='y', alpha=0.3)
-        ax.legend(loc='upper right', fontsize=11, framealpha=0.95)
-        
-        fig.text(0.99, 0.01, 'Workload executed on 64-chip (16GB) Full DIMM configuration. Dynamic = Access + Burst. Static = Leakage + Refresh.',
-                ha='right', va='bottom', fontsize=9, style='italic', color='gray')
-        
-        plt.tight_layout(rect=[0, 0.02, 1, 1])
+
+        # Legend uses neutral gray swatches so component shading (not technology
+        # color) is what's being explained
+        from matplotlib.patches import Patch
+        legend_handles = [
+            Patch(facecolor='gray', alpha=0.9, edgecolor='black', label='Static / Leakage Power'),
+            Patch(facecolor='gray', alpha=0.55, hatch='//', edgecolor='black', label='Dynamic Access Power'),
+            Patch(facecolor='gray', alpha=0.25, hatch='xx', edgecolor='black', label='Refresh Power'),
+        ]
+        ax.legend(handles=legend_handles, loc='upper right', fontsize=11, framealpha=0.95)
+
+        fig.text(0.99, 0.01,
+                'Workload executed on 64-chip (16GB) Full DIMM configuration. '
+                'Static = backgroundPower, Dynamic = activatePower + burstPower, Refresh = '
+                'refreshPower — module-summed NVMain rank counters, same formula every technology. '
+                + UNGATED_CAVEAT,
+                ha='right', va='bottom', fontsize=7, style='italic', color='gray')
+
+        plt.tight_layout(rect=[0, 0.03, 1, 1])
         power_file = os.path.join(POWER_DIR, f"Bar_Power_Breakdown_{benchmark}.png")
         plt.savefig(power_file, dpi=300, bbox_inches='tight')
         logger.info(f"  ✓ Saved: {power_file}")
@@ -326,12 +346,23 @@ def generate_bar_charts(df):
 
         max_edp = edp_vals.max()
         min_edp = edp_vals.min()
-        if max_edp > 0 and min_edp > 0 and max_edp / min_edp > 10:
+        # Axis choice: log when the spread exceeds 10x (same convention used
+        # throughout this pipeline for latency/hero-PDP charts) -- ungated
+        # leakage widens the PDP range enough that this now reliably triggers
+        # (e.g. GCC full_dimm: ~38 to ~50,860 W*ns, a >1000x spread), which
+        # is exactly the case log scale exists to handle: linear axes would
+        # flatten every non-1T1R bar to an indistinguishable sliver near zero.
+        use_log = max_edp > 0 and min_edp > 0 and max_edp / min_edp > 10
+        if use_log:
             ax.set_yscale('log')
+            logger.info(f"  [AXIS] {benchmark} PDP: log scale "
+                       f"(range {min_edp:.1f}-{max_edp:.1f} W*ns, "
+                       f"{max_edp/min_edp:.0f}x spread > 10x threshold)")
         else:
             ax.set_ylim(0, max_edp * 1.15)
 
-        ax.set_ylabel('Efficiency Index (Cycle-Watts)', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Average PDP (W·ns)' + (' — Log Scale' if use_log else ''),
+                     fontsize=12, fontweight='bold')
         ax.set_xlabel('Memory Technology', fontsize=12, fontweight='bold')
         formatted_bench = format_benchmark_name(benchmark)
         ax.set_title(f'Workload Efficiency: {formatted_bench} (PDP)',
@@ -342,8 +373,9 @@ def generate_bar_charts(df):
                verticalalignment='top', horizontalalignment='right',
                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
 
-        fig.text(0.99, 0.01, 'Workload executed on 64-chip (16GB) Full DIMM configuration.',
-                ha='right', va='bottom', fontsize=9, style='italic', color='gray')
+        fig.text(0.99, 0.01,
+                'Workload executed on 64-chip (16GB) Full DIMM configuration. ' + UNGATED_CAVEAT,
+                ha='right', va='bottom', fontsize=7, style='italic', color='gray')
         ax.set_xticks(bars_x)
         ax.set_xticklabels(display_techs, rotation=45, ha='right', fontsize=10)
         ax.grid(axis='y', alpha=0.3)
@@ -363,11 +395,25 @@ def generate_bar_charts(df):
 
 def main():
     """Execute visualization pipeline."""
-    
+
+    global BASE_OUTPUT_DIR, LATENCY_DIR, POWER_DIR, PDP_DIR, METRICS_FILE
+
+    parser = argparse.ArgumentParser(description="MBMM Step 7A: Bar Chart Visualization")
+    parser.add_argument("--metrics-file", default=METRICS_FILE,
+                        help="Path to processed_bar_chart_metrics.csv (default: results/).")
+    parser.add_argument("--output-dir", default=BASE_OUTPUT_DIR,
+                        help="Base output directory for latency/power/pdp subdirs (default: results/final_graphs).")
+    args = parser.parse_args()
+    METRICS_FILE = args.metrics_file
+    BASE_OUTPUT_DIR = args.output_dir
+    LATENCY_DIR = os.path.join(BASE_OUTPUT_DIR, "latency")
+    POWER_DIR = os.path.join(BASE_OUTPUT_DIR, "power")
+    PDP_DIR = os.path.join(BASE_OUTPUT_DIR, "pdp")
+
     logger.info("\n" + "="*80)
     logger.info("STAGE 7A: BAR CHART VISUALIZATION")
     logger.info("="*80 + "\n")
-    
+
     # Archive old graphs
     archive_old_graphs()
     

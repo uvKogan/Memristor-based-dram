@@ -13,6 +13,7 @@ This module:
 import re
 import glob
 import json
+import argparse
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -24,6 +25,10 @@ logger = setup_logging("process_metrics")
 # CONFIGURATION: Physical Constants and Baseline Values
 # ============================================================================
 
+# Overridable via --results-dir/--output-dir (see main()) so isolated pilot/
+# validation runs can target a separate directory (e.g. results/system_v2)
+# without touching the documented-ground-truth results/system/ and
+# results/processed_*.csv. Defaults are unchanged from the original pipeline.
 RESULTS_SYS_DIR = "/home/yuvalk/MBMM/results/system"
 OUTPUT_DIR = "/home/yuvalk/MBMM/results"
 HARDWARE_METRICS_FILE = "/home/yuvalk/MBMM/results/hardware_metrics.json"
@@ -43,28 +48,17 @@ DDR5_MM2_PER_GB = 35.0  # DDR5-4800 empirical baseline
 
 # Clock frequencies for latency normalization (cycles → nanoseconds)
 # DDR5-4800 transfers at 4800 MT/s on a DDR (double-data-rate) bus → 2400 MHz clock
-# All NVMain ReRAM and PCM configs run at 800 MHz
+# 2D/3D DRAM examples per their NVMain stats headers ("memory subsystem running
+# at 666MHz" / "1333MHz"); all NVMain ReRAM and PCM configs run at 800 MHz
 CLOCK_FREQUENCY_MHZ = {
     'DDR5_4800':          2400,
-    '2D_DRAM_example':    2400,
-    '3D_DRAM_example':    2400,
+    '2D_DRAM_example':     666,
+    '3D_DRAM_example':    1333,
     'pcm_microsoft_2009':  800,
     '1T1R_SLC':            800,
     '1T1R_MLC':            800,
     '1S1R_SLC':            800,
     '1S1R_MLC':            800,
-}
-
-# Power Decomposition Ratios (Technology-Based)
-POWER_SPLIT_RATIOS = {
-    'DDR5_4800': {'dynamic': 0.70, 'static': 0.30},
-    '2D_DRAM_example': {'dynamic': 0.70, 'static': 0.30},
-    '3D_DRAM_example': {'dynamic': 0.70, 'static': 0.30},
-    'pcm_microsoft_2009': {'dynamic': 0.65, 'static': 0.35},
-    '1T1R_SLC': {'dynamic': 0.60, 'static': 0.40},
-    '1T1R_MLC': {'dynamic': 0.60, 'static': 0.40},
-    '1S1R_SLC': {'dynamic': 0.65, 'static': 0.35},
-    '1S1R_MLC': {'dynamic': 0.65, 'static': 0.35},
 }
 
 # ============================================================================
@@ -200,29 +194,78 @@ def extract_queue_latency(content):
 
 
 def extract_total_power(content):
-    """Extract total system power from stats file."""
+    """
+    Extract total system power from a stats file: the sum of every rank's
+    totalPower, across every channel.
+
+    NVMain has no channel- or module-level totalPower aggregate of its own —
+    only per-rank counters exist. A full DIMM keeps drawing background/leakage
+    power on every rank whether or not that rank is doing work, so "total
+    system power" must sum all ranks, not just the most-loaded one; picking a
+    single rank silently discards the other (RANKS-1) ranks' contribution,
+    understating the true total by a factor that tracks each technology's own
+    rank x channel count (8x for full_dimm ReRAM, 4x for DDR5's 2 ranks x 2
+    channels) — i.e. a different, incomparable discount per technology.
+    Applied uniformly here, to every technology, for a like-for-like total.
+    """
     # Pattern: "totalPower" followed by value and optional "W" unit
     pattern = r'totalpower\s+([\d\.eE\-]+)(?:\s*w)?'
     matches = re.findall(pattern, content, re.IGNORECASE)
-    
-    if matches:
-        # Filter for reasonable values (0.01W to 100W for memory systems)
-        valid_powers = []
-        for match_str in matches:
-            try:
-                power_val = float(match_str)
-                if 0.01 <= power_val <= 100.0:
-                    valid_powers.append(power_val)
-            except ValueError:
-                continue
-        
-        if valid_powers:
-            # Use max: picks the most-loaded rank (rank0), which correctly represents
-            # active power even when the workload fits in one rank and others are idle.
-            # Median fails for full_dimm configs where 7 of 8 ranks are leakage-only.
-            return max(valid_powers)
-    
-    return None
+
+    if not matches:
+        return None
+
+    # Filter for reasonable per-rank values (0.01W to 100W for memory systems)
+    valid_powers = []
+    for match_str in matches:
+        try:
+            power_val = float(match_str)
+            if 0.01 <= power_val <= 100.0:
+                valid_powers.append(power_val)
+        except ValueError:
+            continue
+
+    if not valid_powers:
+        return None
+
+    return sum(valid_powers)
+
+
+def extract_module_power_components(content):
+    """
+    Return the module-level (all ranks, all channels, summed) Watt-level power
+    breakdown: backgroundPower, activatePower, burstPower, refreshPower.
+
+    Sums the same per-rank totalPower entries extract_total_power() sums, so
+    Static + Dynamic + Refresh reconciles to the Power column by construction
+    (module-sum semantics, applied uniformly across every technology).
+    Returns None if no rank block with a plausible totalPower (0.01-100W) is
+    found in the file.
+    """
+    pattern = r'([\w.\-]+\.rank\d+)\.(totalPower|backgroundPower|activatePower|burstPower|refreshPower)\s+([\d\.eE\-\+]+)W'
+    matches = re.findall(pattern, content)
+    if not matches:
+        return None
+
+    ranks = {}
+    for prefix, field, value_str in matches:
+        try:
+            ranks.setdefault(prefix, {})[field] = float(value_str)
+        except ValueError:
+            continue
+
+    valid_ranks = {p: f for p, f in ranks.items()
+                   if 'totalPower' in f and 0.01 <= f['totalPower'] <= 100.0}
+    if not valid_ranks:
+        return None
+
+    totals = {'backgroundPower': 0.0, 'activatePower': 0.0,
+              'burstPower': 0.0, 'refreshPower': 0.0}
+    for fields in valid_ranks.values():
+        for key in totals:
+            totals[key] += fields.get(key, 0.0)
+
+    return totals
 
 
 RERAM_KEY_PREFIX = {
@@ -340,25 +383,56 @@ def extract_capacity_gb(content):
 # CALCULATION FUNCTIONS
 # ============================================================================
 
-def decompose_power(power, technology):
-    """Decompose total power into dynamic and static components."""
-    if technology not in POWER_SPLIT_RATIOS:
-        # Default to ReRAM 1S1R ratios
-        ratios = POWER_SPLIT_RATIOS['1S1R_SLC']
-        logger.debug(f"Technology {technology} not in power split table, using default")
-    else:
-        ratios = POWER_SPLIT_RATIOS[technology]
-    
-    dynamic = power * ratios['dynamic']
-    static = power * ratios['static']
-    
-    return dynamic, static
+def decompose_power(record, technology, power):
+    """
+    Decompose total system power into static (leakage), dynamic (access), and
+    refresh components using real, module-summed NVMain counters — no fixed
+    per-technology ratios, and (as of the Priority-1 repair) no NonVolatile
+    special-casing either.
+
+    Single path for every technology: rank-level backgroundPower + activatePower
+    + burstPower + refreshPower, summed across all ranks/channels by
+    extract_module_power_components(), reconciles to totalPower by construction
+    (both are sums over the same set of ranks). For ReRAM this now holds because
+    Eactstdby/Eprestdby are derived per-technology from real NVSim leakage
+    (see 3_gen_nvmain_config.py) instead of the previously-unused StandbyPower
+    key — backgroundPower is a real, technology-differentiated NVMain counter
+    now, not a generic default, so it no longer needs a separate residual-based
+    path the way it did before that fix.
+
+    Returns (dynamic, static, refresh, unattributed_power). unattributed_power
+    is the leftover after Static+Dynamic+Refresh is subtracted from Power;
+    should be ~0 (logged as a warning if it exceeds 3% of Power).
+    """
+    background = record.get('background_power')
+    if background is None:
+        logger.error(f"[CRITICAL] No rank-level power counters found for "
+                    f"{technology} — cannot compute power split")
+        return None, None, None, None
+
+    static = background
+    dynamic = (record.get('activate_power') or 0.0) + (record.get('burst_power') or 0.0)
+    refresh = record.get('refresh_power') or 0.0
+    unattributed = power - (static + dynamic + refresh)
+
+    if power > 0 and abs(unattributed) > 0.03 * power:
+        logger.warning(f"[POWER-RECONCILE] {technology}: components sum to "
+                       f"{static + dynamic + refresh:.6f}W vs Power={power:.6f}W "
+                       f"(unattributed {unattributed:.6f}W, {100 * unattributed / power:.1f}%)")
+
+    return dynamic, static, refresh, unattributed
 
 
-def calculate_pdp(cycles, power):
-    """Calculate Power-Delay Product: Total_Execution_Cycles × Total_System_Power."""
-    if cycles > 0 and power > 0:
-        return cycles * power
+def calculate_pdp(latency_ns, power):
+    """
+    Calculate Power-Delay Product: Latency_ns × Total_System_Power (W·ns = nJ).
+
+    Delay must be in nanoseconds, not cycles: each technology runs in its own
+    clock domain (DDR5 2400 MHz vs ReRAM/PCM 800 MHz), so cycle-based PDP
+    inflated higher-clocked technologies in cross-technology comparisons.
+    """
+    if latency_ns > 0 and power > 0:
+        return latency_ns * power
     return 0.0
 
 
@@ -486,6 +560,10 @@ def parse_raw_stats():
             area_mm2 = extract_area_mm2(content, tech)
             capacity_gb = extract_physical_capacity_gb(tech)
 
+            # Real, module-summed power-component counters (all ranks, all
+            # channels) for the static/dynamic/refresh decomposition.
+            module_power = extract_module_power_components(content)
+
             data.append({
                 'filename': filename,
                 'technology': tech,
@@ -497,6 +575,10 @@ def parse_raw_stats():
                 'power': power,
                 'area_mm2': area_mm2,
                 'capacity_gb': capacity_gb,
+                'background_power': module_power['backgroundPower'] if module_power else None,
+                'activate_power': module_power['activatePower'] if module_power else None,
+                'burst_power': module_power['burstPower'] if module_power else None,
+                'refresh_power': module_power['refreshPower'] if module_power else None,
             })
             
             if area_mm2 is not None and capacity_gb is not None:
@@ -528,11 +610,8 @@ def process_metrics(raw_data):
         power = record['power']
         cycles = record['total_execution_cycles']
         
-        # Power decomposition
-        dyn_power, stat_power = decompose_power(power, tech)
-
-        # PDP calculation (uses averageTotalLatency which now includes queue wait)
-        edp = calculate_pdp(cycles, power)
+        # Power decomposition (real NVMain counters, see decompose_power())
+        dyn_power, stat_power, refresh_power, unattributed_power = decompose_power(record, tech, power)
 
         # Latency normalization: cycles → nanoseconds (clock-domain corrected)
         latency_ns = calculate_latency_ns(cycles, tech)
@@ -540,6 +619,9 @@ def process_metrics(raw_data):
                          if record['hw_latency_cycles'] is not None else None)
         queue_latency_ns = (calculate_latency_ns(record['queue_latency_cycles'], tech)
                             if record['queue_latency_cycles'] is not None else None)
+
+        # PDP in W·ns (queue-aware: latency_ns derives from averageTotalLatency)
+        pdp = calculate_pdp(latency_ns, power)
 
         # Area density ratio (ReRAM hybrid-empirical)
         area_ratio = calculate_area_density_ratio(
@@ -569,7 +651,9 @@ def process_metrics(raw_data):
             'Power': power,
             'Dynamic_Power': dyn_power,
             'Static_Power': stat_power,
-            'PDP': edp,
+            'Refresh_Power': refresh_power,
+            'Unattributed_Power': unattributed_power,
+            'PDP': pdp,
             'Area_Density_Ratio': area_ratio,
         })
     
@@ -621,11 +705,11 @@ def save_bar_chart_metrics(df_processed):
         'Technology', 'Architecture', 'Benchmark',
         'Total_Execution_Cycles', 'HW_Latency_Cycles', 'Queue_Latency_Cycles',
         'Latency_ns', 'HW_Latency_ns', 'Queue_Latency_ns',
-        'Power', 'Dynamic_Power', 'Static_Power', 'PDP'
+        'Power', 'Dynamic_Power', 'Static_Power', 'Refresh_Power', 'Unattributed_Power', 'PDP'
     ]]
-    
+
     df_output.to_csv(output_file, index=False)
-    
+
     logger.info(f"✓ Saved bar chart metrics: {output_file}")
     logger.debug(f"  Records: {len(df_output)}, Benchmarks: {df_output['Benchmark'].nunique()}")
 
@@ -692,7 +776,18 @@ def save_geometric_means(geometric_means_dict):
 
 def main():
     """Execute data processing pipeline."""
-    
+
+    global RESULTS_SYS_DIR, OUTPUT_DIR
+
+    parser = argparse.ArgumentParser(description="MBMM Step 6: Metrics Processing")
+    parser.add_argument("--results-dir", default=RESULTS_SYS_DIR,
+                        help="Directory to scan for stats_*.out files (default: results/system).")
+    parser.add_argument("--output-dir", default=OUTPUT_DIR,
+                        help="Directory to write processed_*.csv files (default: results/).")
+    args = parser.parse_args()
+    RESULTS_SYS_DIR = args.results_dir
+    OUTPUT_DIR = args.output_dir
+
     try:
         # Step 1: Parse raw stats files
         raw_data = parse_raw_stats()

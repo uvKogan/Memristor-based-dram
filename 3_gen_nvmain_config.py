@@ -43,11 +43,31 @@ def generate_nvmain_config(base_name, hw_metrics, target_freq_mhz, output_dir, a
     rows_per_chip = int(bits_per_chip / (cols * current_device_width * banks))
     system_rows = max(rows_per_chip * ranks, 65536)
 
-    # FIX: Pre-scale the leakage by device count in the Python factory.
-    # This ensures the correct total power is written to the config before NVMain reads it.
-    base_leakage_w = hw_metrics.get('leakage_mw', 10.0) / 1000.0
-    total_devices = ranks * devices_per_rank
-    scaled_leakage_w = base_leakage_w * total_devices
+    # Static/leakage power: NVMain's NonVolatile energy model charges Eactstdby/Eprestdby
+    # once per RANK per cycle (Ranks/StandardRank/StandardRank.cpp, no per-device scaling
+    # for EnergyModel != "current") -- not once per device, and NOT via a "StandbyPower"
+    # key, which NVMain never reads (grepped the entire nvmain source tree: zero matches
+    # outside Config/*.config data files). So a per-chip NVSim leakage figure must be
+    # scaled up to rank granularity (x devices_per_rank, NOT x total ranks*devices) and
+    # converted from a steady-state Watts figure into per-cycle nanojoules.
+    #
+    # This is policy-a / "ungated" semantics: every device in the rank is always fully
+    # powered (no power-down states are ever entered -- see note below), so leakage is
+    # charged for every simulated cycle at the rank's full linear device-count leakage.
+    # No NVSim datapoint distinguishes "active row open" leakage from "all banks
+    # precharged" leakage, so the same derived value is used for both Eactstdby and
+    # Eprestdby; this is a documented simplifying assumption, not a measured split.
+    #
+    # Epda/Epdpf/Epdps (active/precharge powerdown energy) are deliberately left unset
+    # (NVMain default: 0.0). MemoryController::HandleLowPower() -- the only call site
+    # that would ever transition a rank into a powerdown state -- is commented out in
+    # this NVMain build (src/MemoryController.cpp:1650), confirmed dead by zero
+    # fastExitActiveCycles/fastExitPrechargeCycles/slowExitCycles across every stats file
+    # of every technology. No rank ever reaches PDA/PDPF/PDPS, so these constants have no
+    # effect regardless of value. Restoring that state machine is out of scope here.
+    chip_leakage_w = hw_metrics.get('leakage_mw', 10.0) / 1000.0
+    rank_leakage_w = chip_leakage_w * devices_per_rank
+    e_standby_nj = rank_leakage_w * cycle_time_ns
 
     r_energy = hw_metrics.get('read_energy_nj', 1.1)
     w_energy = hw_metrics.get('write_energy_nj', 1.7)
@@ -93,9 +113,14 @@ tBus 4
 tCMD 1
 
 ; --- Energy and Power ---
+; Eactstdby/Eprestdby: rank-level standby energy per cycle (nJ), derived from NVSim
+; per-chip leakage x devices_per_rank -- see comment above. Policy-a/ungated: no
+; power-down state is ever reached (HandleLowPower() is dead in this NVMain build),
+; so Epda/Epdpf/Epdps are intentionally left at their NVMain defaults (unset/0.0).
 ReadEnergy {r_energy}
 WriteEnergy {w_energy}
-StandbyPower {scaled_leakage_w}
+Eactstdby {e_standby_nj}
+Eprestdby {e_standby_nj}
 
 ; --- Geometry Scaling ---
 ROWS {system_rows}
