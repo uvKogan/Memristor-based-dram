@@ -35,11 +35,23 @@ POWER_DIR = os.path.join(BASE_OUTPUT_DIR, "power")
 PDP_DIR = os.path.join(BASE_OUTPUT_DIR, "pdp")
 METRICS_FILE = "/home/yuvalk/MBMM/results/processed_bar_chart_metrics.csv"
 
-# Caveat footnote required on every power/PDP figure once static power reflects
-# real, ungated, per-technology NVSim leakage (module-summed across all ranks)
-# instead of the old fixed-ratio/single-rank-max approximation.
-UNGATED_CAVEAT = ('Ungated static power (NVMain power-down disabled); module-sum '
-                   'semantics; real per-technology leakage (see fidelity audit).')
+# v3 standardized footnote: the old single-line ungated-leakage caveat measured wider
+# than the axes on the power (1757px vs 1085px axes, starting off-canvas at x=-372)
+# and hero-PDP (1299px vs 1085px) figures, and hung off the axes edge on PDP figures
+# (right-aligned against the figure edge rather than the axes). This verbatim,
+# pre-wrapped two-liner replaces it on every figure that carries a footnote except
+# Pareto, whose existing single-line footnote was measured to already fit within
+# its axes bounds (924px vs 1380px) and so was left untouched per the v3 scope.
+STANDARD_FOOTNOTE = (
+    'Full-DIMM module sums; ReRAM worst-case ungated (NVMain power-down disabled in source).\n'
+    'DRAM/PCM baselines model standard idle behavior. MBMM pipeline: NVSim→NVMain, 200M cycles.'
+)
+
+# Technology order for the v3 two-panel power breakdown chart only (groups SLC/MLC
+# pairs together rather than by cell topology); latency/PDP charts keep the
+# original TECHNOLOGY_COLORS key order.
+POWER_TECH_ORDER_V3 = ['DDR5_4800', 'pcm_microsoft_2009',
+                       '1T1R_SLC', '1S1R_SLC', '1T1R_MLC', '1S1R_MLC']
 
 # Gold Master color palette (exact hex codes)
 TECHNOLOGY_COLORS = {
@@ -264,68 +276,103 @@ def generate_bar_charts(df):
         plt.close(fig)
         
         # ====================================================================
-        # 2. POWER BAR CHART (stacked: Static / Dynamic / Refresh)
+        # 2. POWER BREAKDOWN (v3: two-panel — total power (log) | composition %)
         # ====================================================================
-        fig, ax = plt.subplots(figsize=(14, 7))
-
-        x = list(range(len(bench_df)))
-
-        stat_power_vals = bench_df['Static_Power'].values
-        dyn_power_vals = bench_df['Dynamic_Power'].values
-        refresh_power_vals = bench_df['Refresh_Power'].values
-        colors_list = [TECHNOLOGY_COLORS.get(t, '#808080') for t in bench_df['Technology']]
-
-        bars_static = ax.bar(x, stat_power_vals, color=colors_list,
-                            edgecolor='black', linewidth=1.5, alpha=0.9,
-                            label='Static / Leakage Power')
-        bars_dynamic = ax.bar(x, dyn_power_vals, bottom=stat_power_vals,
-                             color=colors_list, edgecolor='black', linewidth=1.5,
-                             alpha=0.55, hatch='//', label='Dynamic Access Power')
-        bars_refresh = ax.bar(x, refresh_power_vals,
-                             bottom=stat_power_vals + dyn_power_vals,
-                             color=colors_list, edgecolor='black', linewidth=1.5,
-                             alpha=0.25, hatch='xx', label='Refresh Power')
-
-        # Total-height label on top of each stack
-        totals = stat_power_vals + dyn_power_vals + refresh_power_vals
-        for xi, total in zip(x, totals):
-            if total > 0.0001:
-                ax.text(xi, total, f'{total:.3f}',
-                       ha='center', va='bottom', fontsize=9, fontweight='bold')
-
-        ax.set_yscale('linear')
-        ax.set_ylim(0, max(totals) * 1.2 if max(totals) > 0 else 0.25)
-
-        ax.set_ylabel('Power Consumption (Watts)', fontsize=12, fontweight='bold')
-        ax.set_xlabel('Memory Technology', fontsize=12, fontweight='bold')
-        formatted_bench = format_benchmark_name(benchmark)
-        ax.set_title(f'Power Breakdown (Static + Dynamic + Refresh): {formatted_bench}',
-                    fontsize=14, fontweight='bold', pad=15)
-
-        ax.set_xticks(x)
-        ax.set_xticklabels(display_techs, rotation=45, ha='right', fontsize=10)
-        ax.grid(axis='y', alpha=0.3)
-
-        # Legend uses neutral gray swatches so component shading (not technology
-        # color) is what's being explained
+        # Redesigned from a single linear-stacked chart because the repaired
+        # leakage model spans 0.073 W (PCM) to 51 W (1T1R) — a >600x range that
+        # renders DDR5/PCM/1S1R as invisible slivers on a linear axis, and a log
+        # axis is not valid on *stacked* bars (segment heights lose meaning).
+        # Left panel isolates magnitude (log-scale, one bar per technology);
+        # right panel isolates the static/dynamic/refresh mix as 100%-stacked
+        # percentages, independent of the underlying magnitude.
         from matplotlib.patches import Patch
+
+        power_order = [t for t in POWER_TECH_ORDER_V3
+                       if t in bench_df['Technology'].astype(str).unique()]
+        power_df = bench_df.set_index(bench_df['Technology'].astype(str)).loc[power_order]
+
+        p_display = [format_tech_name(t) for t in power_order]
+        p_colors = [TECHNOLOGY_COLORS.get(t, '#808080') for t in power_order]
+        px = list(range(len(power_order)))
+
+        p_totals = power_df['Power'].values
+        p_stat = power_df['Static_Power'].values
+        p_dyn = power_df['Dynamic_Power'].values
+        p_ref = power_df['Refresh_Power'].values
+
+        # figsize height tuned (6.9in) so the post-tight-crop canvas lands near
+        # the ≈2.55:1 aspect of the legacy 5319x2085px power figures, keeping
+        # the book's embed slot sized correctly.
+        fig, (axL, axR) = plt.subplots(1, 2, figsize=(16, 6.9))
+
+        # -- Left: total module power, log scale --
+        bars = axL.bar(px, p_totals, color=p_colors, edgecolor='black',
+                       linewidth=1.5, alpha=0.9)
+        for bar, val in zip(bars, p_totals):
+            label = f'{val:.4f} W' if val < 1 else f'{val:.2f} W'
+            axL.text(bar.get_x() + bar.get_width() / 2., bar.get_height(), label,
+                    ha='center', va='bottom', fontsize=9, fontweight='bold')
+        axL.set_yscale('log')
+        axL.set_ylim(p_totals.min() * 0.3, p_totals.max() * 3)
+        axL.set_ylabel('Total Module Power (W), log scale', fontsize=11, fontweight='bold')
+        axL.set_xlabel('Memory Technology', fontsize=11, fontweight='bold')
+        axL.set_title('Total Module Power', fontsize=12, fontweight='bold')
+        axL.set_xticks(px)
+        axL.set_xticklabels(p_display, rotation=45, ha='right', fontsize=9)
+        axL.grid(axis='y', which='both', alpha=0.3)
+
+        # -- Right: 100%-stacked composition (Static / Dynamic / Refresh) --
+        stat_pct = p_stat / p_totals * 100
+        dyn_pct = p_dyn / p_totals * 100
+        ref_pct = p_ref / p_totals * 100
+
+        axR.bar(px, stat_pct, color=p_colors, edgecolor='black', linewidth=1.5, alpha=0.9)
+        axR.bar(px, dyn_pct, bottom=stat_pct, color=p_colors, edgecolor='black',
+               linewidth=1.5, alpha=0.55, hatch='//')
+        axR.bar(px, ref_pct, bottom=stat_pct + dyn_pct, color=p_colors, edgecolor='black',
+               linewidth=1.5, alpha=0.25, hatch='xx')
+
+        # Label segments ≥3% only — smaller slivers (e.g. 1T1R's ~0.01% dynamic
+        # share) can't fit a readable label and would just clutter the panel.
+        for xi, (s, d, r) in enumerate(zip(stat_pct, dyn_pct, ref_pct)):
+            if s >= 3:
+                axR.text(xi, s / 2, f'{s:.1f}%', ha='center', va='center',
+                        fontsize=8, fontweight='bold')
+            if d >= 3:
+                axR.text(xi, s + d / 2, f'{d:.1f}%', ha='center', va='center',
+                        fontsize=8, fontweight='bold')
+            if r >= 3:
+                axR.text(xi, s + d + r / 2, f'{r:.1f}%', ha='center', va='center',
+                        fontsize=8, fontweight='bold')
+
+        # 22% headroom above the 100% line: every bar reaches y=100 (100%-
+        # stacked), so an in-axes legend at any 'upper' position would clip
+        # the top of whichever bars it sits over without this margin.
+        axR.set_ylim(0, 122)
+        axR.set_yticks(range(0, 101, 20))
+        axR.set_ylabel('Power Composition (%)', fontsize=11, fontweight='bold')
+        axR.set_xlabel('Memory Technology', fontsize=11, fontweight='bold')
+        axR.set_title('Power Composition', fontsize=12, fontweight='bold')
+        axR.set_xticks(px)
+        axR.set_xticklabels(p_display, rotation=45, ha='right', fontsize=9)
+        axR.grid(axis='y', alpha=0.3)
+
         legend_handles = [
             Patch(facecolor='gray', alpha=0.9, edgecolor='black', label='Static / Leakage Power'),
             Patch(facecolor='gray', alpha=0.55, hatch='//', edgecolor='black', label='Dynamic Access Power'),
             Patch(facecolor='gray', alpha=0.25, hatch='xx', edgecolor='black', label='Refresh Power'),
         ]
-        ax.legend(handles=legend_handles, loc='upper right', fontsize=11, framealpha=0.95)
+        axR.legend(handles=legend_handles, loc='upper right', fontsize=8, framealpha=0.95)
 
-        fig.text(0.99, 0.01,
-                'Workload executed on 64-chip (16GB) Full DIMM configuration. '
-                'Static = backgroundPower, Dynamic = activatePower + burstPower, Refresh = '
-                'refreshPower — module-summed NVMain rank counters, same formula every technology. '
-                + UNGATED_CAVEAT,
-                ha='right', va='bottom', fontsize=7, style='italic', color='gray')
+        formatted_bench = format_benchmark_name(benchmark)
+        fig.suptitle(f'Power Breakdown: {formatted_bench}', fontsize=14, fontweight='bold')
 
-        plt.tight_layout(rect=[0, 0.03, 1, 1])
+        foot = fig.text(0.5, 0.01, STANDARD_FOOTNOTE, ha='center', va='bottom',
+                        fontsize=7, style='italic', color='gray', linespacing=1.4)
+
+        plt.tight_layout(rect=[0, 0.08, 1, 0.94])
         power_file = os.path.join(POWER_DIR, f"Bar_Power_Breakdown_{benchmark}.png")
-        plt.savefig(power_file, dpi=300, bbox_inches='tight')
+        plt.savefig(power_file, dpi=300, bbox_inches='tight', bbox_extra_artists=(foot,))
         logger.info(f"  ✓ Saved: {power_file}")
         plt.close(fig)
         
@@ -361,28 +408,25 @@ def generate_bar_charts(df):
         else:
             ax.set_ylim(0, max_edp * 1.15)
 
-        ax.set_ylabel('Average PDP (W·ns)' + (' — Log Scale' if use_log else ''),
-                     fontsize=12, fontweight='bold')
+        # "Lower is better" folded into the ylabel (v3) — the old in-axes
+        # annotation box overlapped bars/value labels on several benchmarks.
+        pdp_ylabel = ('Average PDP (W·ns), log scale — lower is better' if use_log
+                     else 'Average PDP (W·ns) — lower is better')
+        ax.set_ylabel(pdp_ylabel, fontsize=12, fontweight='bold')
         ax.set_xlabel('Memory Technology', fontsize=12, fontweight='bold')
         formatted_bench = format_benchmark_name(benchmark)
         ax.set_title(f'Workload Efficiency: {formatted_bench} (PDP)',
                     fontsize=14, fontweight='bold', pad=15)
 
-        ax.text(0.98, 0.95, 'Lower is Better (Higher Efficiency)',
-               transform=ax.transAxes, fontsize=9, style='italic',
-               verticalalignment='top', horizontalalignment='right',
-               bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
-
-        fig.text(0.99, 0.01,
-                'Workload executed on 64-chip (16GB) Full DIMM configuration. ' + UNGATED_CAVEAT,
-                ha='right', va='bottom', fontsize=7, style='italic', color='gray')
+        foot = fig.text(0.5, 0.01, STANDARD_FOOTNOTE, ha='center', va='bottom',
+                        fontsize=7, style='italic', color='gray', linespacing=1.4)
         ax.set_xticks(bars_x)
         ax.set_xticklabels(display_techs, rotation=45, ha='right', fontsize=10)
         ax.grid(axis='y', alpha=0.3)
-        
-        plt.tight_layout(rect=[0, 0.02, 1, 1])
+
+        plt.tight_layout(rect=[0, 0.06, 1, 1])
         edp_file = os.path.join(PDP_DIR, f"Bar_PDP_{benchmark}.png")
-        plt.savefig(edp_file, dpi=300, bbox_inches='tight')
+        plt.savefig(edp_file, dpi=300, bbox_inches='tight', bbox_extra_artists=(foot,))
         logger.info(f"  ✓ Saved: {edp_file}")
         plt.close(fig)
     
