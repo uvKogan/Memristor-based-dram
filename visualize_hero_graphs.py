@@ -29,8 +29,14 @@ OUTPUT_DIR = "/home/yuvalk/MBMM/results/final_graphs/hero"
 HERO_METRICS_FILE = "/home/yuvalk/MBMM/results/processed_hero_metrics.csv"
 GEOMETRIC_MEANS_FILE = "/home/yuvalk/MBMM/results/processed_geometric_means.csv"
 
-UNGATED_CAVEAT = ('Ungated static power (NVMain power-down disabled); module-sum '
-                   'semantics; real per-technology leakage (see fidelity audit).')
+# v3: replaces the old caption+UNGATED_CAVEAT footnote, which measured wider than
+# the axes (1299px vs 1085px axes, starting off-canvas at x0=50 vs axes x0=175) --
+# see the matching fix in visualize_results.py for the pixel measurements that
+# established this bug across the power/PDP/hero-PDP figure families.
+STANDARD_FOOTNOTE = (
+    'Full-DIMM module sums; ReRAM worst-case ungated (NVMain power-down disabled in source).\n'
+    'DRAM/PCM baselines model standard idle behavior. MBMM pipeline: NVSim→NVMain, 200M cycles.'
+)
 
 # Gold Master color palette (exact hex codes)
 TECHNOLOGY_COLORS = {
@@ -215,12 +221,14 @@ def generate_hero_average_pdp(geometric_means):
     use_log = max_val > 0 and min_val > 0 and max_val / min_val > 10
     if use_log:
         ax.set_yscale('log')
-        ylabel = 'Average PDP (W·ns) — Lower is Better — Log Scale'
+        # "Lower is better" appears exactly once, here in the ylabel (v3 dedupe —
+        # this figure never had a separate in-axes annotation box).
+        ylabel = 'Average PDP (W·ns), log scale — lower is better'
         logger.info(f"  [AXIS] Hero_Average_PDP: log scale "
                    f"(range {min_val:.1f}-{max_val:.1f} W*ns, {max_val/min_val:.0f}x spread > 10x threshold)")
     else:
-        ylabel = 'Average PDP (W·ns) — Lower is Better'
-    
+        ylabel = 'Average PDP (W·ns) — lower is better'
+
     # Formatting
     ax.set_ylabel(ylabel, fontsize=14, fontweight='bold')
     ax.set_xlabel('Memory Technology', fontsize=14, fontweight='bold')
@@ -229,18 +237,14 @@ def generate_hero_average_pdp(geometric_means):
     ax.set_xticks(range(len(technologies)))
     ax.set_xticklabels(display_labels, rotation=45, ha='right', fontsize=11)
     ax.grid(axis='y', alpha=0.3)
-    
-    # Add source caption
-    fig.text(0.5, 0.02,
-            'Data generated via MBMM Pipeline (NVSim + NVMain 2.0). '
-            'PDP = Average Request Latency (ns) × Total System Power (W·ns = nJ). '
-            'Geometric mean across all benchmarks — Full DIMM (64-chip) configuration.\n'
-            + UNGATED_CAVEAT,
-            ha='center', fontsize=9, style='italic')
-    
-    plt.tight_layout(rect=[0, 0.04, 1, 1])
+
+    # Standardized v3 footnote (see STANDARD_FOOTNOTE definition)
+    foot = fig.text(0.5, 0.01, STANDARD_FOOTNOTE, ha='center', va='bottom',
+                    fontsize=8, style='italic', color='gray', linespacing=1.4)
+
+    plt.tight_layout(rect=[0, 0.08, 1, 1])
     output_file = os.path.join(OUTPUT_DIR, "Hero_Average_PDP.png")
-    plt.savefig(output_file, dpi=300, bbox_inches='tight')
+    plt.savefig(output_file, dpi=300, bbox_inches='tight', bbox_extra_artists=(foot,))
     logger.info(f"✓ Saved: {output_file}\n")
     plt.close(fig)
 

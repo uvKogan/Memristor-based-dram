@@ -54,7 +54,8 @@ CLOCK_FREQUENCY_MHZ = {
     'DDR5_4800':          2400,
     '2D_DRAM_example':     666,
     '3D_DRAM_example':    1333,
-    'pcm_microsoft_2009':  800,
+    'pcm_microsoft_2009':  400,  # cycle-7 finding #9: CLK 800 was a stray override;
+                                 # PCM's citable timing basis (and the fixed config) is 400MHz
     '1T1R_SLC':            800,
     '1T1R_MLC':            800,
     '1S1R_SLC':            800,

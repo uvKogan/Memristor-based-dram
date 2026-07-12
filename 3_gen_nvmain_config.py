@@ -117,8 +117,20 @@ tCMD 1
 ; per-chip leakage x devices_per_rank -- see comment above. Policy-a/ungated: no
 ; power-down state is ever reached (HandleLowPower() is dead in this NVMain build),
 ; so Epda/Epdpf/Epdps are intentionally left at their NVMain defaults (unset/0.0).
-ReadEnergy {r_energy}
-WriteEnergy {w_energy}
+;
+; Cycle-7 finding #10: this template previously wrote "ReadEnergy"/"WriteEnergy",
+; which NVMain never parses (no such Params field exists) -- every ReRAM run to
+; date silently used NVMain's generic stock Erd/Ewr defaults (3.405401/1.023750 nJ)
+; instead of these real, per-technology NVSim values. The correct keys, per
+; SubArray.cpp's "flat energy model" branch (used whenever EnergyModel != "current"),
+; are Erd (charged once per access at Activate(), row-open energy) and Ewr (charged
+; once per access at Write()) -- both in nJ, direct, no unit conversion needed.
+; Eopenrd (separate per-access burst-read term) and Ewrpb (per-bit write savings)
+; are left at NVMain's stock defaults: NVSim's read_energy_nj/write_energy_nj are
+; single lumped per-access figures with no open/burst or per-bit decomposition to
+; derive those two from, and inventing a split would be tuning, not calibration.
+Erd {r_energy}
+Ewr {w_energy}
 Eactstdby {e_standby_nj}
 Eprestdby {e_standby_nj}
 
