@@ -89,7 +89,13 @@ MAP_ADDRESS true
 DECODER MigratingDecoder
 INTERCONNECT OffChipBus
 STATS_OUT nvmain_stats_{sys_model_name}.out
-CPUFreq {target_freq_mhz}
+; Cycle-8 finding #11 fix: CPUFreq is the *host* issue-rate assumption used only
+; by traceMain.cpp to rescale the trace-timestamp admission cutoff (see
+; results/throughput_check/throughput_mechanism_report.md) -- it is decoupled
+; from CLK (the device's own clock, which drives all timing/energy formulas)
+; and fixed at 3000 (matching DDR5's existing calibration) for every technology,
+; so every config assumes the same "modern server host" issuing the trace.
+CPUFreq 3000
 
 ; --- Clock, Controller and Scaling ---
 CLK {target_freq_mhz}
