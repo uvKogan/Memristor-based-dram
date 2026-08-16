@@ -1,0 +1,44 @@
+; RECONSTRUCTED from PrintConfig dump embedded in stats_reram_22nm_selector_slc_single_stream.out
+; NOT a byte-identical original .config file -- the true original text is unrecoverable.
+; This is the parsed key=value state NVMain actually used for this technology in system_v2_2.
+
+AddressMappingScheme R:BK:C
+AddressMask 0xFFFFFFFF
+BANKS 8
+BusWidth 64
+CHANNELS 1
+CLK 800
+COLS 1024
+CPUFreq 800
+ClosePage 1
+DECODER MigratingDecoder
+DEVICES_PER_RANK 1
+DeviceWidth 64
+Eactstdby 0.02113375
+EnableDebug false
+EnergyModel NonVolatile
+Eprestdby 0.02113375
+INTERCONNECT OffChipBus
+IgnoreAddressError true
+IgnorePremappedAddresses true
+MAP_ADDRESS true
+MEM_CTL FRFCFS
+PrintAllDevices true
+PrintConfig true
+RANKS 1
+RATE 2
+ROWS 65536
+ReadEnergy 6.773
+STATS_OUT nvmain_stats_reram_22nm_selector_slc_single.out
+SUBARRAYS 1
+UsePrecharge true
+UseRefresh false
+WriteEnergy 2.47
+tBus 4
+tCAS 42
+tCMD 1
+tRAS 42
+tRCD 42
+tRP 1
+tRTW 42
+tWR 59
