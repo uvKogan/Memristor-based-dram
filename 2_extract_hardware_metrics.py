@@ -60,10 +60,15 @@ def parse_nvsim_output(file_path):
 def apply_mlc_penalty(slc_metrics):
     """Applies Phase 5 Analytical Penalties and DOUBLES capacity."""
     mlc = slc_metrics.copy()
-    # Performance Penalties [cite: 1058, 1296]
-    mlc['read_latency_ns'] *= 3.0  
-    mlc['write_latency_ns'] *= 4.0 
-    mlc['read_energy_nj'] *= 3.0   
+    # Performance penalties derived from EMBER, same author group, two papers:
+    # - Upton et al., ESSCIRC 2023 (Table I) for read: 1b/cell vs 2b/cell read latency
+    #   12ns/23ns (1.917x), read energy 1.0/1.1 pJ/bit (1.1x).
+    # - Levy et al., IEEE JSSC 2024, DOI 10.1109/JSSC.2024.3387566 (Section III) for write:
+    #   1b/cell vs 2b/cell write-verify bandwidth 12.4/3.8 Mbps -> 3.263x write-latency
+    #   penalty; write-verify energy 0.40/1.2 nJ/bit -> 3.0x write-energy penalty.
+    mlc['read_latency_ns'] *= 1.917
+    mlc['write_latency_ns'] *= 3.263
+    mlc['read_energy_nj'] *= 1.1
     mlc['write_energy_nj'] *= 3.0  
     
     # Capacity Scaling: MLC doubles bit storage volume [cite: 933, 939]

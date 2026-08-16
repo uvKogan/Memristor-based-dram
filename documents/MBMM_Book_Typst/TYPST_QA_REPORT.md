@@ -10,6 +10,13 @@ canonical `documents/MBMM_Book_Typst/` — the pre-QA original that this report
 compares against has been moved to `archive/documents/MBMM_Book_Typst_preQA/`
 (nothing was deleted; see `archive/README.md`).
 
+**Post-QA update (2026-07-28):** `book.typ`/`book.pdf` were renamed to
+`Project_Book.typ`/`Project_Book.pdf`, and the body font was switched from
+Carlito 11pt (Calibri clone) to Liberation Serif 12pt (Times New Roman clone,
+the conventional academic-paper serif face) — see `README.md`. All `book.typ`/
+`book.pdf`/Carlito references below are as of the original QA pass and are
+left unchanged as a historical record.
+
 ## 0. Toolchain notes (environment had none of the suggested tools pre-installed)
 
 The sandbox had no `typst`, `pandoc`, `pdftotext`/`pdftoppm` (poppler), `LibreOffice`, or

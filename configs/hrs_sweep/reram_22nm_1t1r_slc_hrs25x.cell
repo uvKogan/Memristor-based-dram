@@ -1,0 +1,37 @@
+-MemCellType: memristor
+
+-CellArea (F^2): 20.0
+-CellAspectRatio: 1
+
+-ResistanceOnAtSetVoltage (ohm): 100000
+-ResistanceOffAtSetVoltage (ohm): 2500000
+-ResistanceOnAtResetVoltage (ohm): 100000
+-ResistanceOffAtResetVoltage (ohm): 2500000
+-ResistanceOnAtReadVoltage (ohm): 100000
+-ResistanceOffAtReadVoltage (ohm): 2500000
+-ResistanceOnAtHalfResetVoltage (ohm): 500000
+
+-CapacitanceOn (F): 1e-16
+-CapacitanceOff (F): 1e-16
+
+-ReadMode: current
+-ReadVoltage (V): 1.4
+-ReadPower (uW): 19.6
+
+-ResetMode: voltage
+-ResetVoltage (V): 2.0
+-ResetPulse (ns): 10
+-ResetEnergy (pJ): 1.0
+
+-SetMode: voltage
+-SetVoltage (V): 2.0
+-SetPulse (ns): 10
+-SetEnergy (pJ): 1.0
+
+-AccessType: CMOS
+-AccessCMOSWidth (F): 4.0
+//-AccessType: diode
+-VoltageDropAccessDevice (V): 0.15
+
+-ReadFloating: false
+
