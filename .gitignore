@@ -36,3 +36,5 @@ processed_*.csv
 archive_*/
 __pycache__/
 *.pyc
+archive/final_graphs/
+archive/final_graphs_v2/
