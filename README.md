@@ -39,6 +39,8 @@ python3 mbmm_master.py --cycles 50000000 --trace benchmarks/workload.nvt --model
 
 (Note: mbmm_master.py will automatically call the 3 visualization scripts at the end of the simulation batch).
 
+**⚠️ `--models` does not scope the run.** In `mbmm_master.py`'s `main()`, `args.models` is only checked to decide whether to enter the `--models`/`--all` branch at all (`if args.models or args.all:`) — the actual model list is never read again inside that branch. Once inside, it unconditionally runs the full 16-config ReRAM matrix (1T1R/selector × SLC/MLC × single/8chip/16chip/full_dimm) plus all 3 DRAM baselines (2D/3D/DDR5), for every `--trace` given, regardless of what `--models` lists. If you need a genuinely scoped re-run of specific models (e.g. re-simulating only the configs affected by a parameter fix), call `4_execute_simulation.py --models <names> --trace <file> --cycles <n>` directly instead — that script's `--models` *is* respected (confirmed in its source: `elif args.models: target_models = args.models`). Just ensure Stage 2 (`2_extract_hardware_metrics.py`) and Stage 3 (`3_gen_nvmain_config.py --freq 800`) have already run first if your fix touches hardware-metric-derived `.config` files, since `4_execute_simulation.py` skips NVSim/Stage-1 entirely for any model whose name contains `DRAM` or `_mlc` and expects the `.config` file to already exist.
+
 ---
 
 ## 🗺️ Research Roadmap & Development Vectors
