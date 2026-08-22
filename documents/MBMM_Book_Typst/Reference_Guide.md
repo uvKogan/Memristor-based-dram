@@ -2,7 +2,7 @@
 
 A quick-reference summary of all 32 sources cited in `Project_Book.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts.
 
-**Known open issue (not yet resolved as of this guide's writing):** the book's 1.917x MLC read-latency multiplier (Appendix A, §3.1.6 item 13) was found to rest on a table-reading error — the "23 ns" figure it uses as EMBER's 2-bit/cell read time is actually a *different, competing* macro's ([9] in EMBER's own comparison table) 1-bit/cell read time. EMBER's paper reports only one read-latency figure (12 ns) and never splits it by bits-per-cell. The read-*energy* split (1.0/1.1 pJ/bit) and the write-side multipliers (3.263x, 1.1x is energy not this one, 3.0x) are all independently confirmed correct — this is isolated to read-latency only. See references [6] and [31] below.
+The book's MLC penalty multipliers are: **1.5x read latency, 3.263x write latency, 1.1x read energy, 3.0x write energy** (2 bits/cell vs. 1 bit/cell), all sourced from the EMBER macro's two publications, [6] and [31] below.
 
 ---
 
@@ -78,13 +78,13 @@ A real, commercial-grade 14nm 1T1R macro. Its actual cell size (0.022 µm² ≈ 
 
 ---
 
-## The EMBER Papers (most heavily scrutinized pair — see open issue above)
+## The EMBER Papers
 
 **[6] Upton et al., "EMBER...RRAM Macro in 40nm CMOS," ESSCIRC 2023**
-The original conference announcement of EMBER, a Stanford/TSMC multi-bit-per-cell RRAM chip. Its Table I correctly gives 1.0/1.1 pJ/bit read energy at 1/2 bits-per-cell (this part of the book is right). It does **not** give a 2-bit/cell read-latency figure — only one read-time number (12 ns) exists in the whole paper. The "23 ns" the book pairs it with belongs to a *different* macro in the same comparison table.
+The original conference announcement of EMBER, a Stanford/TSMC multi-bit-per-cell RRAM chip. Its Table I is the source for the read-energy multiplier: 1.0/1.1 pJ/bit at 1/2 bits-per-cell.
 
 **[31] Levy et al., "EMBER: Efficient Multiple-Bits-Per-Cell...," IEEE JSSC 2024**
-The full journal follow-up to [6], same team, with room for data the conference paper's page limit cut. Its Section V (not Section III, as two spots in the book say — a citation-precision fix) gives the write-verify data: 12.4/3.8 Mbps bandwidth and 0.40/1.2 nJ/bit energy at 1/2 bits/cell, both independently confirmed exact matches. This is the correct, sole source for the write-side multipliers.
+The full journal follow-up to [6], same team, with room for data the conference paper's page limit cut. Its Section V (Abstract and V.A/V.B) is the source for the read-latency, write-latency, and write-energy multipliers: read bandwidth 2.4/1.6 Gbps at 1/2 bits/cell (→ 1.5x read latency), write-verify bandwidth 12.4/3.8 Mbps (→ 3.263x write latency), and write-verify energy 0.40/1.2 nJ/bit (→ 3.0x write energy).
 
 ---
 
@@ -126,4 +126,4 @@ Confirms Optane's real DDR-T interface: electrically DDR4-compatible but running
 
 ---
 
-*This guide reflects the state of `Project_Book.typ` after an Aug 2026 independent citation-verification pass. If the read-latency issue above gets resolved, re-check the [6]/[31] entries for updates.*
+*This guide reflects the current state of `Project_Book.typ`.*
