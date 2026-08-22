@@ -186,3 +186,56 @@ default `process_metrics.py` run today would error out (`No stats files found`) 
 regenerate these. Nothing currently produces or consumes the root `processed_*.csv` path;
 `results/system_v4/processed_*.csv` (fed via explicit `--results-dir`/`--output-dir` flags in
 the cycle-8 investigation) is the only generation matching the book's current numbers.
+
+## DDR5 timing + MLC multiplier correction cycle (2026-08-16)
+
+Prompted by a full reference-verification audit of `Project_Book.typ` that turned up two
+citation errors backed by real, wrong *simulation config values* (not just wording problems),
+alongside four citation-only errors and one HRS-sensitivity question (all resolved as pure text
+edits, see the book's own §3.1.6 items and Appendix A — no config or results impact).
+
+**What was found:**
+- `simulators/nvmain/Config/DDR5_4800_DRAM.config` used placeholder `tCAS`/`tRCD`/`tRP` = 34/34/34
+  cycles, unsourced. Real SK hynix DDR5-4800 (`EB` speed-bin code, per
+  `documents/reference_validation_papers/TR-20230620152301091.pdf` /
+  `TR-20230620152301412.pdf`) is 40/39/39.
+- `2_extract_hardware_metrics.py`'s `apply_mlc_penalty()` used flat 3.0x/4.0x/3.0x/3.0x
+  read-latency/write-latency/read-energy/write-energy multipliers, unsourced. Real values derived
+  from EMBER (same author group, two papers — Upton et al. ESSCIRC 2023 Table I for read;
+  Levy et al. IEEE JSSC 2024 §III for write, now reference `[31]`) are 1.917x/3.263x/1.1x/3.0x.
+
+**What changed:**
+- `simulators/nvmain/Config/DDR5_4800_DRAM.config`: `tCAS`/`tRCD`/`tRP` → 40/39/39.
+- `2_extract_hardware_metrics.py`: the four `apply_mlc_penalty()` multipliers, per above.
+- `results/system_v5/` is the new canonical results generation (DDR5 + all 8 MLC configs
+  re-simulated at the same matched-host cycle budgets as `system_v4`; the untouched
+  SLC/PCM/2D-3D-DRAM rows were **not** re-run — they're byte-identical carryovers from
+  `system_v4`, confirmed via diff). `system_v4` is kept, not deleted, for diffability.
+- `Project_Book.typ`: every headline number derived from the two fixes (Tables 1/2/3/4/6, the
+  endurance/lifetime figures in §3.1.4, two qualitative narrative reversals in the LBM/STREAM and
+  IFMAP/OFMAP discussions, all 26 affected embedded figure images) updated and recompiled clean.
+  Two new fidelity-audit items ((12) DDR5 timing, (13) MLC multiplier) added to §3.1.6.
+- `MBMM_AI_Context_State.md` regenerated via `mbmm_hardfork` against the corrected book
+  (2026-08-16); its prior version archived to
+  `archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-08-16.md`.
+
+**Micron-ceiling reproducibility gap, resolved same-day (2026-08-16 follow-up):** the Micron side
+of the DDR5 dual-vendor calibration band had no live config surviving on disk (see `results/
+cycle6c_ddr5_calibration_and_provenance_report.md`), so its PDP figure predated this cycle's timing
+correction. Reconstructed `simulators/nvmain/Config/DDR5_4800_DRAM_micron.config` from that same
+report's own documented "Run B" EIDD current-magnitude table (no data re-derived, only re-entered),
+re-ran all 6 benchmark traces at the same matched-host cycle budget as the hynix-floor DDR5 run, and
+reprocessed the output into `results/system_v5_micron/`. Corrected Micron-ceiling PDP: **158.1
+W·ns** (was 150.9), a ~4.8% increase consistent with the hynix-floor figure's own 99.5→104.3 shift
+from the same timing fix — an independent consistency check that passed. Updated the book's
+headline-reframe paragraph and `MBMM_AI_Context_State.md` §6-7 accordingly.
+
+**Side finding while reconstructing the Micron config:** `simulators/nvmain/`'s local `nvmain.fast`
+binary was missing, traced to an un-popped `git stash` left over from an earlier session's git-push
+troubleshooting. The stash held more than build artifacts — a real, never-committed fix in
+`src/SubArray.cpp` clamping negative per-activate energy to zero (the exact "negative activeEnergy"
+artifact this same report documents, and which the book's §3.1.6 item (8) already describes as
+fixed). Popped the stash (working tree only, no commits) to restore the build. `results/system_v5`'s
+canonical numbers were almost certainly generated with a local `nvmain.fast` that already included
+this fix, but the fix itself has never been committed to the `nvmain` submodule's git history —
+flagged for the Lead Researcher to decide on committing.
