@@ -36,24 +36,16 @@ device specialist) through the reference material, organized as follows:
    - explain why the project's own sensitivity analysis shows this
    doesn't actually change any conclusions.
 
-3. THEN cover the EMBER research papers in real depth - these are the
-   most important and most heavily-scrutinized sources in the whole
-   project. Explain that EMBER is a real multi-bit-per-cell RRAM chip
-   with two publications: a short conference paper and a fuller journal
-   follow-up by the same team. Explain what each paper actually
-   contributes (read-energy data in the conference paper, write-verify
-   data only in the journal paper), and IMPORTANTLY flag the following
-   open issue clearly and honestly to the listener: an independent
-   verification found that this project's read-LATENCY comparison
-   number mixes up EMBER's own measurement with a different, competing
-   chip's number from the same comparison table - the two chips just
-   happened to share a results table. Explain this as a real example of
-   how easy it is to misread a dense technical comparison table, and
-   that the energy-side numbers from the same papers were independently
-   double-checked and are correct - it's specifically the read-latency
-   figure that needs a second look. Don't downplay this or bury it - it
-   should get real airtime as "here's a live open question the
-   researcher still needs to resolve," not a throwaway caveat.
+3. THEN cover the EMBER research papers - these are the most important
+   sources in the whole project. Explain that EMBER is a real
+   multi-bit-per-cell RRAM chip with two publications: a short
+   conference paper and a fuller journal follow-up by the same team.
+   Explain what each paper contributes: the conference paper gives the
+   read-energy figures, and the journal follow-up gives the read-latency
+   and write-side (bandwidth and energy) figures. Together these define
+   the four penalty multipliers (read latency, write latency, read
+   energy, write energy) used to model 2-bit-per-cell operation
+   throughout the project.
 
 4. THEN cover the DDR5 baseline sources - the JEDEC standard, and the
    Micron/SK hynix datasheets used to calibrate realistic power draw
@@ -78,13 +70,11 @@ device specialist) through the reference material, organized as follows:
    memory-access traces from real benchmark programs.
 
 7. CLOSE with a synthesis: what's the actual bottom-line finding this
-   reference material supports (ReRAM's power-efficiency case is real
+   reference material supports - ReRAM's power-efficiency case is real
    and well-grounded; its raw latency is a real tradeoff; the density
    argument depends on DRAM staying stuck on its current scaling
    trajectory, which the sources themselves suggest may not hold
-   forever), and end by reminding the listener that one specific number
-   (the MLC read-latency multiplier) is a known open item as of this
-   recording and shouldn't be treated as final.
+   forever.
 
 Tone: knowledgeable but conversational, the way two engineers would
 actually discuss a colleague's reference list over coffee - it's fine to
@@ -103,11 +93,6 @@ would in conversation.
 Generate a podcast that walks through each cited source in this notebook
 one at a time, in the order they appear in the reference list, briefly
 explaining for each one: what kind of source it is (peer-reviewed paper,
-industry news article, technical datasheet, or standard), what specific
-claim in the research paper it's being used to support, and whether that
-support is solid or has any caveats. Flag prominently when you reach the
-two EMBER papers (referenced as both a conference paper and its journal
-follow-up) that an independent check found the paper's read-latency
-figure was likely misattributed - explain what the actual table said
-instead.
+industry news article, technical datasheet, or standard), and what
+specific claim in the research paper it's being used to support.
 ```
