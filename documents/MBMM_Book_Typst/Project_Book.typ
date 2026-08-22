@@ -210,11 +210,14 @@ inference remains DDR5 territory.
 
   - #strong[1T1R (Transistor-based):] Utilizes CMOS access transistors
     to completely eliminate sneak-paths. While this results in a
-    logic-compatible but larger bit-cell area of approximately $20 F^2$
-    #strong[\[3\], \[14\]], modern commercial foundries currently
-    mass-produce 22nm embedded ReRAM (eReRAM) macros at
-    multi-megabyte scales #strong[\[24\]], inherently validating its
-    manufacturability far beyond the 1Mb subarrays evaluated here.
+    logic-compatible but larger bit-cell area - a commonly-used
+    engineering estimate of approximately $20 F^2$, grounded in the
+    transistor-drive-limited cell-sizing reasoning of
+    #strong[\[3\], \[14\]] rather than a number either paper states
+    outright - modern commercial foundries currently mass-produce 22nm
+    embedded ReRAM (eReRAM) macros at megabyte scale #strong[\[24\]],
+    inherently validating its manufacturability far beyond the 1Mb
+    subarrays evaluated here.
 
   - #strong[1S1R (Selector-based):] Suppresses local sneak-paths via
     highly non-linear thresholding. While academic 1S1R test-chips
@@ -296,14 +299,19 @@ inference remains DDR5 territory.
   - #blockquote[
     #strong[MLC Analytical Modeling]: Prior to simulating Multi-Level
     Cell (MLC) scaling, I established the physical and architectural
-    differences between SLC and MLC. Recognizing that NVSim lacks native
-    support for the complex Analog-to-Digital (ADC) sensing and
-    Iterative Step-and-Verify (ISPV) programming required for MLC, I
-    implemented an Analytical Penalty Method (3x read / 4x write latency
-    factors derived from EMBER macro heuristics \[6\], consistent with
-    published multi-level ReRAM characterization \[13\]) rather than
-    relying on NVSim\'s native MLC implementation, which triggers a
-    floating-point exception in Mat.cpp\'s ISPV sensing logic.
+    differences between SLC and MLC - a technique with established
+    multi-bit-per-cell precedent in the literature, demonstrated up to 3
+    bits per cell \[13\]. Recognizing that NVSim lacks native support for
+    the complex Analog-to-Digital (ADC) sensing and Iterative
+    Step-and-Verify (ISPV) programming required for MLC, I implemented
+    an Analytical Penalty Method (1.917x read latency, 3.263x write
+    latency, 1.1x read energy, 3.0x write energy, measured on the same
+    EMBER macro\'s two publications - Upton et al. \[6\], ESSCIRC 2023,
+    Table I, for the read-side figures, and Levy et al. \[31\], IEEE JSSC
+    2024, Section V, for the write-side figures - see Appendix A for
+    the full derivation) rather than relying on NVSim\'s native MLC
+    implementation, which triggers a floating-point exception in
+    Mat.cpp\'s ISPV sensing logic.
     ]
 
 == 2.3. Hardware Baselines & Memory Models
@@ -311,8 +319,9 @@ inference remains DDR5 territory.
 - #strong[The DDR5-4800 Baseline Reference:] The DDR5 configuration is
   modeled strictly after the JEDEC Solid State Technology Association,
   Standard JESD79-5 (DDR5 SDRAM) \[10\]. I engineered the timing
-  parameters for a 4800 MT/s module (tCAS-tRCD-tRP of 34-34-34 at 1.1V)
-  and explicitly modeled DDR5\'s defining architectural upgrade: two
+  parameters for a 4800 MT/s module (tCAS-tRCD-tRP of 40-39-39, per the
+  SK hynix DDR5-4800 speed-bin decoder - Section 3.1.6, item 12 - at
+  1.1V) and explicitly modeled DDR5\'s defining architectural upgrade: two
   independent 32-bit sub-channels per DIMM and a Burst Length of 16.
   This model inherently imposes the rigorous, real-world JEDEC bus
   serialization and complex bank-group switching penalties that define
@@ -1451,13 +1460,14 @@ characterization, since NVSim itself has no multi-level-cell model -
 were unsourced 3x/4x placeholders that earlier drafts of this book
 attributed to \"EMBER Macro analytical heuristics\" not actually present
 in either EMBER publication: the cited conference paper (Upton et al.
-\[6\], ESSCIRC 2023) reports no write-latency or write-energy data of
-any kind. A literature search for the real multipliers - including two
-independent research-assistant passes, both of which initially
-overreached with unverifiable claims that had to be retracted under
-direct primary-source checking - located the actual measured figures on
-the same EMBER macro\'s full journal publication (Levy et al. \[31\],
-IEEE JSSC 2024, Section III): read latency 12/23 ns and read energy
+\[6\], ESSCIRC 2023) reports no write-verify data split by bits-per-cell
+(it does give an aggregate, non-split SET/RESET pulse-energy estimate,
+but nothing usable as a 1-vs-2-bit/cell multiplier). A literature search
+for the real multipliers - including two independent research-assistant
+passes, both of which initially overreached with unverifiable claims
+that had to be retracted under direct primary-source checking - located
+the actual measured figures on the same EMBER macro\'s full journal
+publication (Levy et al. \[31\], IEEE JSSC 2024, Section V): read latency 12/23 ns and read energy
 1.0/1.1 pJ/bit at 1/2 bits per cell (from the ESSCIRC precursor\'s own
 Table I), write-verify bandwidth 12.4/3.8 Mbps and write-verify energy
 0.40/1.2 nJ/bit at 1/2 bits per cell (from the JSSC follow-up, which the
@@ -1763,10 +1773,12 @@ DDR5 spends 33-45% of its module power on refresh it can never shed. One
 credible gating policy separates 1S1R SLC from DDR5 power parity - a
 concrete research and product opening for gating-capable controllers and
 selector-first DIMM architectures. The full ungated ranking, matching
-Figure 27 bar-for-bar: DDR5 104.3 W·ns (150.9 at the Micron calibration
-ceiling - this figure predates the item (12) DDR5 timing correction and
-has not been re-verified, since no live Micron-calibration configuration
-survives to re-run; see Section 3.1.6, item 8), PCM 165.3, 1S1R SLC
+Figure 27 bar-for-bar: DDR5 104.3 W·ns (158.1 at the Micron calibration
+ceiling - the Micron-side configuration was reconstructed from its
+original documented current-magnitude derivation and re-run under the
+item (12) DDR5 timing correction, confirming the same \~4.8% relative
+increase the hynix-floor figure carried; see Section 3.1.6, item 8), PCM
+165.3, 1S1R SLC
 737.1, 1S1R MLC 1,396.1, 1T1R SLC 21,350.6, and 1T1R MLC 37,074.9. The
 selector\'s 47x standby discipline
 cleanly partitions the ReRAM family: ungated 1T1R is not a viable DDR5
@@ -1946,8 +1958,8 @@ across the suite) - while 1T1R SLC, despite the best raw latency in the
 ReRAM family, is infeasible ungated at DIMM scale and is relegated to a
 latency-optimized niche pending aggressive idle-gating; MLC density
 remains restricted to read-dominant applications (static weight storage
-in AI inference pipelines) where the 4x write-latency penalty is rarely
-triggered. Together these findings define a concrete agenda for research
+in AI inference pipelines) where the 3.263x write-latency penalty is
+rarely triggered. Together these findings define a concrete agenda for research
 and product work: gating-capable memory controllers (Section 4.1),
 selector-first DIMM architectures, and MLC read-only capacity tiers for
 frozen model weights. Finally, the mbmm\_master.py orchestration
@@ -2126,37 +2138,24 @@ data, has been made publicly available.
 
 #strong[\[16\]] Data Center Knowledge, “Data Center Hardware Refresh Cutback by Microsoft – What’s Next?,” Aug. 25, 2022. \[Online\]. Available: https:\/\/www.datacenterknowledge.com/hyperscalers/data-center-hardware-refresh-cutback-by-microsoft-what-s-next-. \[Accessed: Jul. 10, 2026\].
 
-\[17\] TrendForce, \"Micron Races Ahead in 10nm-Class DRAM with 1γ DDR5 Samples Delivered to Intel & AMD,\" Feb. 26, 2025. \[Online\]. Available: https:\/\/www.trendforce.com/news/2025/02/26/news-micron-races-ahead-in-10nm-class-dram-with-1γ-ddr5-samples-delivered-to-intel-amd/. \[Accessed: Jul. 11, 2026\].
+#strong[\[17\]] TrendForce, \"Micron Races Ahead in 10nm-Class DRAM with 1γ DDR5 Samples Delivered to Intel & AMD,\" Feb. 26, 2025. \[Online\]. Available: https:\/\/www.trendforce.com/news/2025/02/26/news-micron-races-ahead-in-10nm-class-dram-with-1γ-ddr5-samples-delivered-to-intel-amd/. \[Accessed: Jul. 11, 2026\].
+#strong[\[18\]] J. Choe, \"Comparing DDR5 Memory From Micron, Samsung, SK Hynix,\" EE Times, Feb. 15, 2022. \[Online\]. Available: https:\/\/www.eetimes.com/comparing-ddr5-memory-from-micron-samsung-sk-hynix/. \[Accessed: Jul. 12, 2026\].
+#strong[\[19\]] A. Shilov, \"Samsung Puts 3D DRAM on the Roadmap, Stacked DRAM to Follow,\" Tom\'s Hardware, Apr. 3, 2024. \[Online\]. Available: https:\/\/www.tomshardware.com/pc-components/dram/samsung-outlines-plans-for-3d-dram-which-will-come-in-the-second-half-of-the-decade. \[Accessed: Jul. 12, 2026\].
+#strong[\[20\]] J. Yang et al., \"A 14nm-FinFET 1Mb Embedded 1T1R RRAM with a 0.022µm² Cell Size Using Self-Adaptive Delayed Termination and Multi-Cell Reference,\" in Proc. IEEE Int. Solid-State Circuits Conf. (ISSCC), 2021. DOI: 10.1109/ISSCC42613.2021.9365945
+#strong[\[21\]] K. T. Malladi, F. A. Nothaft, K. Periyathambi, B. C. Lee, C. Kozyrakis, and M. Horowitz, \"Towards Energy-Proportional Datacenter Memory with Mobile DRAM,\" in Proc. 39th Annu. Int. Symp. Computer Architecture (ISCA), 2012. DOI: 10.1109/ISCA.2012.6237004
+#strong[\[22\]] A. Gholami, Z. Yao, S. Kim, C. Hooper, M. W. Mahoney, and K. Keutzer, \"AI and Memory Wall,\" IEEE Micro, vol. 44, no. 3, May/June 2024. DOI: 10.1109/MM.2024.3373763
+#strong[\[23\]] Tom\'s Hardware, \"Intel Kills Optane Memory Business Entirely, Pays \$559 Million to Exit,\" Jul. 28, 2022. \[Online\]. Available: https:\/\/www.tomshardware.com/news/intel-kills-optane-memory-business-for-good. \[Accessed: Jul. 13, 2026\].
+#strong[\[24\]] TechInsights, \"Advanced TSMC 22ULL Embedded RRAM Chip Unveiled.\" \[Online\]. Available: https:\/\/www.techinsights.com/blog/advanced-tsmc-22ull-embedded-rram-chip-unveiled. \[Accessed: Jul. 13, 2026\].
+#strong[\[25\]] Tom\'s Hardware, \"Neo Semiconductor\'s Revolutionary 3D X-DRAM for AI Processors Has Passed Proof-of-Concept Validation,\" Apr. 24, 2026. \[Online\]. Available: https:\/\/www.tomshardware.com/tech-industry/artificial-intelligence/neo-semiconductors-revolutionary-3d-x-dram-for-ai-processors-has-passed-proof-of-concept-validation-company-secures-funding-to-develop-next-gen-memory-hbm-alternative. \[Accessed: Jul. 13, 2026\].
+#strong[\[26\]] N. Binkert et al., \"The gem5 Simulator,\" ACM SIGARCH Computer Architecture News, vol. 39, no. 2, pp. 1-7, May 2011. DOI: 10.1145/2024716.2024718
+#strong[\[27\]] J. D. McCalpin, \"Memory Bandwidth and Machine Balance in Current High Performance Computers,\" IEEE Computer Society Technical Committee on Computer Architecture (TCCA) Newsletter, pp. 19-25, Dec. 1995.
+#strong[\[28\]] Standard Performance Evaluation Corporation, \"SPEC CPU 2017 Benchmark Suite.\" \[Online\]. Available: https:\/\/www.spec.org/cpu2017/. \[Accessed: Jul. 13, 2026\].
+#strong[\[29\]] Micron Technology, Inc., \"16Gb DDR5 SDRAM Addendum: MT60B4G4, MT60B2G8, MT60B1G16, Die Revision A,\" Doc. No. CCM005-0005-1684161373-30, Rev. D, Feb. 2023. \[Online\]. Available: https:\/\/www.micron.com/products/memory/dram-components/ddr5-sdram/part-catalog
+#strong[\[30\]] SK hynix Inc., \"16Gb DDR5 SDRAM,\" datasheet. \[Online\]. Available (registration required): https:\/\/product.skhynix.com/support/downloads.go
 
-\[18\] J. Choe, \"Comparing DDR5 Memory From Micron, Samsung, SK Hynix,\" EE Times, Feb. 15, 2022. \[Online\]. Available: https:\/\/www.eetimes.com/comparing-ddr5-memory-from-micron-samsung-sk-hynix/. \[Accessed: Jul. 12, 2026\].
+#strong[\[31\]] A. Levy, L. R. Upton, M. D. Scott, D. Rich, W.-S. Khwa, Y.-D. Chih, M.-F. Chang, S. Mitra, B. Murmann, and P. Raina, \"EMBER: Efficient Multiple-Bits-Per-Cell Embedded RRAM Macro for High-Density Digital Storage,\" #emph[IEEE J. Solid-State Circuits], vol. 59, no. 7, pp. 2081-2092, July 2024. DOI: 10.1109/JSSC.2024.3387566
 
-\[19\] A. Shilov, \"Samsung Puts 3D DRAM on the Roadmap, Stacked DRAM to Follow,\" Tom\'s Hardware, Apr. 3, 2024. \[Online\]. Available: https:\/\/www.tomshardware.com/pc-components/dram/samsung-outlines-plans-for-3d-dram-which-will-come-in-the-second-half-of-the-decade. \[Accessed: Jul. 12, 2026\].
-
-\[20\] J. Yang et al., \"A 14nm-FinFET 1Mb Embedded 1T1R RRAM with a 0.022µm² Cell Size Using Self-Adaptive Delayed Termination and Multi-Cell Reference,\" in Proc. IEEE Int. Solid-State Circuits Conf. (ISSCC), 2021. DOI: 10.1109/ISSCC42613.2021.9365945
-
-\[21\] K. T. Malladi, F. A. Nothaft, K. Periyathambi, B. C. Lee, C. Kozyrakis, and M. Horowitz, \"Towards Energy-Proportional Datacenter Memory with Mobile DRAM,\" in Proc. 39th Annu. Int. Symp. Computer Architecture (ISCA), 2012. DOI: 10.1109/ISCA.2012.6237004
-
-\[22\] A. Gholami, Z. Yao, S. Kim, C. Hooper, M. W. Mahoney, and K. Keutzer, \"AI and Memory Wall,\" IEEE Micro, vol. 44, no. 3, May/June 2024. DOI: 10.1109/MM.2024.3373763
-
-\[23\] Tom\'s Hardware, \"Intel Kills Optane Memory Business Entirely, Pays \$559 Million to Exit,\" Jul. 28, 2022. \[Online\]. Available: https:\/\/www.tomshardware.com/news/intel-kills-optane-memory-business-for-good. \[Accessed: Jul. 13, 2026\].
-
-\[24\] TechInsights, \"Advanced TSMC 22ULL Embedded RRAM Chip Unveiled.\" \[Online\]. Available: https:\/\/www.techinsights.com/blog/advanced-tsmc-22ull-embedded-rram-chip-unveiled. \[Accessed: Jul. 13, 2026\].
-
-\[25\] Tom\'s Hardware, \"Neo Semiconductor\'s Revolutionary 3D X-DRAM for AI Processors Has Passed Proof-of-Concept Validation,\" Apr. 24, 2026. \[Online\]. Available: https:\/\/www.tomshardware.com/tech-industry/artificial-intelligence/neo-semiconductors-revolutionary-3d-x-dram-for-ai-processors-has-passed-proof-of-concept-validation-company-secures-funding-to-develop-next-gen-memory-hbm-alternative. \[Accessed: Jul. 13, 2026\].
-
-\[26\] N. Binkert et al., \"The gem5 Simulator,\" ACM SIGARCH Computer Architecture News, vol. 39, no. 2, pp. 1-7, May 2011. DOI: 10.1145/2024716.2024718
-
-\[27\] J. D. McCalpin, \"Memory Bandwidth and Machine Balance in Current High Performance Computers,\" IEEE Computer Society Technical Committee on Computer Architecture (TCCA) Newsletter, pp. 19-25, Dec. 1995.
-
-\[28\] Standard Performance Evaluation Corporation, \"SPEC CPU 2017 Benchmark Suite.\" \[Online\]. Available: https:\/\/www.spec.org/cpu2017/. \[Accessed: Jul. 13, 2026\].
-
-\[29\] Micron Technology, Inc., \"16Gb DDR5 SDRAM Addendum: MT60B4G4, MT60B2G8, MT60B1G16, Die Revision A,\" Doc. No. CCM005-0005-1684161373-30, Rev. D, Feb. 2023. \[Online\]. Available: https:\/\/www.micron.com/products/memory/dram-components/ddr5-sdram/part-catalog
-
-\[30\] SK hynix Inc., \"16Gb DDR5 SDRAM,\" datasheet. \[Online\]. Available (registration required): https:\/\/product.skhynix.com/support/downloads.go
-
-\[31\] A. Levy, L. R. Upton, M. D. Scott, D. Rich, W.-S. Khwa, Y.-D. Chih, M.-F. Chang, S. Mitra, B. Murmann, and P. Raina, \"EMBER: Efficient Multiple-Bits-Per-Cell Embedded RRAM Macro for High-Density Digital Storage,\" #emph[IEEE J. Solid-State Circuits], vol. 59, no. 7, pp. 2081-2092, July 2024. DOI: 10.1109/JSSC.2024.3387566
-
-\[32\] J. Izraelevitz, J. Yang, L. Zhang, J. Kim, X. Liu, A. Memaripour, Y. J. Soh, Z. Wang, Y. Xu, S. R. Dulloor, J. Zhao, and S. Swanson, \"Basic Performance Measurements of the Intel Optane DC Persistent Memory Module,\" arXiv:1903.05714, Aug. 2019.
+#strong[\[32\]] J. Izraelevitz, J. Yang, L. Zhang, J. Kim, X. Liu, A. Memaripour, Y. J. Soh, Z. Wang, Y. Xu, S. R. Dulloor, J. Zhao, and S. Swanson, \"Basic Performance Measurements of the Intel Optane DC Persistent Memory Module,\" arXiv:1903.05714, Aug. 2019.
 
 #pagebreak() <section-3>
 = Appendix A: Simulation Parameters and Literature Grounding
@@ -2197,8 +2196,10 @@ data, has been made publicly available.
   figures (12.4/3.8 Mbps write-verify bandwidth, 0.40/1.2 nJ/bit energy
   at 1/2 b per cell) are from the journal follow-up, #strong[Levy et
   al. \[31\]] (IEEE JSSC 2024) - the ESSCIRC conference paper reports no
-  write-latency or write-energy data at all; the JSSC paper is where
-  that data first appears. Earlier drafts of this book used unsourced
+  write-verify data split by bits-per-cell (only an aggregate,
+  non-split SET/RESET pulse-energy estimate); the JSSC paper is where
+  the bits-per-cell-split data first appears. Earlier drafts of this
+  book used unsourced
   3x/4x placeholder multipliers for read/write latency, attributed to
   "EMBER Macro analytical heuristics" that do not exist in either EMBER
   publication; those figures have been replaced with the measured

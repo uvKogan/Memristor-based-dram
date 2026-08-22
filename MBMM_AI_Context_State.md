@@ -6,9 +6,9 @@
 the canonical, compile-verified edition of the Project Book, now including the reference-audit and
 re-simulation cycle summarized in §3 below)
 
-**Supersedes:** the 2026-07-22 hardfork of this file (archived at
-`archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-07-22.md` is the version *before that*;
-the 2026-07-22 version itself has not yet been separately archived — see housekeeping note in §7).
+**Supersedes:** the 2026-07-22 hardfork of this file, now archived at
+`archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-08-16.md` (the version *before that* is
+`archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-07-22.md`).
 That version's DDR5 timing, MLC read/write penalty multipliers, and every number derived from them
 (Findings 2 and 4 below, the §1.3 table, §2.3, §3's audit-item count) have since been corrected by
 the work in §3, items (12) and (13). Do not cite the 2026-07-22 version's DDR5 or MLC-specific
@@ -297,29 +297,38 @@ than fixed):
 3. **Open-loop trace replay**: no CPU/accelerator feedback path, so every latency figure is a
    memory-subsystem quantity, not a projected end-to-end application slowdown.
 4. **DDR5 power is reported as a two-vendor calibration band** (Micron ceiling / SK hynix floor)
-   rather than a single point value. **The Micron-ceiling side of this band has a known
-   reproducibility gap**: no live NVMain config for the Micron-only calibration survives on disk
-   (it was produced by a one-off manual edit of the shared DDR5 config, run, and reverted — not a
-   repeatable pipeline step), so the Micron-ceiling PDP figure quoted in the book's headline-reframe
-   paragraph (150.9 W·ns) predates this cycle's item (12) DDR5 timing correction and has *not* been
-   re-verified against it. This is a pre-existing gap (first flagged 2026-07-13, `results/
-   cycle8_matched_host_report.md`), not something this cycle introduced, but it is now stale in a
-   way that's worth resolving: reconstructing a proper, saved Micron-only config and re-running it
-   is the cleanest fix, flagged for a future session.
+   rather than a single point value. **The Micron-ceiling side of this band's reproducibility gap is
+   now resolved** (2026-08-16 housekeeping): `simulators/nvmain/Config/DDR5_4800_DRAM_micron.config`
+   was reconstructed from the original documented Micron current-magnitude derivation (`results/
+   cycle6c_ddr5_calibration_and_provenance_report.md`'s own "Run B" table — no data was re-derived,
+   only re-entered from that report), re-run under the item (12) corrected timing across all 6
+   benchmark traces (`results/system_v5_micron/`), and reprocessed. The corrected Micron-ceiling PDP
+   is **158.1 W·ns** (was the stale, pre-timing-fix 150.9), a ~4.8% increase — matching the same
+   relative shift the hynix-floor figure carried (99.5→104.3), an independent consistency check that
+   passed. The book's headline-reframe paragraph now quotes the verified figure.
 
 ---
 
 ## 7. Pending Documentation / Narrative Items
 
-**New this cycle:**
-1. **Micron-calibration DDR5 config reconstruction** (see §6 item 4 above) — no live config exists;
-   the Micron-ceiling PDP figure in the book is now known-stale relative to the item (12) timing
-   correction.
-2. **This file's own prior version** (the 2026-07-22 hardfork, superseded by this regeneration) has
-   not yet been moved to `archive/root_docs/` under the naming convention used for the version
-   before it (`MBMM_AI_Context_State_pre-hardfork_2026-07-22.md`) — worth doing in a future
-   housekeeping pass so the superseded-version chain stays consistent, though nothing currently
-   depends on it being archived promptly.
+**Resolved this cycle (2026-08-16 housekeeping):**
+1. ~~Micron-calibration DDR5 config reconstruction~~ — done, see §6 item 4 above.
+2. ~~This file's own prior version needs archiving~~ — done; the 2026-07-22 hardfork is now at
+   `archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-08-16.md`.
+
+**New this cycle — needs a Lead Researcher decision, not purely documentation:**
+3. **Uncommitted nvmain submodule source fix.** While reconstructing the Micron config, the local
+   `nvmain.fast` binary was found missing — tracing it back, an earlier session's git-push
+   troubleshooting had left a `git stash` un-popped in `simulators/nvmain/`. That stash contained not
+   just build artifacts but a real, never-committed source fix in `src/SubArray.cpp`: it clamps
+   negative per-activate energy to zero, which is exactly the "negative activeEnergy" artifact
+   documented in `results/cycle6c_ddr5_calibration_and_provenance_report.md` and referenced in the
+   book's §3 item (8) ("a sign artifact in NVMain's activate-energy formula, clamped at zero"). The
+   stash was popped (working tree only, no commits made) so the simulator would build. This means
+   `results/system_v5`'s canonical numbers were almost certainly generated with a locally-built
+   `nvmain.fast` that already included this fix — but the fix has never been committed to the
+   `nvmain` submodule's git history, so the submodule's committed source doesn't match what actually
+   produced the canonical results. Needs a Lead Researcher decision on committing it.
 3. **`archive/README.md`** has not yet received a dated entry for this cycle's DDR5-timing /
    MLC-multiplier correction and re-simulation, unlike every other major correction cycle in this
    repo's history — worth adding for consistency with the established documentation pattern, though
