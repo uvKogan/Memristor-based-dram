@@ -239,3 +239,54 @@ fixed). Popped the stash (working tree only, no commits) to restore the build. `
 canonical numbers were almost certainly generated with a local `nvmain.fast` that already included
 this fix, but the fix itself has never been committed to the `nvmain` submodule's git history —
 flagged for the Lead Researcher to decide on committing.
+
+## MLC read-latency multiplier correction: item (13)'s own data error (2026-08-22)
+
+Prompted by a full reference-verification audit of `Project_Book.typ` requested after the DDR5/MLC
+correction cycle above had already landed — the audit re-checked every citation against its actual
+source rather than trusting the prior fix, and found that the 1.917x MLC read-latency multiplier
+from item (13) (itself the "corrected" replacement for the original unsourced 3x placeholder) was
+**also wrong**, in a way distinct from the original citation problem.
+
+**What was found:** item (13)'s 1.917x read-latency multiplier paired EMBER's own 12 ns read time
+(real, from Upton et al. `[6]`, ESSCIRC 2023, Table I) with a "23 ns" figure assumed to be EMBER's
+2-bit/cell read time. A dedicated verification agent read Table I directly: its "Read Time (1 b)"
+row lists five macros side by side, all explicitly scoped to 1-bit/cell operation — EMBER (This
+Work) at 12 ns, and reference `[9]` (T. F. Wu et al., ISSCC 2019) at 23 ns. The "23 ns" is `[9]`'s
+own 1-bit/cell number, not EMBER's 2-bit/cell number; EMBER's ESSCIRC paper never reports a
+2-bit/cell read latency at all, in any table, figure, or prose passage.
+
+**The real source, found by re-reading EMBER's own JSSC 2024 follow-up (Levy et al. `[31]`) more
+carefully:** its Abstract and Section V.A state "1 b/cell read operation with 1.0 pJ/bit energy at
+2.4 Gbps, and 2 b/cell read with 1.1 pJ/bit at 1.6 Gbps" — independently verified by direct PDF text
+extraction. This gives a clean 1.5x read-latency multiplier (2.4/1.6 Gbps), via the identical
+bandwidth-ratio methodology already used (and already correct) for the write-latency multiplier
+(12.4/3.8 Mbps → 3.263x). The corrected 1.5x is *milder* than the erroneous 1.917x — MLC read
+latency was previously over-penalized, not under-penalized.
+
+**What changed:**
+- `2_extract_hardware_metrics.py`: `apply_mlc_penalty()`'s read-latency multiplier, 1.917x → 1.5x.
+- All 8 MLC configs re-simulated across all 6 benchmark traces at the same matched-host cycle budget
+  (66,666,667 cycles). `results/system_v6/` is the new canonical results generation — built from
+  `results/system_v5_input`'s untouched non-MLC `.out` files (SLC, PCM, 2D/3D DRAM, DDR5) plus the
+  48 freshly re-simulated MLC files; the 72 non-MLC rows were verified byte-identical to v5.
+  `results/system_v5` is kept, not deleted, for diffability.
+- MLC latency fell a further 5.5-18.6% and MLC PDP fell 0.7-18.6% relative to the v5/item-(13)
+  dataset. `Project_Book.typ`: Tables 1/2/3/4/6, the §3.1.4 endurance/lifetime footnote (LBM write
+  counts also shifted — faster reads let more total requests complete within the fixed simulation
+  window — 1T1R MLC 1,706,502→1,824,503 writes, 1S1R MLC 942,406→1,090,741), the Abstract, and
+  numerous §3.1.1-3.1.3 prose restatements, all updated and recompiled clean. All 25
+  latency/power/PDP/Pareto/Hero figure images regenerated from `system_v6` (`image23.png`, die
+  density, is unaffected by read latency and was left untouched; `image27.png`, ReadVoltage
+  sensitivity, is unrelated and also untouched).
+- Added §3.1.6 item (14) documenting this correction; item (13)'s text was amended (not rewritten)
+  to honestly note its read-latency figure was later found wrong, per the section's established
+  transparency convention. Audit item count updated throughout: "thirteen... eleven repaired" →
+  "fourteen... twelve repaired".
+
+**Bonus find during the same audit, unrelated to the read-latency error:** three separate sentences
+in §3.1.1 (the LBM/1S1R-MLC absolute-latency claim, the AlexNet IFMAP/OFMAP "Write-Torture" pair,
+and the selector write/read device-ratio claim) and one in the Conclusion were frozen at **stale
+pre-`system_v4`** or even original-3x/4x-placeholder-era data — never updated through either of the
+two prior MLC-multiplier correction rounds. All four caught and fixed as part of the same sweep,
+independent of today's read-latency correction.

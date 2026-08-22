@@ -61,15 +61,22 @@ def apply_mlc_penalty(slc_metrics):
     """Applies Phase 5 Analytical Penalties and DOUBLES capacity."""
     mlc = slc_metrics.copy()
     # Performance penalties derived from EMBER, same author group, two papers:
-    # - Upton et al., ESSCIRC 2023 (Table I) for read: 1b/cell vs 2b/cell read latency
-    #   12ns/23ns (1.917x), read energy 1.0/1.1 pJ/bit (1.1x).
-    # - Levy et al., IEEE JSSC 2024, DOI 10.1109/JSSC.2024.3387566 (Section III) for write:
-    #   1b/cell vs 2b/cell write-verify bandwidth 12.4/3.8 Mbps -> 3.263x write-latency
-    #   penalty; write-verify energy 0.40/1.2 nJ/bit -> 3.0x write-energy penalty.
-    mlc['read_latency_ns'] *= 1.917
+    # - Upton et al., ESSCIRC 2023 (Table I) for read energy: 1b/cell vs 2b/cell
+    #   1.0/1.1 pJ/bit (1.1x). (An earlier draft paired EMBER's 12ns read time
+    #   with a "23ns" figure for a read-latency multiplier -- confirmed by
+    #   direct table read to be a DIFFERENT competing macro's own 1b/cell read
+    #   time from the same comparison table, not EMBER's 2b/cell number, which
+    #   the ESSCIRC paper never reports. Corrected below using EMBER's own data.)
+    # - Levy et al., IEEE JSSC 2024, DOI 10.1109/JSSC.2024.3387566 (Section V.A
+    #   / Abstract) for read latency and write: 1b/cell vs 2b/cell read
+    #   bandwidth 2.4/1.6 Gbps -> 1.5x read-latency penalty (same
+    #   bandwidth-ratio methodology as the write-side derivation below);
+    #   write-verify bandwidth 12.4/3.8 Mbps -> 3.263x write-latency penalty;
+    #   write-verify energy 0.40/1.2 nJ/bit -> 3.0x write-energy penalty.
+    mlc['read_latency_ns'] *= 1.5
     mlc['write_latency_ns'] *= 3.263
     mlc['read_energy_nj'] *= 1.1
-    mlc['write_energy_nj'] *= 3.0  
+    mlc['write_energy_nj'] *= 3.0
     
     # Capacity Scaling: MLC doubles bit storage volume [cite: 933, 939]
     mlc['capacity_gb'] *= 2.0
