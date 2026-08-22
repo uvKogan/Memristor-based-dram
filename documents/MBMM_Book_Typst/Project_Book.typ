@@ -1639,7 +1639,10 @@ node-independent and exact: DRAM stores one bit per 6F², 1T1R one per
 20F² - a transistor-drive-limited figure \[14\] - and the selector
 cross-point one per 4F² (two per 4F² as MLC) - so at any matched process
 node, 1S1R MLC is 3.0x denser than DRAM and 1S1R SLC 1.5x denser, while
-1T1R is intrinsically 3.3x less dense. That the measured die-level
+1T1R is intrinsically 3.3x less dense under the planar-access-transistor
+assumption used throughout this book (a DRAM-process recessed-channel
+alternative closes this gap in principle but is not modeled here -
+Appendix A, Section 4.2). That the measured die-level
 advantage (1.92x) exceeds the 1.5x cell-level bound reflects real-die
 overheads on the DRAM side - peripheral, spare, and interface area that
 pure cell arithmetic ignores. The third level is headroom: the die-level
@@ -1711,7 +1714,7 @@ These projections are bounded claims, not measurements: the 16nm and
 12nm columns are geometry rather than NVSim characterizations, they
 optimistically assume peripheral circuits shrink with the cell array,
 and selector device physics below the 2x-nm regime is unvalidated. The
-counterpoint is equally real, and moving on two fronts: DRAM\'s escape
+counterpoint is equally real, and moving on three fronts: DRAM\'s escape
 from the planar capacitor is on the incumbents\' public roadmap, with
 Samsung outlining vertical-channel-transistor 3D DRAM for the second
 half of the decade \[19\], and the challenger ecosystem is moving faster
@@ -1722,7 +1725,16 @@ challenger\'s headline retention claim is a 15x longer refresh interval,
 not refresh elimination: charge-based storage refreshes by construction,
 so while 3D DRAM contests the density column of this comparison, the
 zero-refresh power asymmetry this work quantifies survives every DRAM
-roadmap, planar or vertical. The window Table 7 quantifies is therefore
+roadmap, planar or vertical. The third front attacks the economics
+around the cell rather than the cell itself: Intel\'s July 2026 patent
+filing for Cross-Batch Memory (XBM) proposes moving the 1T1C cell into
+back-end-of-line thin-film transistors and replacing HBM\'s silicon
+interposer with direct die-to-die UCIe links, targeting HBM4\'s
+footprint at lower packaging cost - a response to the same supply-side
+crunch behind this project\'s premise (Section 1.1), though the design
+remains patent-stage, discloses no independent performance data, and is
+not targeted for commercialization before 2030 \[34\]\[35\]. The window
+Table 7 quantifies is therefore
 real but not permanent - it is the interval in which a cross-point that
 ports to logic-compatible nodes today faces a DRAM that must first
 re-architect its cell to go vertical. Every density multiplier in the
@@ -2109,6 +2121,22 @@ highest-leverage item of future work.
   manufacturing limits (e.g., TSMC maximum macro bounds) to push DIMM
   capacity to the extreme.
 
+- #strong[Recessed-Channel 1T1R Density:] this evaluation models 1T1R
+  with a planar/FinFET, width-driven CMOS access transistor (20F²,
+  Appendix A), the only access-device topology NVSim supports for this
+  project. A commercial 16Gb, 27nm ReRAM has demonstrated a
+  DRAM-process buried recessed-channel access transistor instead,
+  reaching a 6F² cell - parity with DRAM \[33\] - though paired with a
+  Cu-filament CBRAM switching layer rather than the HfOx/TaOx family
+  simulated here. Closing this gap for the oxide-RRAM material system
+  modeled in this book would require either patching NVSim with a
+  recessed-channel access-device model or deriving an equivalent RC/
+  drive-current model outside NVSim and feeding it back in; either is
+  real device-physics work, not a configuration change, and could
+  overturn this book\'s "1T1R is not density-competitive" verdict if
+  the recessed-channel geometry proves compatible with oxide-RRAM
+  integration.
+
 - #strong[Node Scaling and 3D Stacking]: this evaluation deliberately
   fixed ReRAM at 22nm - a manufacturability-anchored choice \[8\] -
   while DRAM competes from 10 nm-class nodes with no remaining capacitor
@@ -2187,6 +2215,12 @@ data, has been made publicly available.
 
 #strong[\[32\]] J. Izraelevitz, J. Yang, L. Zhang, J. Kim, X. Liu, A. Memaripour, Y. J. Soh, Z. Wang, Y. Xu, S. R. Dulloor, J. Zhao, and S. Swanson, \"Basic Performance Measurements of the Intel Optane DC Persistent Memory Module,\" arXiv:1903.05714, Aug. 2019.
 
+#strong[\[33\]] R. Fackenthal, M. Kitagawa, W. Otsuka, K. Prall, D. Mills, K. Tsutsui, J. Javanifard, K. Tedrow, T. Tsushima, Y. Shibahara, and G. Hush, \"19.7 A 16Gb ReRAM with 200MB/s Write and 1GB/s Read in 27nm Technology,\" in Proc. IEEE Int. Solid-State Circuits Conf. (ISSCC), Feb. 2014, pp. 338-339. DOI: 10.1109/ISSCC.2014.6757460
+
+#strong[\[34\]] Intel Corporation, \"Ultra High Bandwidth Memory with Backend Transistors,\" U.S. Patent Application Publication No. US 2026/0191095 A1, Appl. No. 19/001,921, filed Dec. 26, 2024, published Jul. 2, 2026. \[Online\]. Available: https:\/\/www.freepatentsonline.com/y2026/0191095.html. \[Accessed: Aug. 22, 2026\].
+
+#strong[\[35\]] TrendForce, \"Intel Patent Reveals XBM Matching HBM4 Footprint Without Interposers; Commercialization Seen After 2030,\" Jul. 8, 2026. \[Online\]. Available: https:\/\/www.trendforce.com/news/2026/07/08/news-intel-patent-reveals-xbm-matching-hbm4-footprint-without-interposers-commercialization-seen-after-2030/. \[Accessed: Aug. 22, 2026\].
+
 #pagebreak() <section-3>
 = Appendix A: Simulation Parameters and Literature Grounding
 <appendix-a-simulation-parameters-and-literature-grounding>
@@ -2252,9 +2286,23 @@ data, has been made publicly available.
   back-end-of-line above the cell, while the access transistor must be
   sized wide enough to source the SET/RESET programming current \[14\].
   A production-grade 14nm FinFET embedded 1T1R macro reports a 0.022 µm²
-  cell - about 112F² at that node \[20\] - so 20F² is a generous
-  assumption for 1T1R, which makes the density verdict against it
-  conservative. Note that the 4F² figure is the array-level cell
+  cell - about 112F² at that node \[20\] - so 20F² is generous relative
+  to planar/FinFET logic-transistor integration, which makes the density
+  verdict against it conservative #emph[for that architecture]. It is
+  not generous in absolute terms: DRAM-process integration using a
+  buried recessed-channel access transistor rather than a planar logic
+  transistor has been demonstrated at 6F² - parity with DRAM\'s own 6F²
+  cell - in a commercial 16Gb, 27nm part \[33\]. That device pairs the
+  recessed transistor with a Cu-filament CBRAM switching layer rather
+  than the HfOx/TaOx oxide-RRAM family modeled here, and NVSim\'s
+  access-device model in this project (width-driven CMOS or diode only,
+  no recessed-channel option) cannot represent it, so no simulated
+  results are claimed for that configuration anywhere in this book (see
+  Section 4.2 for the future-work case). \[33\] stands as an existence
+  proof that 1T1R density is architecture-dependent, not a validated
+  data point: 20F² should be read as a mid-range, logic-compatible
+  assumption, not a technology ceiling. Note that the 4F² figure is the
+  array-level cell
   footprint; peripheral circuitry (sense amplifiers, row decoders,
   column multiplexers) adds overhead, and the periphery-inclusive
   die-level density ratios are reported in Section 3.3 and Figure 26
