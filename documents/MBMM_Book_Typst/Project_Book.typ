@@ -59,7 +59,7 @@ contrast that proves the point: the transistor-gated 1T1R module leaks
 selector\'s 47x leakage discipline, not raw cell speed, decides
 architectural viability, and 1S1R SLC is the flagship configuration.
 These power results rest on a fidelity audit of the simulation flow
-(Section 3.1.6) that found thirteen silent failure modes in the standard
+(Section 3.1.6) that found fourteen silent failure modes in the standard
 NVSim-to-NVMain toolchain - a mixed-clock-domain efficiency metric, two
 silently ignored parameter families (leakage and access energy), a
 technology-blind static-power default, single-rank power reported as
@@ -70,8 +70,10 @@ basis, heterogeneous host-CPU frequencies that replayed each technology
 against a different offered load and admitted trace population, an
 unsourced DDR5 CAS/RCD/RP timing placeholder, and unsourced ReRAM MLC
 read/write latency and energy penalty multipliers attributed to a
-citation that does not support them - of which this work repaired
-eleven, validating every repair against device-level anchors (0.0%
+citation that does not support them (later found to include a further,
+independent data error in the MLC read-latency figure, also corrected)
+- of which this work repaired twelve, validating every repair against
+device-level anchors (0.0%
 error) or exact predicted arithmetic, and re-running the affected
 simulations (the DRAM and PCM baselines model standard idle behavior;
 ReRAM figures are worst-case ungated). (3)
@@ -304,11 +306,11 @@ inference remains DDR5 territory.
     bits per cell \[13\]. Recognizing that NVSim lacks native support for
     the complex Analog-to-Digital (ADC) sensing and Iterative
     Step-and-Verify (ISPV) programming required for MLC, I implemented
-    an Analytical Penalty Method (1.917x read latency, 3.263x write
+    an Analytical Penalty Method (1.5x read latency, 3.263x write
     latency, 1.1x read energy, 3.0x write energy, measured on the same
     EMBER macro\'s two publications - Upton et al. \[6\], ESSCIRC 2023,
-    Table I, for the read-side figures, and Levy et al. \[31\], IEEE JSSC
-    2024, Section V, for the write-side figures - see Appendix A for
+    Table I, for the read-energy figure, and Levy et al. \[31\], IEEE JSSC
+    2024, Section V, for the read-latency and write-side figures - see Appendix A for
     the full derivation) rather than relying on NVSim\'s native MLC
     implementation, which triggers a floating-point exception in
     Mat.cpp\'s ISPV sensing logic.
@@ -411,7 +413,7 @@ FinFET LOP, 1.4 V ReadVoltage nominal).]
   [19.80],
   [#strong[1T1R MLC\*]],
   [20F²],
-  [61.60],
+  [48.20],
   [105.33],
   [1.31],
   [5.21],
@@ -427,7 +429,7 @@ FinFET LOP, 1.4 V ReadVoltage nominal).]
   [2.28],
   [#strong[1S1R MLC\*]],
   [4F²],
-  [99.93],
+  [78.20],
   [237.85],
   [7.45],
   [7.41],
@@ -436,7 +438,7 @@ FinFET LOP, 1.4 V ReadVoltage nominal).]
 )
 ]
 
-#emph[\*MLC rows apply the Analytical Penalty Method (1.917x read
+#emph[\*MLC rows apply the Analytical Penalty Method (1.5x read
 latency, 3.263x write latency, 1.1x read energy, 3.0x write energy -
 Section 3.1.6, item 13); leakage and die area are unchanged. Sources:
 results/hardware\_metrics.json; Sections 2.1-2.2.]
@@ -611,10 +613,10 @@ averages 374.50 cycles at 800 MHz (468.12 ns), compared to DDR5-4800 at
 from its higher operating frequency. The efficiency implications under
 streaming are governed by each technology\'s leakage tier and are
 quantified in Section 3.1.3. This workload also exposes the limits of
-Multi-Level Cells: the 1S1R MLC latency spikes to 1549.42 cycles
-(1936.78 ns), as continuous write-pressure backs up the FRFCFS
+Multi-Level Cells: the 1S1R MLC latency spikes to 1062.99 cycles
+(1328.74 ns), as continuous write-pressure backs up the FRFCFS
 controller queue with ISPV programming operations, increasing average
-total latency by 4.1x relative to 1T1R SLC (2.9x relative to its own
+total latency by 2.8x relative to 1T1R SLC (2.0x relative to its own
 1S1R SLC sibling).
 
 #block(breakable: false)[
@@ -657,9 +659,9 @@ To explicitly isolate and prove the MLC write penalty, I engineered a
 \"Write-Torture\" test by comparing the Input Feature Map (IFMAP) and
 Output Feature Map (OFMAP) traces of AlexNet Layer 1 #strong[(Figures 4
 and 5)]. The data reveals a severe architectural bottleneck. Under the
-read-heavy IFMAP workload, 1S1R MLC averages 948.74 cycles. However,
+read-heavy IFMAP workload, 1S1R MLC averages 550.82 cycles. However,
 under the write-heavy OFMAP workload, the 1S1R MLC latency spikes to
-3335.20 cycles - just over 3× degradation compared to its SLC
+2412.40 cycles - just over 2× degradation compared to its SLC
 counterpart (1081.98 cycles). This empirical gap confirms the analytical
 penalty method implemented in my simulation stack: MLC ReRAM incurs a
 severe latency tax during write operations, dictating that MLC
@@ -673,11 +675,11 @@ only writes (13,542) - and every technology replays the identical pair.
 The write-side degradation factor (OFMAP over IFMAP average latency)
 therefore ranks write tolerance directly: DDR5 is nearly
 read/write-symmetric at 1.08x, 1T1R SLC degrades 2.1x, 1S1R SLC 2.6x,
-1T1R MLC 2.8x, 1S1R MLC 3.5x, and PCM 3.6x. Two device-level facts from
+1T1R MLC 3.2x, 1S1R MLC 4.4x, and PCM 3.6x. Two device-level facts from
 Table 1 sit beneath that ranking. The selector prices writes
 intrinsically: a 1S1R write costs 1.4x its read at the device (72.9 vs
-52.1 ns) before ISPV programming multiplies it toward 1.9x for MLC
-(291.6 vs 156.4 ns). The access transistor, by contrast, makes the 1T1R
+52.1 ns) before ISPV programming multiplies it toward 3.0x for MLC
+(237.9 vs 78.2 ns). The access transistor, by contrast, makes the 1T1R
 device almost perfectly symmetric (32.3 vs 32.1 ns) - so 1T1R\'s 2.1x
 system-level degradation measures burst structure and bank pressure
 under the write stream, not cell physics, and marks the asymmetry floor
@@ -727,49 +729,49 @@ suite, complementing the per-workload bar charts.
   [6,399.2],
   [130.9],
   [190.3],
-  [223.2],
-  [354.2],
+  [182.6],
+  [288.5],
   [#strong[LBM]],
   [271.5],
   [7,363.4],
   [468.1],
   [662.1],
-  [871.2],
-  [1,537.6],
+  [809.7],
+  [1,328.7],
   [#strong[STREAM]],
   [299.9],
   [7,666.5],
   [591.5],
   [890.3],
-  [1,081.8],
-  [1,837.7],
+  [977.0],
+  [1,675.7],
   [#strong[GPT-2]],
   [100.3],
   [1,816.1],
   [458.4],
   [618.4],
-  [698.4],
-  [998.4],
+  [588.4],
+  [828.4],
   [#strong[AlexNet IFMAP]],
   [118.6],
   [1,438.0],
   [397.4],
   [523.9],
-  [586.7],
-  [822.3],
+  [500.2],
+  [688.5],
   [#strong[AlexNet OFMAP]],
   [124.7],
   [5,209.3],
   [819.7],
   [1,352.5],
-  [1,722.1],
-  [3,200.7],
+  [1,602.3],
+  [3,015.5],
 )
 ]
 
 #emph[Wall-clock nanoseconds (clock domains: ReRAM 800 MHz, PCM 400 MHz,
 DDR5 2400 MHz). Source:
-results/system\_v5/processed\_bar\_chart\_metrics.csv.]
+results/system\_v6/processed\_bar\_chart\_metrics.csv.]
 
 === 3.1.2 Power Analysis: Static Leakage Dominance
 <power-analysis-static-leakage-dominance>
@@ -879,7 +881,7 @@ per-technology access energies (Section 3.1.6, items 10 and 13), each
 MLC write also costs 3.0x its SLC counterpart in energy, and under lbm
 the energy
 penalty outweighs the throughput throttling: 1T1R MLC dynamic power
-reaches 149.7 mW against SLC\'s 140.6 mW. At module scale, both variants
+reaches 162.1 mW against SLC\'s 140.6 mW. At module scale, both variants
 remain pinned to the same 50.9 W static tier, reconfirming that ReRAM
 DIMMs are fundamentally bounded by their static peripheral leakage
 rather than dynamic cell activity.
@@ -893,7 +895,7 @@ under the STREAM benchmark.]
 
 The standard stream benchmark (Figure 10) follows the same direction as
 lbm rather than reversing it: 1T1R SLC dynamic power reaches 99.5 mW
-while MLC now draws more, at 110.1 mW, because the corrected
+while MLC now draws more, at 121.7 mW, because the corrected
 write-latency penalty (3.263x, Section 3.1.6, item 13) throttles MLC
 throughput less than the earlier unsourced 4x estimate implied, so more
 energy-costly writes complete per second than the write-side energy
@@ -926,12 +928,12 @@ severe latency penalty incurred during OFMAP writes (as established in
 Section 3.1.1), no configuration exhibits a power spike large enough to
 threaten the static tier - OFMAP dynamic power is lower than IFMAP
 dynamic power for 1T1R SLC (87.7 vs. 122.2 mW) and for both 1S1R
-variants (120.6 vs. 163.3 mW SLC; 105.6 vs. 110.4 mW MLC), because slow
+variants (120.6 vs. 163.3 mW SLC; 112.1 vs. 131.4 mW MLC), because slow
 ISPV write operations throttle request throughput enough to offset the
 higher energy per write. 1T1R MLC is the exception: its corrected,
 less-severe write-latency penalty throttles throughput less than the
 SLC comparison would suggest, so OFMAP\'s higher per-write energy edges
-narrowly ahead of IFMAP\'s (111.1 vs. 85.2 mW) - a genuine but small
+narrowly ahead of IFMAP\'s (119.5 vs. 99.5 mW) - a genuine but small
 reversal (both values sit three orders of magnitude below the 50.9 W
 static tier) that does not disturb the section\'s conclusion: extended
 write durations never translate into a power spike large enough to
@@ -969,42 +971,42 @@ module-sum semantics.]
   [0.042],
   [50.999],
   [1.304],
-  [51.008],
-  [1.249],
+  [51.020],
+  [1.276],
   [#strong[STREAM]],
   [0.702],
   [0.042],
   [50.957],
   [1.210],
-  [50.968],
-  [1.192],
+  [50.980],
+  [1.202],
   [#strong[GPT-2]],
   [0.647],
   [0.036],
   [50.965],
   [1.233],
-  [50.930],
-  [1.181],
+  [50.944],
+  [1.202],
   [#strong[AlexNet IFMAP]],
   [0.749],
   [0.036],
   [50.980],
   [1.246],
-  [50.943],
-  [1.192],
+  [50.958],
+  [1.213],
   [#strong[AlexNet OFMAP]],
   [0.775],
   [0.044],
   [50.948],
   [1.205],
-  [50.969],
-  [1.188],
+  [50.977],
+  [1.194],
 )
 ]
 
 #emph[ReRAM figures are worst-case ungated (NVMain power-down disabled
 in source); DRAM/PCM baselines model standard idle behavior. Source:
-results/system\_v5/processed\_bar\_chart\_metrics.csv.]
+results/system\_v6/processed\_bar\_chart\_metrics.csv.]
 
 === 3.1.3 Power-Delay Product (PDP): The Architectural Sweet Spot
 <power-delay-product-pdp-the-architectural-sweet-spot>
@@ -1039,7 +1041,7 @@ baselines, DDR5 posts 56.8 W·ns under GCC and 64.9 under GPT-2 (Figure
 14); ungated 1S1R SLC trails DDR5 by roughly 3.7x under GCC, and the
 ungated 1T1R family is uncompetitive at any operating point. Cell-level
 density still costs efficiency within each family - MLC multiplies the
-delay term (400.3 vs. 212.8 W·ns for 1S1R under GCC) - but the deciding
+delay term (326.1 vs. 212.8 W·ns for 1S1R under GCC) - but the deciding
 term is now leakage class, not cell type.
 
 #image("media/media/image14.png", width: 6.5in, height: 3.816531058617673in)
@@ -1053,8 +1055,8 @@ memory-streaming workloads (LBM SPEC2017 and STREAM).]
 
 Under maximum bandwidth pressure (Figures 15 and 16), the repaired
 ordering persists: 1S1R SLC posts 863.4 W·ns under lbm and 1,077.0 under
-stream, with its MLC sibling at roughly 2.0-2.2x those values (1,920.1
-and 2,190.3 W·ns) as streaming amplifies every write-side penalty, and
+stream, with its MLC sibling at roughly 1.9x those values (1,696.0
+and 2,014.4 W·ns) as streaming amplifies every write-side penalty, and
 the 1T1R family remains more than an order of magnitude further adrift
 (23,874 W·ns for 1T1R SLC under lbm). DDR5 holds a \~4.5-5x edge over
 ungated 1S1R SLC in the streaming regime (193.2 and 210.4 W·ns).
@@ -1072,9 +1074,9 @@ write-latency penalty on system efficiency.]
 Finally, the PDP diagnostics explicitly map the efficiency limits of
 density scaling within the viable selector family. Under the read-heavy
 AlexNet IFMAP (Figure 17), moving from 1S1R SLC to the ultra-dense 1S1R
-MLC topology incurs a 1.5x PDP increase (652.5 to 980.6 W·ns). Under
+MLC topology incurs a 1.3x PDP increase (652.5 to 835.5 W·ns). Under
 the write-heavy AlexNet OFMAP trace (Figure 18), the 1S1R MLC PDP spikes
-to 3,801.3 W·ns - 2.3x its SLC sibling\'s 1,629.2. This confirms a
+to 3,601.1 W·ns - 2.2x its SLC sibling\'s 1,629.2. This confirms a
 strict efficiency tax for density: MLC solves the physical capacity
 problem, but its iterative write penalties still degrade overall
 system efficiency under active write stress, even though the corrected
@@ -1105,56 +1107,56 @@ six-workload geometric means.]
   [254.0],
   [6,659.3],
   [212.8],
-  [11,357.7],
-  [400.3],
+  [9,291.6],
+  [326.1],
   [#strong[LBM]],
   [193.2],
   [311.7],
   [23,873.5],
   [863.4],
-  [44,440.1],
-  [1,920.1],
+  [41,311.1],
+  [1,696.0],
   [#strong[STREAM]],
   [210.4],
   [325.5],
   [30,139.9],
   [1,077.0],
-  [55,138.1],
-  [2,190.3],
+  [49,804.8],
+  [2,014.4],
   [#strong[GPT-2]],
   [64.9],
   [65.8],
   [23,363.0],
   [762.5],
-  [35,570.0],
-  [1,179.6],
+  [29,975.6],
+  [995.5],
   [#strong[AlexNet IFMAP]],
   [88.8],
   [52.2],
   [20,260.2],
   [652.5],
-  [29,888.6],
-  [980.6],
+  [25,488.8],
+  [835.5],
   [#strong[AlexNet OFMAP]],
   [96.7],
   [230.4],
   [41,763.3],
   [1,629.2],
-  [87,775.2],
-  [3,801.3],
+  [81,681.9],
+  [3,601.1],
   [#strong[Geometric mean]],
   [104.3],
   [165.3],
   [21,350.6],
   [737.1],
-  [37,074.9],
-  [1,396.1],
+  [32,567.1],
+  [1,222.4],
 )
 ]
 
 #emph[PDP \= total module power x average request latency. ReRAM
 worst-case ungated; DRAM/PCM standard idle (Section 3.1.6, item 5).
-Source: results/system\_v5 processed CSVs.]
+Source: results/system\_v6 processed CSVs.]
 
 === #strong[3.1.4 Endurance Viability Analysis]
 <endurance-viability-analysis>
@@ -1221,9 +1223,9 @@ capacity).
 †Lifetimes scale linearly with module capacity; the 64 GB column
 reflects a commodity server-class module, where ReRAM\'s density
 advantage is realized. Directly measured MLC lifetimes at the physical
-16 GB module under LBM: 0.42 years for 1T1R MLC (1,706,535 writes in
-83.33 ms at 20.5 M/s) and 0.75 years for 1S1R selector MLC (942,439
-writes at 11.3 M/s); even at 128 GB these reach only 3.3 and 6.0 years
+16 GB module under LBM: 0.39 years for 1T1R MLC (1,824,503 writes in
+83.33 ms at 21.9 M/s) and 0.65 years for 1S1R selector MLC (1,090,741
+writes at 13.1 M/s); even at 128 GB these reach only 3.09 and 5.18 years
 respectively. All lifetimes assume uniform wear leveling.
 
 The results reframe endurance as a capacity- and workload-dependent
@@ -1240,8 +1242,8 @@ linearly with capacity: at the 64-128 GB module sizes where ReRAM\'s
 density advantage is actually realized, worst-case SLC lifetime reaches
 9-17 years (the slower-writing selector variant, 12-25), meeting the
 target at 64 GB and exceeding it at 128 GB. MLC is harsher: at its
-physical 16 GB module the measured LBM lifetimes are 0.42 years (1T1R)
-and 0.75 years (1S1R), and even at 128 GB they remain below or marginal
+physical 16 GB module the measured LBM lifetimes are 0.39 years (1T1R)
+and 0.65 years (1S1R), and even at 128 GB they remain below or marginal
 to the target - an independent endurance argument for restricting MLC to
 read-dominant deployments that converges with the write-latency argument
 of Section 3.1.1. Endurance is therefore not a categorical barrier but a
@@ -1292,10 +1294,10 @@ robust to process variation in the ReadVoltage operating point.]
 === #strong[3.1.6 Simulation-Fidelity Audit: Where the Toolchain Could Not Be Trusted - and How It Was Repaired]
 <simulation-fidelity-audit-where-the-toolchain-could-not-be-trusted---and-how-it-was-repaired>
 A systematic audit of the NVSim-to-NVMain flow, conducted against the
-raw simulator sources and statistics files, found thirteen silent
+raw simulator sources and statistics files, found fourteen silent
 failure modes that bounded which conclusions this evaluation could
 honestly draw - across the ReRAM configurations, the metrics pipeline,
-and both non-ReRAM baselines. Eleven of the thirteen have since been
+and both non-ReRAM baselines. Twelve of the fourteen have since been
 repaired in this project\'s toolchain, with the affected simulations
 re-run; every power and PDP figure in this book derives from the
 resulting repaired dataset.
@@ -1467,20 +1469,48 @@ for the real multipliers - including two independent research-assistant
 passes, both of which initially overreached with unverifiable claims
 that had to be retracted under direct primary-source checking - located
 the actual measured figures on the same EMBER macro\'s full journal
-publication (Levy et al. \[31\], IEEE JSSC 2024, Section V): read latency 12/23 ns and read energy
+publication (Levy et al. \[31\], IEEE JSSC 2024, Section V): read energy
 1.0/1.1 pJ/bit at 1/2 bits per cell (from the ESSCIRC precursor\'s own
 Table I), write-verify bandwidth 12.4/3.8 Mbps and write-verify energy
 0.40/1.2 nJ/bit at 1/2 bits per cell (from the JSSC follow-up, which the
-ESSCIRC paper\'s page budget omitted entirely). The corrected
-multipliers - 1.917x read latency, 3.263x write latency, 1.1x read
-energy, 3.0x write energy - replace the unsourced 3x/4x/3x/3x set; write
-energy happens to be numerically unchanged (3.0x both times), while the
-read-energy correction is the largest single change (3.0x to 1.1x). All
-8 MLC configurations were re-simulated across all 6 benchmark traces
-under the corrected multipliers; MLC latency fell 20.6-34.9% and MLC
-dynamic power shifted in both directions depending on workload mix
-(Sections 3.1.2 and 3.1.3 detail the resulting, occasionally
-sign-flipping, per-workload comparisons against SLC).
+ESSCIRC paper\'s page budget omitted entirely). At this stage the
+read-latency multiplier was set to 1.917x, derived by pairing EMBER\'s
+own 12 ns read time with a "23 ns" figure read off the same ESSCIRC
+Table I - a derivation later found to be itself in error (see item
+(14)). The write-latency, read-energy, and write-energy multipliers -
+3.263x, 1.1x, 3.0x respectively - replace the unsourced 3x/3x/3x set and
+remain correct; write energy happens to be numerically unchanged (3.0x
+both times), while the read-energy correction is the largest single
+change of the three (3.0x to 1.1x). All 8 MLC configurations were
+re-simulated across all 6 benchmark traces under the multipliers as
+understood at this stage (Sections 3.1.2 and 3.1.3, in their original
+form, detailed the resulting per-workload comparisons against SLC;
+those sections now reflect item (14)\'s further correction).
+
+(14) Found and fixed: item (13)\'s 1.917x read-latency multiplier was
+itself a data error, caught by an independent citation-verification
+pass that read Upton et al.\'s \[6\] Table I directly rather than trusting
+the prior derivation. The table\'s "Read Time (1 b)" row lists five
+macros side by side - EMBER (This Work) at 12 ns, and four competing
+designs, including reference [9] (T. F. Wu et al., ISSCC 2019) at 23
+ns - and every entry in that row, including EMBER\'s own, is explicitly
+scoped to #emph[1-bit/cell] operation. The "23 ns" is [9]\'s own
+1-bit/cell read time, not EMBER\'s 2-bit/cell number; EMBER\'s ESSCIRC
+paper never reports a 2-bit/cell read latency at all. Re-deriving from
+EMBER\'s own data: the JSSC 2024 follow-up (Levy et al. \[31\], Section
+V.A and Abstract) states "1 b/cell read operation with 1.0 pJ/bit
+energy at 2.4 Gbps, and 2 b/cell read with 1.1 pJ/bit at 1.6 Gbps" -
+giving a clean 1.5x read-latency multiplier (2.4/1.6 Gbps) via the same
+bandwidth-ratio methodology already used for the write-latency
+multiplier (12.4/3.8 Mbps -\> 3.263x). The corrected 1.5x is milder
+than the erroneous 1.917x, not harsher: MLC read latency was
+previously over-penalized. All 8 MLC configurations were re-simulated
+across all 6 benchmark traces under the corrected multiplier; MLC
+latency fell a further 5.5-18.6% and MLC PDP fell 0.7-18.6% relative to
+the item (13) dataset (Sections 3.1.2 and 3.1.3 reflect the corrected
+figures throughout; Section 3.1.4\'s LBM endurance lifetimes were
+likewise recomputed, since faster reads let more total requests -
+including writes - complete within the fixed simulation window).
 
 A dedicated NVSim sensitivity sweep, prompted by a related citation
 question over the HRS resistance target (Appendix A), separately
@@ -1545,7 +1575,7 @@ supply high-MLP workloads.
 The Pareto trajectory for AlexNet OFMAP (Figure 23) reveals the most
 extreme manifestation of the write-penalty scaling wall. Under sustained
 write pressure, the 1S1R MLC configuration suffers a PDP spike to
-3,801.3 W·ns against 1,629.2 W·ns for 1S1R SLC - a 2.3x write-torture
+3,601.1 W·ns against 1,629.2 W·ns for 1S1R SLC - a 2.2x write-torture
 tax within the selector family - while the 1T1R family, whatever its
 latency behavior, is priced out entirely by its 50.9 W leakage floor
 (41,763.3 W·ns for 1T1R SLC). This confirms that high-density
@@ -1779,7 +1809,7 @@ original documented current-magnitude derivation and re-run under the
 item (12) DDR5 timing correction, confirming the same \~4.8% relative
 increase the hynix-floor figure carried; see Section 3.1.6, item 8), PCM
 165.3, 1S1R SLC
-737.1, 1S1R MLC 1,396.1, 1T1R SLC 21,350.6, and 1T1R MLC 37,074.9. The
+737.1, 1S1R MLC 1,222.4, 1T1R SLC 21,350.6, and 1T1R MLC 32,567.1. The
 selector\'s 47x standby discipline
 cleanly partitions the ReRAM family: ungated 1T1R is not a viable DDR5
 successor at any cell density (50.9 W per module, 65-78x DDR5) - the
@@ -1886,18 +1916,18 @@ summary of the entire evaluation.
   [24.8 yr],
   [flagship: one gating policy from DDR5 parity],
   [#strong[1T1R MLC]],
-  [223.2],
+  [182.6],
   [50.877],
-  [37,074.9],
+  [32,567.1],
   [0.44],
-  [3.3 yr],
+  [3.1 yr],
   [infeasible ungated],
   [#strong[1S1R MLC]],
-  [354.2],
+  [288.5],
   [1.130],
-  [1,396.1],
+  [1,222.4],
   [3.84],
-  [6.0 yr],
+  [5.2 yr],
   [read-only capacity tier (frozen weights)],
 )
 ]
@@ -1919,7 +1949,7 @@ This research delivers two things: a rigorous cross-layer
 characterization of 22nm ReRAM as a DDR5 alternative - whose headline is
 that selector-gated ReRAM sits one credible gating policy from DDR5
 power parity - and a quantified fidelity audit of the standard
-NVSim-to-NVMain toolchain in which eleven of thirteen discovered failure
+NVSim-to-NVMain toolchain in which twelve of fourteen discovered failure
 modes were repaired - spanning the ReRAM configurations, the metrics
 pipeline, and both non-ReRAM baselines - each repair validated by exact
 anchor arithmetic and an independent blind re-verification, with the
@@ -1974,9 +2004,9 @@ workload-dependent rather than uniform. Under compute-bound traces such
 as GCC, where memory requests arrive infrequently, MLC write latency is
 absorbed by the memory controller queue with negligible impact on
 average read latency. Under continuous streaming workloads such as LBM
-and STREAM, the penalty compounds: 1T1R MLC latency reaches 1,128 ns
-compared to 468 ns for 1T1R SLC, and 1S1R MLC reaches 1,937 ns (Figure
-2) - 2.4x and 4.1x slowdowns that make MLC unsuitable for
+and STREAM, the penalty compounds: 1T1R MLC latency reaches 809.7 ns
+compared to 468 ns for 1T1R SLC, and 1S1R MLC reaches 1,328.7 ns (Figure
+2) - 1.7x and 2.8x slowdowns that make MLC unsuitable for
 bandwidth-saturating applications.
 
 Power analysis (3.1.2), executed on the repaired power model,
@@ -1995,7 +2025,7 @@ scope by the repaired model (with the ungated-ReRAM caveat attached
 throughout), inverts the intra-ReRAM hierarchy: 1S1R SLC (geometric mean
 737.1 W·ns) dominates 1T1R SLC (21,350.6) by 29x, because the leakage
 term dwarfs the latency term; DDR5 stands at 104.3 W·ns and PCM at 165.3.
-Density still costs efficiency within each family (1S1R MLC at 1,396.1),
+Density still costs efficiency within each family (1S1R MLC at 1,222.4),
 but leakage class - not cell type - decides the ranking.
 
 Endurance analysis (3.1.4) addressed the most common objection to
@@ -2187,24 +2217,32 @@ data, has been made publicly available.
   times$) across the swept range. The exact HRS value is therefore
   not load-bearing for any headline finding in this book.
 
-- #strong[MLC Penalties:] 1.917x Read Latency, 3.263x Write Latency,
+- #strong[MLC Penalties:] 1.5x Read Latency, 3.263x Write Latency,
   1.1x Read Energy, 3.0x Write Energy (2 bits/cell vs. 1 bit/cell).
   #emph[Reference:] Directly measured on the same EMBER macro, across
-  its two publications by the same author group. Read-side figures
-  (12 ns/23 ns latency, 1.0/1.1 pJ/bit energy at 1/2 b per cell) are
-  from #strong[Upton et al. \[6\]] (ESSCIRC 2023), Table I. Write-side
-  figures (12.4/3.8 Mbps write-verify bandwidth, 0.40/1.2 nJ/bit energy
-  at 1/2 b per cell) are from the journal follow-up, #strong[Levy et
-  al. \[31\]] (IEEE JSSC 2024) - the ESSCIRC conference paper reports no
-  write-verify data split by bits-per-cell (only an aggregate,
-  non-split SET/RESET pulse-energy estimate); the JSSC paper is where
-  the bits-per-cell-split data first appears. Earlier drafts of this
-  book used unsourced
-  3x/4x placeholder multipliers for read/write latency, attributed to
-  "EMBER Macro analytical heuristics" that do not exist in either EMBER
-  publication; those figures have been replaced with the measured
-  values above (Section 3.1.6 documents the correction and the
-  resulting re-simulation).
+  its two publications by the same author group. Read energy (1.0/1.1
+  pJ/bit at 1/2 b per cell) is from #strong[Upton et al. \[6\]] (ESSCIRC
+  2023), Table I. Read latency, write-verify bandwidth, and write-verify
+  energy are all from the journal follow-up, #strong[Levy et al. \[31\]]
+  (IEEE JSSC 2024): read bandwidth 2.4/1.6 Gbps at 1/2 b per cell
+  (Section V.A / Abstract) gives the 1.5x read-latency multiplier via
+  the same bandwidth-ratio method as write-latency; write-verify
+  bandwidth 12.4/3.8 Mbps and write-verify energy 0.40/1.2 nJ/bit at 1/2
+  b per cell (Section V.B) give the 3.263x and 3.0x multipliers. The
+  ESSCIRC conference paper reports no write-verify data split by
+  bits-per-cell (only an aggregate, non-split SET/RESET pulse-energy
+  estimate) and no 2-bit/cell read-latency figure at all - its Table I
+  "Read Time (1 b)" row lists only 1-bit/cell numbers for every compared
+  macro, including EMBER's own. Earlier drafts of this book used
+  unsourced 3x/4x placeholder multipliers attributed to "EMBER Macro
+  analytical heuristics" that do not exist in either EMBER publication;
+  a subsequent correction replaced these with 1.917x/3.263x/1.1x/3.0x,
+  but the 1.917x read-latency figure was itself a data error - it paired
+  EMBER's own 12 ns read time with a "23 ns" figure that Table I
+  attributes to a different, competing macro's 1-bit/cell measurement,
+  not EMBER's 2-bit/cell number. The 1.5x figure above corrects this
+  using EMBER's own bandwidth data (Section 3.1.6, items 13 and 14
+  document both correction rounds and the resulting re-simulations).
 
 - #strong[Bit-Cell Area:] $20 med F^2$ for 1T1R, $4 med F^2$ for 1S1R.
   #emph[Justification:] $20 med F^2$ reflects the physical reality of

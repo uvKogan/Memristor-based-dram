@@ -4,15 +4,17 @@
 **Supervisor:** Prof. Shahar Kvatinsky
 **Generated:** 2026-08-16 (Hardfork — regenerated from `documents/MBMM_Book_Typst/Project_Book.typ`,
 the canonical, compile-verified edition of the Project Book, now including the reference-audit and
-re-simulation cycle summarized in §3 below)
+re-simulation cycle summarized in §3 below); **updated in place 2026-08-22** with item (14)'s
+MLC read-latency correction and 4 bonus stale-data fixes (§1.3, §2.3, §3, §5 all reflect this).
 
 **Supersedes:** the 2026-07-22 hardfork of this file, now archived at
 `archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-08-16.md` (the version *before that* is
 `archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-07-22.md`).
 That version's DDR5 timing, MLC read/write penalty multipliers, and every number derived from them
 (Findings 2 and 4 below, the §1.3 table, §2.3, §3's audit-item count) have since been corrected by
-the work in §3, items (12) and (13). Do not cite the 2026-07-22 version's DDR5 or MLC-specific
-numbers; its qualitative structure (Findings 1, 3, and the density baseline) is still accurate and
+the work in §3, items (12), (13), and (14). Do not cite the 2026-07-22 version's DDR5 or MLC-specific
+numbers, or this file's own pre-2026-08-22 MLC read-latency/geo-mean-PDP figures (superseded by item
+(14)); its qualitative structure (Findings 1, 3, and the density baseline) is still accurate and
 carried forward unchanged.
 
 ---
@@ -88,11 +90,13 @@ lifetimes are **0.42 years for 1T1R MLC** (was 0.54 — 1,706,535 writes per 83.
 write-latency one) for restricting MLC to read-dominant deployments, now with a somewhat sharper
 edge than previously reported.
 
-**Finding 5 — A Simulation-Fidelity Audit found thirteen silent failure modes; eleven were
-repaired (count and two items added since the prior doc, both in §3).** See §3 for the full list.
-In short: the toolchain — and, this cycle, the *book's own bibliography* — was silently producing
-numbers that looked plausible but weren't measuring or citing what they claimed to. Two of the
-thirteen remain open (idle-power gating is simulated nowhere in the current NVMain fork; the GPT-2
+**Finding 5 — A Simulation-Fidelity Audit found fourteen silent failure modes; twelve were
+repaired (count and three items added since the prior doc, all in §3 — items 12/13 from the
+DDR5-timing/MLC-multiplier cycle, item 14 from a later re-verification of item 13 itself).** See §3
+for the full list. In short: the toolchain — and, across two cycles, the *book's own bibliography* —
+was silently producing numbers that looked plausible but weren't measuring or citing what they
+claimed to, including a "corrected" figure that turned out to need a second correction. Two of the
+fourteen remain open (idle-power gating is simulated nowhere in the current NVMain fork; the GPT-2
 trace's SCALE-Sim provenance couldn't be confirmed against a preserved run) — both are disclosed as
 residual limitations in the book, not silently absorbed into the headline numbers.
 
@@ -106,18 +110,34 @@ standard-idle DRAM & PCM)
 | PCM (Lee et al. 2009) | 6,399.2 | 0.040 | 165.3 | 1.25 | not evaluated | floor-power NVM; 4–49× latency cost |
 | 1T1R SLC | 130.9 | 50.870 | 21,350.6 | 0.22 | 17.3 yr | latency-optimized niche; infeasible ungated |
 | **1S1R SLC** | 190.3 | 1.118 | 737.1 | 1.92 | 24.8 yr | **flagship: one gating policy from DDR5 parity** |
-| 1T1R MLC | 223.2 | 50.877 | 37,074.9 | 0.44 | 3.3 yr | infeasible ungated |
-| 1S1R MLC | 354.2 | 1.130 | 1,396.1 | 3.84 | 6.0 yr | read-only capacity tier (frozen weights) |
+| 1T1R MLC | 182.6 | 50.877 | 32,567.1 | 0.44 | 3.1 yr | infeasible ungated |
+| 1S1R MLC | 288.5 | 1.130 | 1,222.4 | 3.84 | 5.2 yr | read-only capacity tier (frozen weights) |
 
-**What changed vs. the 2026-07-22 doc:** DDR5's GCC latency rose 81.2→87.2 ns (+7.5%) and geo-mean
-PDP 99.5→104.3 W·ns (+4.8%) — the corrected `tCAS`/`tRCD`/`tRP` timing (34-34-34→40-39-39, §3 item
-12) diluted into total latency once blended with the unaffected `tRAS`/`tWR`/refresh components.
-Both MLC rows dropped substantially: 1T1R MLC latency 330.2→223.2 ns (-32.4%) and geo-mean PDP
-50,426.6→37,074.9 W·ns (-26.5%); 1S1R MLC latency 544.4→354.2 ns (-34.9%) and geo-mean PDP
-1,991.4→1,396.1 W·ns (-29.9%) — the corrected read/write latency multipliers (1.917×/3.263×, down
-from the unsourced 3.0×/4.0×, §3 item 13) throttle MLC access less severely than previously modeled.
-DDR5 power and both SLC rows are unaffected (neither fix touches SLC device characterization or
-DDR5's IDD/energy calibration) — confirmed byte-identical across the re-simulation.
+**What changed vs. the 2026-07-22 doc (items 12/13, DDR5 timing + first MLC-multiplier fix):** DDR5's
+GCC latency rose 81.2→87.2 ns (+7.5%) and geo-mean PDP 99.5→104.3 W·ns (+4.8%) — the corrected
+`tCAS`/`tRCD`/`tRP` timing (34-34-34→40-39-39, §3 item 12) diluted into total latency once blended
+with the unaffected `tRAS`/`tWR`/refresh components. Both MLC rows dropped substantially: 1T1R MLC
+latency 330.2→223.2 ns (-32.4%) and geo-mean PDP 50,426.6→37,074.9 W·ns (-26.5%); 1S1R MLC latency
+544.4→354.2 ns (-34.9%) and geo-mean PDP 1,991.4→1,396.1 W·ns (-29.9%) — the corrected read/write
+latency multipliers (1.917×/3.263×, down from the unsourced 3.0×/4.0×, §3 item 13) throttle MLC
+access less severely than previously modeled. DDR5 power and both SLC rows are unaffected (neither
+fix touches SLC device characterization or DDR5's IDD/energy calibration) — confirmed byte-identical
+across the re-simulation.
+
+**What changed since then (item 14, 2026-08-22 — item 13's own read-latency figure was itself
+wrong):** an independent citation-verification pass found the 1.917× read-latency multiplier paired
+EMBER's own 12 ns read time with a "23 ns" figure that actually belongs to a *different* competing
+macro's 1-bit/cell measurement in the same comparison table — EMBER's ESSCIRC paper never reports a
+2-bit/cell read latency at all. Re-derived from EMBER's own JSSC 2024 data (2.4/1.6 Gbps read
+bandwidth at 1/2 bits/cell) using the same bandwidth-ratio method already validated for write-latency,
+giving a corrected **1.5×** read-latency multiplier — milder than the erroneous 1.917×, since MLC
+reads were previously over-penalized. Table values above reflect this: 1T1R MLC latency
+223.2→182.6 ns (-18.2%) and geo-mean PDP 37,074.9→32,567.1 W·ns (-12.2%); 1S1R MLC latency
+354.2→288.5 ns (-18.6%) and geo-mean PDP 1,396.1→1,222.4 W·ns (-12.4%). LBM's service-limited write
+counts also rose (faster reads let more total requests complete in the fixed window), pushing
+worst-case @128GB lifetime down slightly further: 1T1R MLC 3.3→3.1 yr, 1S1R MLC 6.0→5.2 yr. Write
+latency, read energy, and write energy (3.263×/1.1×/3.0×) were independently re-verified correct and
+unchanged. Non-MLC rows remain unaffected — confirmed byte-identical across this re-simulation too.
 
 **Headline reframe, still current:** selector-gated 1S1R SLC — not raw 1T1R latency — remains the
 flagship configuration. It trails DDR5 by only 1.7× on power at the conservative calibration floor
@@ -156,27 +176,42 @@ outright power parity — currently unsimulated (Finding 5 / §3, item 5).
 actually documents shipping 22nm eReRAM; the book text was reworded to drop the unconfirmed "1T1R"
 topology claim rather than assert something [24] doesn't state either.)
 
-### 2.3 SLC vs. MLC — multipliers and citations corrected, largest single change this cycle
+### 2.3 SLC vs. MLC — multipliers and citations corrected across two rounds; read latency needed a second fix
 MLC (2 bits/cell) requires Iterative Step-and-Verify (ISPV) programming and ADC-precision sensing;
 NVSim's native MLC logic is non-functional at 22nm (FPE in `Mat.cpp`), so MLC metrics are
 analytically derived from the SLC baseline via four multipliers applied to latency and energy. The
-prior doc's **3× read latency, 4× write latency, 3× access energy**, attributed to "EMBER-macro
+original doc's **3× read latency, 4× write latency, 3× access energy**, attributed to "EMBER-macro
 heuristics," were unsourced placeholders — that attribution does not exist in either EMBER
-publication, and the conference paper (Upton et al. [6], ESSCIRC 2023) reports no write-latency or
-write-energy data of any kind. The corrected multipliers, each traced to a real measured figure on
-the same EMBER macro across its two publications:
-- **Read latency 1.917×, read energy 1.1×** — Upton et al. [6] (ESSCIRC 2023) Table I: 1b/cell vs.
-  2b/cell read latency 12/23 ns, read energy 1.0/1.1 pJ/bit.
-- **Write latency 3.263×, write energy 3.0×** — Levy et al. [31] (IEEE JSSC 2024, the full journal
-  follow-up the conference paper's page budget omitted) Section III: 1b/cell vs. 2b/cell
-  write-verify bandwidth 12.4/3.8 Mbps, write-verify energy 0.40/1.2 nJ/bit.
+publication, and the conference paper (Upton et al. [6], ESSCIRC 2023) reports no write-verify data
+split by bits-per-cell (only an aggregate, non-split SET/RESET pulse-energy estimate). A first
+correction round (2026-08-16) replaced these with figures traced to real EMBER measurements, but one
+of the four — read latency — was itself derived incorrectly and needed a second fix (2026-08-22),
+caught by an independent citation-verification pass that read the source table directly rather than
+trusting the first round's derivation:
 
-Write energy is numerically unchanged (3.0× both times, now properly sourced instead of unsourced);
-the read-energy correction (3.0×→1.1×) is the largest single change of the four, and drives most of
-the MLC dynamic-power reordering described in §1.2's Finding 2 addendum. The prior doc's
-cross-reference to Le et al. [13] as a consistency check for the old placeholder values has been
-dropped — [13] uses a different multi-level resistance-encoding scheme with no comparable SLC
-baseline, so it never actually supported a specific multiplier value either way.
+- **Read latency 1.5×** — Levy et al. [31] (IEEE JSSC 2024, Section V.A / Abstract): "1 b/cell read
+  operation with 1.0 pJ/bit energy at 2.4 Gbps, and 2 b/cell read with 1.1 pJ/bit at 1.6 Gbps" — a
+  clean bandwidth ratio (2.4/1.6 Gbps), via the same method already used for write-latency. This
+  *replaces* the first round's **1.917×**, which paired EMBER's own 12 ns read time (real, from
+  Upton et al. [6] Table I) with a "23 ns" figure mistakenly assumed to be EMBER's 2-bit/cell read
+  time — direct re-reading of Table I found that 23 ns is actually reference [9]'s (a *different*,
+  competing macro) own 1-bit/cell measurement; every entry in that table row, including EMBER's, is
+  scoped to 1-bit/cell operation, and EMBER's ESSCIRC paper never reports a 2-bit/cell read latency
+  anywhere. The corrected 1.5× is milder than the erroneous 1.917× — MLC reads were over-penalized,
+  not under-penalized, in the first round.
+- **Read energy 1.1×** — Upton et al. [6] (ESSCIRC 2023) Table I: 1b/cell vs. 2b/cell read energy
+  1.0/1.1 pJ/bit. Independently re-verified correct in both rounds.
+- **Write latency 3.263×, write energy 3.0×** — Levy et al. [31] (IEEE JSSC 2024) Section V.B: 1b/cell
+  vs. 2b/cell write-verify bandwidth 12.4/3.8 Mbps, write-verify energy 0.40/1.2 nJ/bit.
+  Independently re-verified correct in both rounds.
+
+Write energy is numerically unchanged from the original placeholder (3.0× both times, now properly
+sourced instead of unsourced); the read-energy correction (3.0×→1.1×) was the largest single change
+of the first round. The read-latency correction (1.917×→1.5×) is the second round's only change, and
+drives the further MLC latency/PDP reduction described in §1.3. The original doc's cross-reference
+to Le et al. [13] as a consistency check for the placeholder values has been dropped — [13] uses a
+different multi-level resistance-encoding scheme with no comparable SLC baseline; it remains cited
+only as general multi-bit-per-cell precedent (book §2.3 bullet), not as a multiplier source.
 
 ### 2.4 Area Density Baseline — unchanged this cycle (see prior hardfork for the convention fix)
 - **DDR5 physical baseline:** 35 mm²/GB (commodity DDR5-4800 dies, Choe [18]).
@@ -190,14 +225,14 @@ baseline, so it never actually supported a specific multiplier value either way.
 
 ---
 
-## 3. Simulation-Fidelity Audit (extended this cycle — two new items, both "found and fixed")
+## 3. Simulation-Fidelity Audit (extended across two cycles — three new items, all "found and fixed")
 
 A systematic audit of the NVSim-to-NVMain flow (book §3.1.6), conducted against the raw simulator
-sources and statistics files, found **thirteen silent failure modes** that bounded which
-conclusions the evaluation could honestly draw — the last two found via a rigorous bibliography
-verification pass on the book itself, not the simulator. **Eleven of thirteen have been repaired**,
-with affected simulations re-run; every power and PDP figure in the current book derives from the
-resulting repaired dataset.
+sources and statistics files, found **fourteen silent failure modes** that bounded which
+conclusions the evaluation could honestly draw — items 12-13 found via a rigorous bibliography
+verification pass on the book itself, and item 14 found by re-verifying item 13's own citation work
+rather than trusting it. **Twelve of fourteen have been repaired**, with affected simulations
+re-run; every power and PDP figure in the current book derives from the resulting repaired dataset.
 
 | # | Failure mode | Status | Effect |
 |---|---|---|---|
@@ -213,7 +248,8 @@ resulting repaired dataset.
 | 10 | ReRAM access energies written under config keys NVMain never reads (dead keys, same class of bug as #2) | **Fixed** | Every ReRAM config had silently used identical stock access-energy constants despite a real 5.7× read-energy difference between 1T1R/1S1R |
 | 11 | Heterogeneous, unmatched host-CPU frequencies across technologies (800 MHz ReRAM host vs. 2/3 GHz others) with an unrescaled trace-admission cutoff | **Fixed** | Every technology now admits the identical request population per workload (matched-host correction: 250M-trace-cycle admission at a 3 GHz reference host, 83.33ms wall-clock for every configuration) |
 | 12 | DDR5's `tCAS`/`tRCD`/`tRP` timing (34-34-34 cycles) was an unsourced placeholder, no citation or datasheet attached | **Fixed (2026-08-16)** | Cross-referenced SK hynix's public DDR5 part-number decoders against the standard DDR5-4800 (non-3DS) speed bin: real value is 40-39-39, a 15.7% increase in the CAS+RCD+RP timing component. Re-simulated; DDR5 total latency rose 2.3-8.6% across the 6-benchmark suite (diluted from 15.7% once blended with the unaffected `tRAS`/`tWR`/refresh timing); DDR5 power unaffected (this fix is timing-only, item 8's IDD calibration is untouched) |
-| 13 | MLC read/write latency and energy penalty multipliers (3×/4×/3×/3×) were unsourced placeholders attributed to a citation ("EMBER Macro analytical heuristics") that does not support them in either of its publications | **Fixed (2026-08-16)** | Real measured multipliers located on the EMBER macro's full JSSC 2024 journal publication (missing from the ESSCIRC 2023 conference version cited alone): 1.917× read latency, 3.263× write latency, 1.1× read energy, 3.0× write energy (§2.3 above has the full derivation). All 8 MLC configurations re-simulated across all 6 benchmarks; MLC latency fell 20.6-34.9%, MLC dynamic power reordered relative to SLC in a workload-dependent way (§1.2 Finding 2 addendum) |
+| 13 | MLC read/write latency and energy penalty multipliers (3×/4×/3×/3×) were unsourced placeholders attributed to a citation ("EMBER Macro analytical heuristics") that does not support them in either of its publications | **Fixed (2026-08-16); read-latency figure itself superseded, see item 14** | Real measured multipliers located on the EMBER macro's full JSSC 2024 journal publication (missing from the ESSCIRC 2023 conference version cited alone): read latency set to 1.917× (later found wrong, item 14), write latency 3.263×, read energy 1.1×, write energy 3.0× (§2.3 above has the full derivation). All 8 MLC configurations re-simulated across all 6 benchmarks |
+| 14 | Item (13)'s own 1.917× read-latency multiplier was a data error: it paired EMBER's 12 ns read time with a "23 ns" figure actually belonging to a different, competing macro's own 1-bit/cell measurement in the same comparison table — EMBER's ESSCIRC paper never reports a 2-bit/cell read latency at all | **Fixed (2026-08-22)** | Caught by an independent citation-verification pass that read the source table directly. Re-derived from EMBER's own JSSC 2024 data (2.4/1.6 Gbps read bandwidth at 1/2 bits/cell, same bandwidth-ratio method as write-latency): corrected multiplier is **1.5×**, milder than the erroneous 1.917× (MLC reads were over-penalized, not under-penalized). All 8 MLC configurations re-simulated across all 6 benchmarks; MLC latency fell a further 5.5-18.6%, MLC PDP fell 0.7-18.6% (§1.3 above). Also caught and fixed in the same pass: 4 unrelated sentences frozen at stale pre-`system_v4` or original-placeholder-era data, never updated through either prior MLC-multiplier correction round (§3.1.1 LBM/1S1R-MLC absolute latency, the AlexNet Write-Torture IFMAP/OFMAP pair, the selector write/read device-ratio claim, and a Conclusion restatement) |
 
 **Validation discipline:** every repair was checked against device-level anchors (0.0% error) or
 exact predicted arithmetic. Items (12) and (13) were additionally checked by: re-running the full
@@ -223,7 +259,10 @@ row (SLC, PCM, 2D/3D-DRAM controls — 66 rows across 5 technologies) against th
 and confirming byte-for-byte identity; and catching + correcting a genuine data-contamination bug
 found mid-validation (a stale, never-fully-processed "DDR5 Micron-calibration" data slice that would
 have corrupted the DDR5 geometric-mean PDP by ~26% instead of the real ~4.8%, had it not been
-excluded before the final CSVs were generated).
+excluded before the final CSVs were generated). Item (14) was checked the same way: the 8 MLC
+configs × 6 benchmarks were re-run and every output file's admission ceiling verified against the
+matched-host methodology, and all 72 non-MLC rows (carried forward from `system_v5_input`) were
+diffed byte-for-byte identical to `system_v5` before the corrected CSVs/figures were generated.
 
 ---
 
@@ -250,12 +289,15 @@ the root README's own worked example previously reproduced the same wrong assump
 250M-trace-cycle admission at a fixed 3 GHz reference host — 83.33ms wall-clock for all (ReRAM
 66.7M memory cycles at 800 MHz, PCM 33.3M at 400 MHz, DDR5's 200M unchanged at 2400 MHz).
 
-**Current results generation: `results/system_v5/`** (supersedes `results/system_v4/`, which is
-kept, not deleted, for diffability — the established archival pattern in this repo). `system_v5`
-was produced by re-running only the 9 configs affected by items (12)/(13) (`DDR5_4800_DRAM` + the
-8 MLC configs) and carrying every other technology's raw stats forward byte-identical from
-`system_v4`, rather than a full 20-config re-run — the Global-Constraints-style scoping this repo
-has settled on for parameter fixes that don't touch every technology.
+**Current results generation: `results/system_v6/`** (supersedes `results/system_v5/`, which is
+kept, not deleted, for diffability, itself supersedes `results/system_v4/`, also kept — the
+established archival pattern in this repo). `system_v5` was produced by re-running only the 9
+configs affected by items (12)/(13) (`DDR5_4800_DRAM` + the 8 MLC configs) and carrying every other
+technology's raw stats forward byte-identical from `system_v4`. `system_v6` was produced the same
+way one level up: only the 8 MLC configs (affected by item (14)'s read-latency correction) were
+re-run, with `system_v5_input`'s other 72 rows — including `system_v5`'s own DDR5 re-simulation —
+carried forward byte-identical. This is the Global-Constraints-style scoping this repo has settled
+on for parameter fixes that don't touch every technology.
 
 ---
 
@@ -277,6 +319,7 @@ narrative, and (now-archived) scoping/audit docs — not from a formal session s
 | — (2026-07-13, commit `c728173`) | 2026-07-13 | Investigated the throughput mechanism behind the book's §3.1.1 sustained-streaming sentence; matched-host `CPUFreq` correction (§3 item 11); `results/system_v4` established as canonical |
 | — (2026-07-22/23) | 2026-07-22 | Full §3.1.6 fidelity audit completed (11 findings, 9 repaired); endurance analysis and ReadVoltage robustness sweep added; Project Book converted to a compile-verified Typst edition; this file's first hardfork regeneration |
 | — (2026-08-16, this cycle) | 2026-08-16 | **Bibliography reference-verification audit**: every citation in the book checked against its actual cited source (6 independently-dispatched research passes). Found and fixed: an eReRAM commercial-production citation pointing at the wrong (2T2R research, not 1T1R production) paper; a page-range typo; an unsupported technical claim (Optane's DDR-T interface) cited to an article that never discusses it; a misattributed bandwidth-utilization figure; an over-claimed resistance-target citation. Found, via a much longer multi-round investigation (two AI research assistants, both of which initially overreached with unverifiable claims later retracted under direct primary-source checking), that the MLC read/write penalty multipliers were unsourced placeholders — real values eventually located on a second, journal-length publication of the same source macro. Separately found the DDR5 baseline's CAS/RCD/RP timing was *also* an unsourced placeholder. Both corrected (§3 items 12/13), the affected 9-config slice re-simulated, and every table/prose paragraph/figure in the book that cited the old numbers updated (turned out to be at least 6 separate restatements of the same headline figures scattered across the Abstract, five tables, and the Conclusion, plus 26 embedded figure images regenerated). A dedicated NVSim sensitivity sweep separately confirmed the leakage-class-separation finding (§1.2 Finding 2) is completely insensitive to the disputed resistance-target citation, closing that question without needing a re-simulation. This file regenerated to match |
+| — (2026-08-22, this cycle) | 2026-08-22 | **Full 32-reference citation re-verification** (six parallel research agents, one per reference cluster), requested independently of — and skeptical toward — the 2026-08-16 audit's own fixes. Confirmed the DDR5/industry/tool citations all check out, plus two more minor precision fixes (a "20F²" figure imprecisely co-cited to [3]/[14], a "multi-megabyte" overclaim on the TechInsights teardown). But the audit's central finding: **item (13)'s own 1.917× MLC read-latency multiplier was itself a data error** — direct re-reading of EMBER's ESSCIRC Table I showed the "23 ns" it was paired against belongs to a different competing macro's own 1-bit/cell measurement, not EMBER's 2-bit/cell number, which the paper never reports. Re-derived a real 1.5× multiplier from EMBER's own JSSC bandwidth data (§2.3, §3 item 14). Re-simulated the 8 MLC configs across all 6 benchmarks (`results/system_v6/`), and — because the read-latency multiplier touches a huge number of restated figures — did a full manual line-by-line sweep of the book (not just a grep-and-replace) that also caught **4 unrelated, previously-missed stale-data bugs**: three §3.1.1 sentences and one Conclusion sentence frozen at pre-`system_v4` or original-3x/4x-placeholder-era numbers, never updated through either of the two prior MLC-multiplier correction rounds. All fixed, all 25 affected figure images regenerated, this file updated to match |
 
 ---
 
@@ -311,30 +354,22 @@ than fixed):
 
 ## 7. Pending Documentation / Narrative Items
 
-**Resolved this cycle (2026-08-16 housekeeping):**
+**Resolved (2026-08-16 housekeeping):**
 1. ~~Micron-calibration DDR5 config reconstruction~~ — done, see §6 item 4 above.
 2. ~~This file's own prior version needs archiving~~ — done; the 2026-07-22 hardfork is now at
    `archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-08-16.md`.
 
-**New this cycle — needs a Lead Researcher decision, not purely documentation:**
-3. **Uncommitted nvmain submodule source fix.** While reconstructing the Micron config, the local
-   `nvmain.fast` binary was found missing — tracing it back, an earlier session's git-push
-   troubleshooting had left a `git stash` un-popped in `simulators/nvmain/`. That stash contained not
-   just build artifacts but a real, never-committed source fix in `src/SubArray.cpp`: it clamps
-   negative per-activate energy to zero, which is exactly the "negative activeEnergy" artifact
-   documented in `results/cycle6c_ddr5_calibration_and_provenance_report.md` and referenced in the
-   book's §3 item (8) ("a sign artifact in NVMain's activate-energy formula, clamped at zero"). The
-   stash was popped (working tree only, no commits made) so the simulator would build. This means
-   `results/system_v5`'s canonical numbers were almost certainly generated with a locally-built
-   `nvmain.fast` that already included this fix — but the fix has never been committed to the
-   `nvmain` submodule's git history, so the submodule's committed source doesn't match what actually
-   produced the canonical results. Needs a Lead Researcher decision on committing it.
-3. **`archive/README.md`** has not yet received a dated entry for this cycle's DDR5-timing /
-   MLC-multiplier correction and re-simulation, unlike every other major correction cycle in this
-   repo's history — worth adding for consistency with the established documentation pattern, though
-   this file and the book's own §3.1.6 items (12)/(13) already carry the full record.
+**Resolved (2026-08-22, this cycle):**
+3. ~~Uncommitted nvmain submodule source fix~~ — the `src/SubArray.cpp` negative-activate-energy
+   clamp (recovered from the un-popped git stash) has been committed to the `nvmain` submodule
+   (commit `ed06ca4`, pushed to `origin/master`) alongside the reconstructed Micron config, and the
+   parent repo's submodule pointer bumped accordingly. Also documented in `nvmain/CLAUDE.md`'s
+   "Applied Repairs" section per that file's own convention.
+4. ~~`archive/README.md` missing a dated entry for the DDR5-timing/MLC-multiplier cycle~~ — added,
+   plus a further dated entry for this cycle's item (14) read-latency correction and the 4 bonus
+   stale-data fixes.
 
-No other pending documentation items are currently tracked in this file.
+No pending documentation items are currently tracked in this file.
 
 ---
 
@@ -342,4 +377,6 @@ No other pending documentation items are currently tracked in this file.
 (canonical, compile-verified, post-reference-audit edition). Cross-referenced against: git log,
 `results/cycle8_matched_host_report.md`, `docs/superpowers/plans/2026-07-29-book-reference-fixes.md`
 (this cycle's working plan, with full task-by-task execution notes), and the prior (2026-07-22)
-version of this file.*
+version of this file. Updated in place 2026-08-22 (not a full hardfork regeneration) following item
+(14)'s MLC read-latency correction and the bonus stale-data sweep — see `archive/README.md`'s
+matching dated entry for the full record.*
