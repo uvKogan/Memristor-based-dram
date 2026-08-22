@@ -1,6 +1,6 @@
 # Reference Guide — MBMM Project Book
 
-A quick-reference summary of all 32 sources cited in `Project_Book.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts.
+A quick-reference summary of all 35 sources cited in `Project_Book.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts.
 
 The book's MLC penalty multipliers are: **1.5x read latency, 3.263x write latency, 1.1x read energy, 3.0x write energy** (2 bits/cell vs. 1 bit/cell), all sourced from the EMBER macro's two publications, [6] and [31] below.
 
@@ -12,7 +12,7 @@ The book's MLC penalty multipliers are: **1.5x read latency, 3.263x write latenc
 A NAND-market recovery story; cited here only for a secondary point it makes about Samsung/SK Hynix reallocating fab capacity from DRAM to HBM. Supporting/context citation, not the article's main topic — worth knowing when you re-read the abstract's "DRAM-to-HBM reallocation" claim.
 
 **[2] Fleischer, "How AI Broke the Memory Market," Octopart Pulse, 2026**
-The book's more central source for the AI-driven memory shortage premise. Reports HBM consuming ~3x the wafer capacity of standard DDR5 and vendors reallocating up to 40% of advanced capacity to AI memory. Verified via search-snippet corroboration only (direct fetch was blocked) — slightly lower confidence than most other refs, but consistent and specific.
+The book's more central source for the AI-driven memory shortage premise. Verified via direct fetch of a mirrored copy (Octopart itself blocks fetches with bot protection) — confirms the article is real and on-topic (data centers consuming up to 70% of high-end memory chips in 2026, Samsung/SK Hynix wafer output declines, sharp DRAM price spikes), and it directly backs the book's only claim drawn from it: DRAM-to-HBM wafer reallocation causing a supply-demand gap (Project_Book.typ lines 26, 178 — both stated qualitatively, no numbers). An earlier annotation here cited "~3x HBM wafer capacity" and "40% advanced-capacity reallocation" figures attributed to this article; neither appears in it (the 3x figure traces to an unrelated, uncited Substack post) and neither is used in the book text, so no book fix was needed — this was a reference-guide-only error, now corrected.
 
 **[16] "Data Center Hardware Refresh Cutback by Microsoft," Data Center Knowledge, 2022**
 Cited for exactly one statistic: enterprise servers now average 5.4 years of useful life, trending toward 6-7 years. This sets the endurance/lifetime bar the book's ReRAM configs are judged against.
@@ -34,6 +34,12 @@ Intel's 2022 exit from 3D XPoint/Optane, a $559M write-off. Used as precedent: a
 
 **[25] "Neo Semiconductor's 3D X-DRAM...Passed Proof-of-Concept Validation," Tom's Hardware, 2026**
 A very recent (Apr. 2026) challenger DRAM technology: sub-10ns access, >1 second retention (~15x longer refresh interval — the book correctly notes this is refresh *reduction*, not elimination; it's still charge-based DRAM).
+
+**[34] Intel Corp., "Ultra High Bandwidth Memory with Backend Transistors," U.S. Patent Application Pub. No. US 2026/0191095 A1, filed 2024, published Jul. 2026**
+Intel's real, publicly filed patent for "Cross-Batch Memory" (XBM): moves the 1T1C DRAM cell into back-end-of-line thin-film transistors and replaces HBM's silicon interposer with direct die-to-die UCIe links, targeting HBM4's footprint at lower packaging cost. A third DRAM-roadmap front alongside [19]/[25] — this one attacks packaging economics, not cell density. Patent-stage only: no independent performance data, not targeted for commercialization before 2030.
+
+**[35] TrendForce, "Intel Patent Reveals XBM Matching HBM4 Footprint Without Interposers...," 2026**
+Trade-press corroboration of [34]'s technical claims (32 GT/s UCIe links, 0.5–5GB per die, 8/16-high stacks) and the post-2030 commercialization timeline, independently of the patent text itself.
 
 ---
 
@@ -74,7 +80,10 @@ First array-level (not just single-cell) demonstration of 3-bit-per-cell ReRAM, 
 The single most-cited comprehensive RRAM review paper. Correctly sourced for: endurance-range variability, 10×10nm HfOx switching demonstrations, and device-to-device variability as RRAM's chief scaling barrier (all near-verbatim matches to the book's phrasing). The "20F²" cell-area number is *not* stated in this paper — only the qualitative "transistor-limited scaling" reasoning is; treat 20F² as a rule-of-thumb, not a number quoted from Wong et al.
 
 **[20] Yang et al., "A 14nm-FinFET 1Mb Embedded 1T1R RRAM with 0.022µm² Cell Size," ISSCC 2021**
-A real, commercial-grade 14nm 1T1R macro. Its actual cell size (0.022 µm² ≈ 112F² at that node) is used as a reality check showing the book's 20F² assumption is generous/conservative for 1T1R, not stacked in ReRAM's favor.
+A real, commercial-grade 14nm 1T1R macro. Its actual cell size (0.022 µm² ≈ 112F² at that node) is used as a reality check showing the book's 20F² assumption is generous/conservative for 1T1R *relative to planar/FinFET logic-transistor integration* — see [33] for the counter-case where it isn't generous at all.
+
+**[33] Fackenthal et al., "A 16Gb ReRAM with 200MB/s Write and 1GB/s Read in 27nm Technology," ISSCC 2014**
+Verified real: DOI 10.1109/ISSCC.2014.6757460, confirmed via three independent sources. The commercial Micron/Sony 16Gb ReRAM chip — uses a DRAM-process **buried recessed-channel access transistor** (not a planar/FinFET logic transistor) to hit a **6F² 1T1R cell**, i.e. parity with DRAM's own 6F². Added as the counterpoint to [20]: it shows 1T1R density is architecture-dependent, not that 20F² is wrong. Two caveats keep it from being a substitute data point for this book's own 1T1R track: (1) it's a Cu-filament CBRAM cell, not the HfOx/TaOx oxide-RRAM family this book simulates; (2) NVSim as configured here (`configs/reram_22nm_1t1r_slc.cell`) only supports width-driven CMOS or diode access devices — no recessed-channel model — so no simulated numbers for this architecture are claimed anywhere in the book. Discussed in Project_Book.typ Appendix A (Bit-Cell Area) and Section 4.2 (future work).
 
 ---
 
