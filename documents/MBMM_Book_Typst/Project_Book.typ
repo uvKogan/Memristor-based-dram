@@ -52,8 +52,9 @@ DDR5\'s 0.651 W at the conservative calibration floor, and within 11% of
 outright parity at the vendor spec-limit ceiling - with zero refresh
 cost, and because that draw is 97% static, essentially all of it is
 exposed to idle-power gating, which remains unexercised (NVMain\'s
-power-down machinery is disabled in source). One credible gating policy
-separates 1S1R SLC from DDR5 power parity, while DDR5 spends 33-45% of
+power-down machinery is disabled in source). Power parity is therefore
+a projection contingent on that unmodeled gating - bounding arithmetic
+on measured static power, not a simulated result - while DDR5 spends 33-45% of
 its module power on refresh it can never shed - a concrete opening for
 gating-capable memory controllers and selector-first DIMM designs. The
 contrast that proves the point: the transistor-gated 1T1R module leaks
@@ -1683,7 +1684,7 @@ node-independent and exact: DRAM stores one bit per 6F², 1T1R one per
 20F² (Appendix A), and the selector
 cross-point one per 4F² (two per 4F² as MLC) - so at any matched process
 node, 1S1R MLC is 3.0x denser than DRAM and 1S1R SLC 1.5x denser, while
-1T1R is intrinsically 3.3x less dense under the planar-access-transistor
+1T1R is 3.3x less dense under the planar-access-transistor
 assumption used throughout this book (a DRAM-process recessed-channel
 alternative closes this gap in principle but is not modeled here -
 Appendix A, Section 4.2). That the measured die-level
@@ -1867,8 +1868,10 @@ drawing 1.12 W with zero refresh - lands 1.7x from DDR5\'s 0.651 W at
 the conservative vendor-calibration floor, and within 11% of outright
 parity at the spec-limit ceiling; that gap is precisely the component an
 idle-gating policy attacks, because 1S1R\'s draw is 97% static while
-DDR5 spends 33-45% of its module power on refresh it can never shed. One
-credible gating policy separates 1S1R SLC from DDR5 power parity - a
+DDR5 spends 33-45% of its module power on refresh it can never shed.
+Power parity for 1S1R SLC is therefore a projection contingent on
+idle-gating the toolchain cannot yet simulate - bounded by the
+arithmetic below, not demonstrated - and a
 concrete research and product opening for gating-capable controllers and
 selector-first DIMM architectures. The full ungated ranking, matching
 Figure 27 bar-for-bar: DDR5 104.3 W·ns (158.1 at the Micron calibration
@@ -1982,7 +1985,7 @@ summary of the entire evaluation.
   [737.1],
   [1.92],
   [24.8 yr],
-  [flagship: one credible - but unexercised - gating policy from DDR5 parity],
+  [flagship; power parity contingent on future gating work],
   [#strong[1T1R MLC]],
   [182.6],
   [50.877],
@@ -2015,8 +2018,8 @@ GB versus 1T1R\'s 17.3).]
 <conclusion-and-future-work>
 This research delivers two things: a rigorous cross-layer
 characterization of 22nm ReRAM as a DDR5 alternative - whose headline is
-that selector-gated ReRAM sits one credible gating policy from DDR5
-power parity - and a quantified fidelity audit of the standard
+that selector-gated ReRAM carries a credible, bounded projection to DDR5
+power parity, contingent on idle-gating not yet simulated - and a quantified fidelity audit of the standard
 NVSim-to-NVMain toolchain in which twelve of fourteen discovered failure
 modes were repaired - spanning the ReRAM configurations, the metrics
 pipeline, and both non-ReRAM baselines - each repair validated by exact

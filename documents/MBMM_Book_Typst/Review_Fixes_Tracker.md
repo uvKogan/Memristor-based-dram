@@ -23,7 +23,9 @@ Applied 2026-08-23 — these change names/numbers you may be quoting (relevant t
 ## Repo state
 
 - XBM additions (refs [34]/[35]) committed and pushed 2026-08-22. Current reference count: **35**.
-- Tier 1 + Tier 2 edits below are complete, compile-verified, **not yet committed** as of the last log entry.
+- Tier 1 + Tier 2 committed as `aa43746`; presentation files (parallel session) committed as `0227ea4`.
+- Reconciliation batch (T1-8, T1-9, tracker merge, deck/outline stale-note fixes) is complete and compile-verified — see last change-log entry for commit status.
+- `Presentation_Fixes_Tracker.md` (parallel session's tracker) is reconciled into this file; THIS file is the single source of truth for book-fix status.
 
 ---
 
@@ -42,6 +44,8 @@ Status values: `todo` / `in-progress` / `done` / `blocked` / `wont-do` / `prep-d
 | T1-5 | Abstract closing claim retreats to compute-bound with disclosed 1.9-2.1x streaming penalty | done | Claude f2ad0d1b |
 | T1-6 | Endurance hot-spot bound added at end of §3.1.4 (2x hot-spot factor halves Table 5 figures: 128 GB SLC still clears target at 8.7 / 12.4 yr; 64 GB drops to 4.3-6.2 yr, the target's lower edge) | done | Claude f2ad0d1b |
 | T1-7 | `Reading_Guide.md`: reference count fixed 32→35; table-verification note updated for the 6/7 renumbering | done | Claude f2ad0d1b |
+| T1-8 | Gating-parity claim reworded as "projection contingent on unmodeled gating" in all four sites (Abstract, §3.3, Table 7 role cell, Conclusion) to match the talk's framing — Lead-approved 2026-08-23; originated in `Presentation_Fixes_Tracker.md` | done | Claude f2ad0d1b |
+| T1-9 | Dropped "intrinsically" from "3.3x less dense" in §3.3 (sat awkwardly against its own planar-assumption hedge) — originated in `Presentation_Fixes_Tracker.md` | done | Claude f2ad0d1b |
 
 ### Tier 2 — bounded additions
 
@@ -97,4 +101,10 @@ Append entries newest-last. Template:
 - File(s): `Tier3_Prep_Proposals.md` (new)
 - What changed: Proposals + sign-off checklist for the three structural items. No book edits.
 - Compile gate: n/a
-- Staged: no
+- Staged: committed (`aa43746`)
+
+### 2026-08-23 — T1-8, T1-9 + parallel-session reconciliation — Claude session f2ad0d1b
+- File(s): `Project_Book.typ`, `Project_Book.pdf`, `Presentation_Fixes_Tracker.md`, `Presentation_Outline.md`, `presentation_deck.html`
+- What changed: Gating-parity claim reworded as projection-contingent at all four sites (new anchors: Abstract `Power parity is therefore`, §3.3 `Power parity for 1S1R SLC is therefore a projection`, Table 7 cell `flagship; power parity contingent on future gating work`, Conclusion `credible, bounded projection to DDR5 power parity`); "intrinsically" dropped in §3.3. Parallel session's tracker reconciled: statuses flipped to done/in-progress with pointers here, renumbering + Standby Convergence notices added at top. Deck slide-16 speaker note and outline updated — they claimed the book still said "competitive for streaming"; it no longer does.
+- Compile gate: pass
+- Staged: yes (uncommitted)

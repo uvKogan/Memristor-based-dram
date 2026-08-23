@@ -1,5 +1,14 @@
 # Book Fixes Tracker — driven by presentation prep
 
+> **RECONCILED 2026-08-23.** The book-fix work items below were executed in a parallel
+> session; canonical status and the append-only change log live in
+> **`Review_Fixes_Tracker.md`** — treat that file as the single source of truth and log
+> any further edits there. Note two renames that postdate this tracker's creation:
+> the **density table is now Table 6 and the cross-technology summary is Table 7**
+> (swapped to match body order), and **"Power Flatline" is renamed "Standby
+> Convergence"**. This file is kept for the presentation workstream's context; statuses
+> below are updated in place.
+
 Source: 2026-08-22 super-critique (4 independent read-throughs: rigor/methodology,
 overclaiming/data-honesty, defensibility/completeness, structure/clarity) plus the
 decision to reframe the flagship claim before presenting it live.
@@ -8,81 +17,76 @@ Status legend: `[ ]` open · `[~]` in progress · `[x]` done · `[-]` decided no
 
 ## Critical — must land before the talk is finalized (these are what the talk will say out loud)
 
-- [ ] **Gating-parity claim (Abstract, §3.3, Table 6).** Currently stated as "1S1R sits
-      one credible gating policy from DDR5 power parity." NVMain's power-down state
-      machine is disabled in source — no gating policy has actually been simulated
-      (§4.1 item 5). The 43%-idle break-even is hand arithmetic on one borrowed
-      utilization statistic, not a modeled result.
-      **Fix direction:** reword every instance (Abstract, §3.3, Table 6, Conclusion) to
-      state this as a *projection contingent on unmodeled gating*, not a near-achieved
-      result. The talk will present it this way regardless — the book should match.
+- [x] **Gating-parity claim (Abstract, §3.3, summary table).** Done 2026-08-23,
+      Lead-approved: reworded in all four sites as a *projection contingent on
+      unmodeled gating* — Abstract ("bounding arithmetic on measured static power, not
+      a simulated result"), §3.3 ("bounded by the arithmetic below, not demonstrated"),
+      Table 7 role cell ("flagship; power parity contingent on future gating work" —
+      now matches the deck's wording), Conclusion ("credible, bounded projection…
+      contingent on idle-gating not yet simulated"). Book and talk now say the same thing.
 
-- [ ] **Streaming framing (Abstract).** Headline picks PCM as the streaming
-      comparandum instead of DDR5, while the real DDR5 comparison is unflattering
-      (1.9–2.1x slower under LBM/STREAM), and the LBM latency ratio is computed over a
-      completed-request subset that's much smaller for ReRAM (40%/28%) than DDR5
-      (100%) — understating the true deficit.
-      **Fix direction:** drop "streaming" from the abstract's viability claim, or add a
-      completion-adjusted throughput number and let that govern the framing.
+- [x] **Streaming framing (Abstract).** Done: Abstract close now reads "for
+      compute-bound workloads - and within a disclosed 1.9-2.1x of DDR5 under
+      sustained streaming"; the 4.6x AI figure is additionally labeled a
+      memory-latency ratio, not an application slowdown. (Qualified rather than
+      dropped; the deck's completion-panel slide stays the sharper telling.)
 
-- [ ] **Worst-case-stacking in the DDR5 comparison.** DDR5 IDD = vendor spec-limit
-      maxima (not typical); ReRAM = worst-case-ungated. Both unfavorable-to-DDR5
-      choices compound into the "within 11% of parity" headline with no estimate of
-      where a typical-current DDR5 module would land.
-      **Fix direction:** add an explicit sentence bounding which direction (and roughly
-      how much) the gap could move under typical-current DDR5 assumptions.
+- [x] **Worst-case-stacking in the DDR5 comparison.** Done: §3.1.2 now states both
+      band ends are vendor *specification* currents, a typical-current module sits
+      below the ceiling, and 11%-of-parity is the most favorable end of a disclosed
+      range. (Note: the two assumptions cut in opposite directions — spec-max DDR5
+      favors ReRAM, ungated ReRAM penalizes ReRAM — so "compound" was not quite right.)
 
 ## Important — strengthens defensibility, not fatal if deferred
 
-- [ ] **No sensitivity sweep on CellArea (20F² / 4F²).** Single most load-bearing
-      geometric constant in the book (drives every density claim, Fig. 26, Table 7);
-      never swept, despite Appendix A/[33] establishing it's architecture-dependent.
-      **Fix direction:** add a bounded sensitivity range (e.g. 6F²–20F² per [33]) to at
-      least the density/viability conclusions.
+- [x] **No sensitivity sweep on CellArea (20F² / 4F²).** Done: §3.3 (after the now-
+      Table-6 bounded-claims paragraph) states the linear sensitivity with
+      demonstrated endpoints — 1T1R spans ~0.04x (112F² [20]) to ~0.7x (6F² [33]);
+      a 2x-area selector cell halves every 1S1R entry (22nm SLC → 0.96x parity,
+      MLC retains 1.92x).
 
-- [ ] **Validation is entirely self-referential (§3.1.6).** Every "0.0% error" claim
-      checks NVMain against NVSim's own numbers, never against a real fabricated chip
-      or measured DDR5 DIMM behavior.
-      **Fix direction:** add one paragraph explicitly scoping validation as
-      internal/toolchain consistency, not external ground-truth validation — don't let
-      the strength of the internal audit imply more than it does.
+- [x] **Validation is entirely self-referential (§3.1.6).** Done: new "Validation
+      Scope" bullet at the end of §2.2 — internal consistency vs hardware
+      correlation stated plainly; "0.0% error" reframed as a pipeline-fidelity
+      guarantee, not hardware accuracy.
 
-- [ ] **No related-work section anywhere in the book.** No section situates this
-      system-level NVSim→NVMain ReRAM evaluation against other published
-      architecture-level ReRAM/NVM main-memory studies.
-      **Fix direction:** add a short related-work subsection to §1 or §2; this is also
-      a required slide for the talk regardless (advisor will ask "what's novel here?").
+- [~] **No related-work section anywhere in the book.** Proposal drafted, awaiting
+      Lead sign-off: new §1.3, six candidate sources (ISCA'09 PCM trio, Xu HPCA'15
+      crossbar ReRAM, Kültürsay ISPASS'13 STT-RAM, Izraelevitz Optane measurements)
+      — see `Tier3_Prep_Proposals.md` (item T3-1). Still a required slide for the
+      talk regardless.
 
-- [ ] **Trace fidelity caveat surfaces too late (§3.1.6 item 6).** gem5 traces have no
-      cache hierarchy/warmup; GPT-2 trace provenance is unverified — yet the Abstract's
-      "4.6x AI-inference deficit" is stated as unqualified fact three sections earlier.
-      **Fix direction:** pull the caveat (or a compressed version of it) forward to
-      wherever the number is first stated.
+- [x] **Trace fidelity caveat surfaces too late.** Done: the Abstract's 4.6x now
+      carries the caveat inline ("memory-latency ratio under the cache-less trace
+      capture of Section 2.1"). (Nuance: the caveat was already disclosed *before*
+      results, in §2.1 and §2.4.1 — the genuinely-unqualified site was the Abstract.)
 
-- [ ] **Endurance assumes an unimplemented wear-leveling controller (Table 5).**
-      Hot-spot degradation named but never bounded.
-      **Fix direction:** add a pessimistic-case bound, not just the idealized number.
+- [x] **Endurance hot-spot bound (Table 5).** Done: §3.1.4 closing now bounds it —
+      a 2x hot-spot factor halves every figure; 128 GB SLC still clears the target
+      (8.7 / 12.4 yr), 64 GB drops to the target's lower edge (4.3-6.2 yr).
 
 ## Structural / polish — no science risk, but visible to any careful reader
 
-- [ ] **List of Tables (lines ~150–166) is out of order and has truncated captions**
-      (Table 7 listed before Table 6; several entries cut off mid-sentence). First
-      thing a reader sees after the Abstract.
-- [ ] **§3.1.6 fidelity audit (~230 lines) is positioned after the results that depend
-      on it**, despite being forward-referenced from as early as line 336. Consider
-      moving earlier (end of §2) or to an appendix with a one-paragraph inline summary.
-- [ ] **Conclusion re-derives the results section almost paragraph-for-paragraph**
-      instead of synthesizing — should spend that space on what future work actually
-      unlocks.
-- [ ] **Naming collision:** "Power Flatline" (a debunked measurement bug, §3.1.2) vs.
-      "Flatline Paradox" (a real finding, §3.2) — near-identical names for opposite
-      things.
-- [ ] **20F²/6F² cell-density discussion is fully re-argued four times** (§1.2, §3.3,
-      Appendix A, §4.2) — collapse three of the four into one-sentence cross-references.
-- [ ] **§1.2 skips the basic memristor mechanism** before jumping into 1T1R-vs-1S1R
-      topology — a scaffolding gap for anyone less specialized than your advisor.
-- [ ] Line ~1642: "intrinsically 3.3x less dense" sits awkwardly next to its own hedge
-      ("under the planar-access-transistor assumption...") — drop "intrinsically."
+- [x] **List of Tables out of order / truncated.** Done: tables renumbered (density →
+      Table 6, summary → Table 7, matching body order), list rebuilt with full
+      captions, dead `GEN-BEGIN` generator markers removed (no generator script
+      exists in the repo).
+- [~] **§3.1.6 positioned after the results that depend on it.** Recommendation
+      drafted (Tier3_Prep_Proposals.md, T3-2): do NOT move it — 35 in-body
+      cross-references — add a one-paragraph audit summary at the top of §3.1 instead.
+      Awaiting sign-off.
+- [~] **Conclusion re-derives instead of synthesizing.** Compression approach
+      proposed (T3-3): keep opening synthesis, collapse five recap paragraphs into
+      one verdicts paragraph, add a consolidated honest-scope close. Draft-first;
+      awaiting sign-off.
+- [x] **Naming collision.** Done: the debunked §3.1.2 artifact is renamed "Standby
+      Convergence" with an explicit in-text note that it is unrelated to the
+      Flatline Paradox.
+- [x] **20F²/6F² re-argued four times.** Done: Appendix A is canonical; §1.2, §3.3,
+      §4.2 trimmed to one-line statements + cross-references.
+- [x] **§1.2 skips the basic memristor mechanism.** Done: primer paragraph added at
+      the top of §1.2 (filament physics, LRS/HRS, non-volatility, finite endurance).
+- [x] **"intrinsically 3.3x less dense".** Done: "intrinsically" dropped.
 
 ## Explicitly not fixing (for now)
 
@@ -93,5 +97,5 @@ Status legend: `[ ]` open · `[~]` in progress · `[x]` done · `[-]` decided no
 
 - §3.1.6's 14-item fidelity audit — exact-arithmetic validated, independently
   blind-re-verified. This is the book's real methodological asset.
-- §3.1's opening signposting (lines 536–545) and the overall results arc
+- §3.1's opening signposting and the overall results arc
   (per-workload → scaling → global viability).

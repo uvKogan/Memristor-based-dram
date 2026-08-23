@@ -8,8 +8,12 @@ Contributions → Future Work).
 
 **Reframing rule applied throughout:** every slide that touches the
 gating-parity claim or the streaming comparison uses the *honest* framing
-from `Presentation_Fixes_Tracker.md`, not the book's current wording. The
-book itself gets updated separately to match — see that tracker.
+from `Presentation_Fixes_Tracker.md`. As of 2026-08-23 the book has been
+updated to match (gating parity reworded as a projection contingent on
+unmodeled gating in Abstract/§3.3/Table 7/Conclusion; streaming claim
+scoped to compute-bound with the 1.9-2.1x penalty disclosed) — book and
+talk now say the same thing. Canonical fix status lives in
+`Review_Fixes_Tracker.md`.
 
 **Figures:** all chart slides are generated — see `visualize_slides.py`
 (repo root) and `results/slide_graphs/*.png`. Every chart tag below now
@@ -143,8 +147,8 @@ ReRAM replace DDR5 in a commodity DIMM?"
 `results/slide_graphs/16_streaming_honest.png`
 - On-slide: STREAM latency (DDR5/1T1R SLC/1S1R SLC, 1.9-2.1x DDR5) next
   to LBM completion rate (100% → 40% → 28% → 16% → 9% → 4%)
-- Say: this replaces the book's current "competitive for streaming"
-  framing — the completion panel is the point: 1T1R only finishes 40% of
+- Say: the book was updated 2026-08-23 to match this framing
+  (compute-bound, streaming penalty disclosed) — the completion panel is the point: 1T1R only finishes 40% of
   what DDR5 finishes in the same window, so the reported latency ratio
   understates the real gap. Streaming is the weakest regime, say so
   plainly.
