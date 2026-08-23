@@ -126,3 +126,9 @@ Append entries newest-last. Template:
 - What changed: Appendix C repo link target fixed — was a Google-search redirect carrying a leaked `authuser=3` parameter; now links `https://github.com/uvKogan/MBMM` directly (display text unchanged; anchor: `#link("https://github.com/uvKogan/MBMM")`). This closes the last deferred `[-]` item. `Presentation_Fixes_Tracker.md`'s three stale `[~]` entries (related work, §3.1.6, Conclusion) flipped to `[x]` with final outcomes — all book-fix work is now complete in both trackers.
 - Compile gate: pass
 - Staged: yes (uncommitted)
+
+### 2026-08-23 — review-process docs archived — Claude session f2ad0d1b
+- File(s): `README.md` (this folder), `archive/documents/book_review_pass_2026-08/` (new)
+- What changed: With every item closed, the finished process docs were `git mv`'d out of the book folder: `Tier3_Prep_Proposals.md`, `Conclusion_Rewrite_Draft.md`, `Lead_Decisions_and_Handoff.md`, `TYPST_QA_REPORT.md`, `qa_screenshots/` → `archive/documents/book_review_pass_2026-08/`. Any mention of those filenames in earlier log entries above now resolves to that archive path. Both trackers stay in place until the talk is delivered (they are the parallel-session coordination surface). The folder `README.md` was rewritten — it still claimed docx parity and refs [1]-[30], both false since this fix pass began.
+- Compile gate: n/a (no book edit)
+- Staged: yes (uncommitted)

@@ -337,3 +337,21 @@ hook files + restore instructions), patch verified with
 gitignored — RESOLVED 2026-08-23: Lead confirmed it is backed up on their own
 computer; kept in place on this machine, no action needed. (3) `simulators/SCALE-Sim` is a clean clone at commit
 `9f98c43` (recorded here in case it is ever deleted/re-cloned).
+
+## Book review-pass process docs (2026-08-23)
+
+With the 2026-08 super-critique fix pass fully closed (see
+`documents/MBMM_Book_Typst/Review_Fixes_Tracker.md`), its finished process
+documents were moved (not deleted) out of the book folder so reviewers see
+only live deliverables there:
+
+| Old path (under `documents/MBMM_Book_Typst/`) | New path (under `archive/documents/book_review_pass_2026-08/`) |
+|---|---|
+| `Tier3_Prep_Proposals.md` | `Tier3_Prep_Proposals.md` |
+| `Conclusion_Rewrite_Draft.md` | `Conclusion_Rewrite_Draft.md` |
+| `Lead_Decisions_and_Handoff.md` | `Lead_Decisions_and_Handoff.md` |
+| `TYPST_QA_REPORT.md` (docx-conversion QA, July era) | `TYPST_QA_REPORT.md` |
+| `qa_screenshots/` (its before/after screenshots) | `qa_screenshots/` |
+
+Kept in the book folder: both trackers (still the coordination surface for the
+parallel presentation session), the reading/reference guides, and the talk files.
