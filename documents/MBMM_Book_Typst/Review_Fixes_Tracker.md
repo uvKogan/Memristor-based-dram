@@ -3,59 +3,67 @@
 Coordination file for the super-critique fix pass (critique triaged 2026-08-22).
 **Multiple workers (AI sessions / humans) may edit the book in parallel. This file is the single source of truth for who changed what.**
 
+## ⚠️ NOTICES FOR PARALLEL WORKERS (read before citing the book)
+
+Applied 2026-08-23 — these change names/numbers you may be quoting (relevant to the presentation-planning session):
+
+1. **Tables 6 and 7 SWAPPED numbers.** The density-projection table (16nm/12nm/deck-stacking) is now **Table 6**; the cross-technology summary table is now **Table 7**. Body order and List of Tables now match.
+2. **"Power Flatline" no longer exists.** The debunked §3.1.2 artifact is renamed **"Standby Convergence"**. "Flatline Paradox" (the real §3.2 multi-rank finding) is unchanged — they are different things.
+3. The Abstract's closing claim now scopes streaming honestly: "…for compute-bound workloads - and within a disclosed 1.9-2.1x of DDR5 under sustained streaming".
+4. The `GEN-BEGIN lot` markers are gone — no generator script exists anywhere in the repo (verified); the List of Tables is now hand-maintained.
+
 ## Ground rules for every worker
 
-1. **Before editing**: read this file top to bottom. Check the Change Log for edits that may have moved your target text. Locate targets by **anchor string**, not line number — line numbers drift with every edit.
+1. **Before editing**: read this file top to bottom. Locate targets by **anchor string**, not line number — line numbers drift with every edit.
 2. **Claim your item**: set its Status to `in-progress` and put your session/name in Owner *before* editing.
 3. **After editing**: run the compile gate — `typst compile --font-path fonts Project_Book.typ /tmp/verify.pdf` must exit 0 — then set Status to `done` and **append a Change Log entry** (template at bottom).
 4. **Sync obligations**: any reference added/removed → update `Reference_Guide.md` (count + entry) and check `Reading_Guide.md`. Any table renumbering → check every in-body "Table N" mention and the List of Tables.
 5. Git commits are done by the Lead Researcher only (per repo CLAUDE.md). Note in your log entry whether your change is staged.
 
-## Preconditions / current repo state
+## Repo state
 
-- **Staged, uncommitted** (as of tracker creation): `Project_Book.typ` + `Reference_Guide.md` carry the XBM additions (refs [34]/[35], Section 3.3 "three fronts" sentence). **Commit these before parallel work starts** so everyone edits from a clean, shared base.
-- Current reference count: **35**. Current table count: 7 (Table 7 appears *before* Table 6 in the body — see T1-1).
-- List of Tables (lines ~150–166) is machine-generated (`// GEN-BEGIN lot` … `// GEN-END lot`). The generator script has **not yet been located** — find it before hand-editing that block, or your fix may be overwritten on next regeneration.
+- XBM additions (refs [34]/[35]) committed and pushed 2026-08-22. Current reference count: **35**.
+- Tier 1 + Tier 2 edits below are complete, compile-verified, **not yet committed** as of the last log entry.
 
 ---
 
 ## Work plan
 
-Status values: `todo` / `in-progress` / `done` / `blocked` / `wont-do`
+Status values: `todo` / `in-progress` / `done` / `blocked` / `wont-do` / `prep-done`
 
 ### Tier 1 — mechanical, low-risk
 
-| ID | Item | Target / anchor | Status | Owner |
-|----|------|----------------|--------|-------|
-| T1-1 | Fix Table 6/7 out-of-order numbering (Table 7 body position precedes Table 6) and the truncated List of Tables captions ("(= 1.", "66."). Renumber tables to match body order OR reorder; update every in-body "Table 6"/"Table 7" mention. Locate the `GEN-BEGIN lot` generator first. | Anchors: `Table 7: Projected die-level density`, `Table 6: Cross-technology summary`, `GEN-BEGIN lot` | todo | — |
-| T1-2 | Rename "Power Flatline" (the *debunked artifact*, §3.1.2) so it no longer collides with "Flatline Paradox" (the *real finding*, §3.2). Suggested: "leakage flatline artifact". Check all occurrences incl. Conclusion. | Anchor: `named “Power Flatline.”` | todo | — |
-| T1-3 | Hedge Table 6's 1S1R SLC role cell: "flagship: one gating policy from DDR5 parity" → make explicit the policy is unexercised arithmetic (e.g. "one credible — but unexercised — gating policy from DDR5 parity"); optionally reinforce in the table footnote. | Anchor: `flagship: one gating policy from DDR5 parity` | todo | — |
-| T1-4 | Qualify the Abstract's 4.6x AI-inference figure in claim (1) as a memory-latency ratio under the cache-less trace methodology (one clause, pointing at §2.1) — the power claims in the same Abstract already carry their caveats inline; latency should too. | Anchor: `trailing DDR5 by 4.6x` | todo | — |
-| T1-5 | Retreat the closing claim "latency-competitive … for compute-bound and streaming workloads": against DDR5, streaming is the *weak* regime (1.9–2.1x slower; LBM ratio computed over a service-limited subset). Either drop "streaming" or qualify it (e.g. "compute-bound workloads, with a disclosed 1.9–2.1x streaming penalty"). | Anchor: `latency-competitive, density-superior DDR5 alternative` (Abstract close); check Conclusion for the same claim | todo | — |
-| T1-6 | Add one-sentence endurance bound in §3.1.4: lifetime scales inversely with hot-spot concentration, so a 2x hot-spot factor halves every Table 5 number — which still clears the 5–10-yr target at 64–128 GB SLC. Closes the "named but never bounded" gap. | Anchor: `these lifetimes assume ideal uniform wear leveling; hot-spot` | todo | — |
-| T1-7 | Fix stale count in `Reading_Guide.md`: says "All 32 references" — true count is 35. | File: `Reading_Guide.md`, anchor: `All 32 references` | todo | — |
+| ID | Item | Status | Owner |
+|----|------|--------|-------|
+| T1-1 | Table 6/7 renumbering (density table → Table 6, summary → Table 7; all 5 in-body mentions updated) + List of Tables rebuilt with full untruncated captions, GEN markers removed | done | Claude f2ad0d1b |
+| T1-2 | "Power Flatline" renamed "Standby Convergence" (intro at §3.1.2 anchor `a convergence this project's earlier analysis`, plus the §4 recap `technology-blind "Standby Convergence" artifact`); collision with "Flatline Paradox" resolved and explicitly disclaimed in-text | done | Claude f2ad0d1b |
+| T1-3 | Table 7 (summary) flagship cell hedged: "one credible - but unexercised - gating policy from DDR5 parity" | done | Claude f2ad0d1b |
+| T1-4 | Abstract 4.6x now qualified: "(a memory-latency ratio under the cache-less trace capture of Section 2.1, not a projected application slowdown)" | done | Claude f2ad0d1b |
+| T1-5 | Abstract closing claim retreats to compute-bound with disclosed 1.9-2.1x streaming penalty | done | Claude f2ad0d1b |
+| T1-6 | Endurance hot-spot bound added at end of §3.1.4 (2x hot-spot factor halves Table 5 figures: 128 GB SLC still clears target at 8.7 / 12.4 yr; 64 GB drops to 4.3-6.2 yr, the target's lower edge) | done | Claude f2ad0d1b |
+| T1-7 | `Reading_Guide.md`: reference count fixed 32→35; table-verification note updated for the 6/7 renumbering | done | Claude f2ad0d1b |
 
 ### Tier 2 — bounded additions
 
-| ID | Item | Target / anchor | Status | Owner |
-|----|------|----------------|--------|-------|
-| T2-1 | Add a short memristor primer paragraph at the top of §1.2 (what a memristor physically is/does — resistance as stored state, filament formation, nonvolatility) before the process/topology discussion. | Anchor: `== 1.2. ReRAM Fundamentals` | todo | — |
-| T2-2 | Add a validation-scope paragraph to §2.2: parameters are real-world-anchored (vendor IDD datasheets, EMBER silicon multipliers) but all "0.0% error" checks verify pipeline self-consistency against NVSim anchors — no end-to-end result is validated against a measured chip/DIMM. State this plainly as scope, not weakness. | Anchor: `== 2.2. Validation & Protocol` | todo | — |
-| T2-3 | Add a cell-area sensitivity paragraph to §3.3 near Table 7: density ratios scale linearly with assumed cell area; promote Appendix A's existing 112F² measured-chip counterpoint (`about 112F² at that node`) into an explicit best/worst-case density band. | Anchors: `Table 7 makes the third level concrete`, Appendix A `112F²` | todo | — |
-| T2-4 | Consolidate the 20F²/4F²/6F² cell-area argument: full argument lives once (Appendix A), other sites (§1.2, §3.3, §4.2, Table 6 footnote) get one sentence + cross-reference instead of re-arguing. | Anchor: grep `20F` (currently ~8 hits across 5 sections) | todo | — |
-| T2-5 | Acknowledge spec-vs-typical DDR5 current: all four "11% of parity" mentions carry the floor/ceiling band already, but both ends are vendor *spec* values — add one sentence (§3.1.2 or §3.3) noting a typical-current DDR5 module would sit below the ceiling, widening the gap. | Anchor: `within 11% of outright` | todo | — |
+| ID | Item | Status | Owner |
+|----|------|--------|-------|
+| T2-1 | Memristor primer paragraph added at top of §1.2 (filament physics, LRS/HRS, non-volatility, finite endurance; cites [14], [5]) | done | Claude f2ad0d1b |
+| T2-2 | "Validation Scope" bullet added at end of §2.2: internal consistency vs hardware correlation stated plainly; "0.0% error" reframed as pipeline-fidelity, not hardware-accuracy, guarantee | done | Claude f2ad0d1b |
+| T2-3 | Cell-area sensitivity added in §3.3 after the Table 6 bounded-claims paragraph: 1T1R spans ~0.04x (112F² [20]) to ~0.7x (6F² [33]); 2x-area selector cell halves 1S1R entries (SLC → 0.96x parity, MLC retains 1.92x) | done | Claude f2ad0d1b |
+| T2-4 | 20F² argument consolidated: Appendix A canonical; §1.2, §3.3, §4.2 trimmed to one-line statements + Appendix A cross-references | done | Claude f2ad0d1b |
+| T2-5 | Spec-vs-typical DDR5 sentence added in §3.1.2 after the 65-78x comparison: both band ends are vendor spec currents; 11%-of-parity is the most favorable end of a disclosed range | done | Claude f2ad0d1b |
 
-### Tier 3 — structural (each is its own task; get Lead Researcher sign-off on approach before starting)
+### Tier 3 — structural (proposals drafted, NO book edits made; see `Tier3_Prep_Proposals.md`)
 
-| ID | Item | Notes | Status | Owner |
-|----|------|-------|--------|-------|
-| T3-1 | Add a Related Work section (situate vs prior NVM-main-memory system studies: PCM ISCA-era work, other NVMain/ReRAM evaluations). Requires sourcing + verifying new references (same workflow as the XBM patent: primary sources only). Updates Reference_Guide.md. | Biggest examiner-facing gap; no partial mitigation exists in the book | todo | — |
-| T3-2 | §3.1.6 placement: either move the 14-item audit to an appendix with a one-paragraph inline summary in §3.1, or move it before the results it underwrites. Keep the audit content itself untouched — it is a strength. | ~230 lines; heavy cross-reference checking needed | todo | — |
-| T3-3 | Rewrite Conclusion (§4) as synthesis rather than paragraph-for-paragraph replay of §3. | Subjective; draft for Lead Researcher review before replacing | todo | — |
+| ID | Item | Status | Owner |
+|----|------|--------|-------|
+| T3-1 | Related Work section: proposed as new §1.3; 6 candidate sources listed (ISCA'09 PCM trio, Xu HPCA'15 crossbar ReRAM, Kültürsay ISPASS'13 STT-RAM, Izraelevitz Optane measurements); each requires web verification before citing | prep-done (awaiting sign-off) | Claude f2ad0d1b |
+| T3-2 | §3.1.6 placement: recommendation is DO NOT MOVE (35 in-body cross-references); add a one-paragraph audit summary at top of §3.1 instead | prep-done (awaiting sign-off) | Claude f2ad0d1b |
+| T3-3 | Conclusion rewrite: keep opening synthesis, compress five per-section recaps into one verdicts paragraph, add a consolidated honest-scope closing paragraph; draft-first, side-by-side review | prep-done (awaiting sign-off) | Claude f2ad0d1b |
 
 ### Explicitly NOT doing (critique findings triaged as overstated)
 
-- Abstract gating caveat "doesn't travel" — it does; the Abstract discloses "unexercised / disabled in source" inline twice. Only Table 6's cell needed the hedge (T1-3).
+- Abstract gating caveat "doesn't travel" — it does; the Abstract discloses "unexercised / disabled in source" inline twice. Only the summary table's cell needed the hedge (T1-3).
 - "Two worst-case assumptions stacked in ReRAM's favor" — the two assumptions cut in opposite directions, and the floor/ceiling band is disclosed at all four "11%" sites. Residue handled by T2-5.
 - "Trace fidelity surfaces too late" — disclosed in §2.1 and §2.4.1, *before* results. Residue handled by T1-4.
 
@@ -68,13 +76,25 @@ Append entries newest-last. Template:
 ```
 ### YYYY-MM-DD — <item ID> — <owner>
 - File(s): <paths>
-- What changed: <1–3 sentences, with anchor strings for moved/edited text>
+- What changed: <1-3 sentences, with anchor strings for moved/edited text>
 - Compile gate: pass/fail
 - Staged: yes/no
 ```
 
 ### 2026-08-22 — (pre-tracker baseline) — Claude session f2ad0d1b
 - File(s): `Project_Book.typ`, `Reference_Guide.md`
-- What changed: Added refs [34] (Intel XBM patent US 2026/0191095 A1) and [35] (TrendForce corroboration); Section 3.3 DRAM-roadmap paragraph expanded from "two fronts" to "three fronts" with a new XBM sentence after the `Notably, even that challenger's` sentence. Reference_Guide.md count bumped 33→35 with matching entries.
+- What changed: Added refs [34] (Intel XBM patent US 2026/0191095 A1) and [35] (TrendForce corroboration); Section 3.3 DRAM-roadmap paragraph expanded to "three fronts". Reference_Guide.md count bumped 33→35.
 - Compile gate: pass
-- Staged: yes (uncommitted)
+- Staged: committed & pushed 2026-08-22
+
+### 2026-08-23 — T1-1..T1-7, T2-1..T2-5 — Claude session f2ad0d1b
+- File(s): `Project_Book.typ`, `Reading_Guide.md`
+- What changed: All Tier 1 + Tier 2 items as described in the tables above. Highest-impact for other workers: Table 6/7 number swap, "Power Flatline"→"Standby Convergence" rename, Abstract streaming/4.6x qualifiers (see NOTICES at top). New anchors: primer starts `Before the engineering choices, the device itself`; validation bullet starts `#strong[Validation Scope]`; sensitivity passage starts `Every ratio in the table is also linear in the assumed cell area`; endurance bound starts `That proportionality also bounds the exposure`; spec-vs-typical sentence starts `One honest bound on that comparison`.
+- Compile gate: pass (verified after final .typ edit)
+- Staged: no (pending Lead Researcher review)
+
+### 2026-08-23 — T3-1/T3-2/T3-3 prep — Claude session f2ad0d1b
+- File(s): `Tier3_Prep_Proposals.md` (new)
+- What changed: Proposals + sign-off checklist for the three structural items. No book edits.
+- Compile gate: n/a
+- Staged: no
