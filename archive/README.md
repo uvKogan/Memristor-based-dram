@@ -334,6 +334,6 @@ patches (`src/mem/NVMainMemory.{cc,hh,py}`, modified `src/mem/SConscript` and
 2026-08-23: exported to tracked `simulators/gem5-nvmain-patches/` (diff +
 hook files + restore instructions), patch verified with
 `git apply --check --reverse`. (2) `resources/` (137M) is
-gitignored, so the thesis source papers exist in exactly one place — worth an
-external backup. (3) `simulators/SCALE-Sim` is a clean clone at commit
+gitignored — RESOLVED 2026-08-23: Lead confirmed it is backed up on their own
+computer; kept in place on this machine, no action needed. (3) `simulators/SCALE-Sim` is a clean clone at commit
 `9f98c43` (recorded here in case it is ever deleted/re-cloned).
