@@ -63,7 +63,7 @@ Status values: `todo` / `in-progress` / `done` / `blocked` / `wont-do` / `prep-d
 |----|------|--------|-------|
 | T3-1 | Related Work: new §1.3 added with all sources web-verified (titles/venues/pages/DOIs). New refs [36]-[40] (ISCA'09 PCM trio, Xu HPCA'15, Kültürsay ISPASS'13); Izraelevitz was ALREADY ref [32] and Optane-exit [23] — reused, no duplicates. Reference count now **40**; `Reference_Guide.md` + `Reading_Guide.md` synced | done | Claude f2ad0d1b |
 | T3-2 | §3.1.6 placement: audit-summary paragraph added at top of §3.1 ("fourteen found, twelve repaired, two permanent"); section itself NOT moved (35 in-body cross-references preserved) | done | Claude f2ad0d1b |
-| T3-3 | Conclusion rewrite: full replacement text drafted in `Conclusion_Rewrite_Draft.md` (verdicts paragraph + consolidated honest-scope paragraph); book untouched pending Lead side-by-side review | draft ready (awaiting approval) | Claude f2ad0d1b |
+| T3-3 | Conclusion rewrite APPLIED: six recap paragraphs replaced with verdicts paragraph + consolidated honest-scope paragraph, plus the Lead's two citation additions (§3.3 cell-area passage, §3.1.4 hot-spot bound). Approved via `Lead_Decisions_and_Handoff.md` 2026-08-23 | done | Claude f2ad0d1b |
 
 ### Explicitly NOT doing (critique findings triaged as overstated)
 
@@ -112,5 +112,11 @@ Append entries newest-last. Template:
 ### 2026-08-23 — T3-1, T3-2 executed; T3-3 drafted — Claude session f2ad0d1b
 - File(s): `Project_Book.typ`, `Project_Book.pdf`, `Reference_Guide.md`, `Reading_Guide.md`, `Conclusion_Rewrite_Draft.md` (new)
 - What changed: New §1.3 Related Work (anchor: `== 1.3. Related Work`) citing new refs [36]-[40] plus existing [23]/[32]; five verified bibliography entries inserted after [35]; reference count 35→40. Audit-summary paragraph added at top of §3.1 (anchor: `One framing note before the numbers`). Conclusion replacement text drafted only — NOT applied. ToC updates automatically (typst `#outline()`).
+- Compile gate: pass
+- Staged: yes (uncommitted)
+
+### 2026-08-23 — T3-3 applied — Claude session f2ad0d1b
+- File(s): `Project_Book.typ`, `Project_Book.pdf`, `Conclusion_Rewrite_Draft.md`, this file
+- What changed: §4's six per-section recap paragraphs (old anchors: `Latency analysis (3.1.1) revealed` through `convert added ranks into latency gains.`) replaced by two paragraphs (new anchors: `Each results axis resolves to a one-line verdict.` and `The scope of these claims is bounded by four disclosed limitations`), per `Conclusion_Rewrite_Draft.md` with the Lead's two citation additions from `Lead_Decisions_and_Handoff.md`. Opening synthesis paragraph and §4.1-4.3 untouched. Note for the handoff file: its T3-1 spec assumed refs [36]-[41]; actual is [36]-[40] because Izraelevitz was already ref [32] (and Optane-exit [23]) — no duplicates were added. Its T3-2 question (options A-D) is still open with the Lead; Option A is what's currently implemented.
 - Compile gate: pass
 - Staged: yes (uncommitted)
