@@ -1,6 +1,6 @@
 # Conclusion Rewrite Draft (T3-3) — for side-by-side review
 
-**Nothing in the book has been changed yet for this item.** Approve/amend this draft and I'll apply it in one edit.
+**STATUS: APPLIED 2026-08-23** per the Lead's approval in `Lead_Decisions_and_Handoff.md`, including its two citation additions ("(Section 3.3, cell-area sensitivity passage)" and "(Section 3.1.4 hot-spot bound)"). This file is retained as the review record; the book is the canonical text.
 
 ## What stays untouched
 

@@ -2136,65 +2136,44 @@ leakage faithfully propagated - is contributed as an open-source
 Physical-to-System memory simulator for the non-volatile memory research
 community.
 
-Latency analysis (3.1.1) revealed that the MLC write penalty is
-workload-dependent rather than uniform. Under compute-bound traces such
-as GCC, where memory requests arrive infrequently, MLC write latency is
-absorbed by the memory controller queue with negligible impact on
-average read latency. Under continuous streaming workloads such as LBM
-and STREAM, the penalty compounds: 1T1R MLC latency reaches 809.7 ns
-compared to 468 ns for 1T1R SLC, and 1S1R MLC reaches 1,328.7 ns (Figure
-2) - 1.7x and 2.8x slowdowns that make MLC unsuitable for
-bandwidth-saturating applications.
+Each results axis resolves to a one-line verdict. Latency (3.1.1): the
+MLC write penalty is workload-dependent, not uniform - absorbed by
+controller queueing under compute-bound traces, compounding to 1.7x/2.8x
+under saturating streams - which confines MLC to read-dominant roles.
+Power (3.1.2): the earlier technology-blind “Standby Convergence” gave
+way to a leakage-class hierarchy - 50.9 W ungated 1T1R, 1.12 W ungated
+1S1R, 0.651 W DDR5 (calibration floor), 0.040 W PCM - so ungated ReRAM
+power #emph[is] leakage, and the selector\'s 47x standby discipline is
+the largest technology-differentiating fact this project measured.
+Efficiency (3.1.3): that same leakage term inverts the intra-ReRAM
+hierarchy - 1S1R SLC dominates 1T1R SLC by 29x on geometric-mean PDP -
+leakage class, not cell speed, decides efficiency. Endurance (3.1.4):
+lifetime scales linearly with capacity, so the constraint binds only for
+small modules under sustained write streaming. Robustness (3.1.5): the
+operating point is stable - read latency invariant and system-level PDP
+within 4% across a +/-20% ReadVoltage sweep. Scaling (3.2): added ranks
+pay off only where memory-level parallelism exists to use them - the
+Flatline Paradox - making single-chip or 8-chip configurations
+Pareto-optimal for write-heavy deployments.
 
-Power analysis (3.1.2), executed on the repaired power model,
-established DDR5\'s structural refresh burden (33-45% of module power on
-every workload, from real rank-level counters under the
-vendor-calibrated model) and replaced the earlier technology-blind
-“Standby Convergence” artifact with a leakage-class hierarchy: 50.9 W ungated 1T1R, 1.12 W
-ungated 1S1R, 0.651 W DDR5 (calibration floor), 0.040 W PCM. Real ReRAM
-dynamic power is small and now technology-differentiated (12-98 mW
-module-wide under GCC), so ungated ReRAM power is leakage - and the
-selector\'s 47x leakage advantage is the largest
-technology-differentiating fact this project measured.
-
-The Power-Delay Product analysis (3.1.3), restored to cross-technology
-scope by the repaired model (with the ungated-ReRAM caveat attached
-throughout), inverts the intra-ReRAM hierarchy: 1S1R SLC (geometric mean
-737.1 W·ns) dominates 1T1R SLC (21,350.6) by 29x, because the leakage
-term dwarfs the latency term; DDR5 stands at 104.3 W·ns and PCM at 165.3.
-Density still costs efficiency within each family (1S1R MLC at 1,222.4),
-but leakage class - not cell type - decides the ranking.
-
-Endurance analysis (3.1.4) addressed the most common objection to
-resistive memory deployment. Under real workload write rates with
-uniform wear leveling, lifetime scales linearly with module capacity:
-the modeled 8 GB SLC module yields 1.1 years under worst-case sustained
-streaming (LBM) - below the 5-10 year server replacement cycle - while
-64-128 GB server-class modules reach 9-17 years, and all other workloads
-exceed 20 years even at 8 GB (Table 5). Endurance is thus a capacity-
-and workload-dependent design constraint, binding only for small modules
-under sustained write streaming, and directly motivates the
-wear-leveling and write-coalescing work of Section 4.2.
-
-Robustness analysis (3.1.5) demonstrated that the simulated operating
-point is stable under device-level manufacturing variation. A
-three-point ReadVoltage sweep at +/-20% of the nominal 1.40 V operating
-point showed read latency to be completely invariant while read energy
-scales monotonically with applied voltage (Figure 19). System-level PDP
-variation across the full sweep is below 4%; the sweep predates the
-power-model repair, and the repair only strengthens the insensitivity
-conclusion by raising the static share of total power (Section 3.1.5).
-
-Pareto scaling analysis (3.2) revealed that multi-rank and multi-chip
-scaling does not uniformly improve efficiency. Under compute-bound
-workloads, scaling from a single chip to a full 64-chip DIMM buys no
-latency while multiplying leakage roughly 64x - the Flatline Paradox
-(Figure 20) - because the memory subsystem remains idle and the dominant
-cost is static leakage, which scales linearly with capacity. Under
-write-heavy workloads, multi-rank scaling likewise hurts efficiency
-(Figure 23), making single-chip or 8-chip configurations the
-Pareto-optimal choice for write-intensive deployments; only high-MLP AI
-workloads convert added ranks into latency gains.
+The scope of these claims is bounded by four disclosed limitations,
+gathered here deliberately in one place: validation is internal to the
+toolchain - parameters are anchored to real silicon and vendor
+datasheets, but no end-to-end result is checked against measured
+hardware (Section 2.2); the power-parity path rests on bounding
+arithmetic over idle-gating the simulator cannot yet exercise (Sections
+3.1.6 item 5 and 3.3); endurance projections assume ideal uniform wear
+leveling, with the hot-spot exposure bounded but not simulated (Section
+3.1.4); and the traces are cache-less, first-10M-instruction captures
+with one AI trace of unverifiable provenance (Sections 2.1, 3.1.6 item
+6). None of these caveats inverts a headline - the leakage-class
+hierarchy is measured device physics propagated to module scale, the
+density ratios survive their cell-area sensitivity bounds (Section 3.3,
+cell-area sensitivity passage), and the endurance threshold moves but
+does not vanish under pessimistic leveling (Section 3.1.4 hot-spot
+bound) - but together they draw the boundary between what this book
+demonstrates and what remains to be demonstrated. That boundary is, by
+construction, the future-work agenda of Sections 4.1-4.2.
 
 == 4.1. Future Work: Simulator and Infrastructure Enhancements
 <future-work-simulator-and-infrastructure-enhancements>
