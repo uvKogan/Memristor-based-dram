@@ -2,7 +2,7 @@
 
 A short, practical guide for reading and self-reviewing `Project_Book.typ` (or the compiled PDF). This is not a summary of the content — it's a map of *how* to read it efficiently and *where* to slow down and check the numbers yourself.
 
-Independent verification status as of 2026-08-22: Abstract/Conclusion claims, all of Section 3's tables (1-4, 6), the figure set, and the reference numbering have all been cross-checked against the underlying data/CSVs and found consistent, with zero discrepancies. Details below on what to still sanity-check yourself and why.
+Independent verification status as of 2026-08-22: Abstract/Conclusion claims, all of Section 3's tables (1-4 and the cross-technology summary — renumbered to Table 7 on 2026-08-23; the density-projection table is now Table 6), the figure set, and the reference numbering have all been cross-checked against the underlying data/CSVs and found consistent, with zero discrepancies. Details below on what to still sanity-check yourself and why.
 
 ---
 
@@ -39,7 +39,7 @@ Skip on a first pass: the Introduction/Background (1.x) and Methodology (2.x) se
 - Each table states its power/gating assumption explicitly ("ReRAM worst-case ungated; DRAM/PCM standard idle"). This asymmetry is intentional and disclosed (it's audit item 5), but it means you should never directly compare a ReRAM power number to a DDR5 power number without remembering one is worst-case and the other is realistic-idle.
 
 ### References
-- All 32 references are cited somewhere in the body (verified) and numbered sequentially. The EMBER papers — **[6]** (conference, gives read-energy figures) and **[31]** (journal follow-up, gives read-latency + write-side figures) — are the most load-bearing pair in the whole bibliography; see `Reference_Guide.md` for a one-paragraph summary of each reference if you want the "what is this and why is it here" without reading the papers.
+- All 35 references are cited somewhere in the body (verified) and numbered sequentially. The EMBER papers — **[6]** (conference, gives read-energy figures) and **[31]** (journal follow-up, gives read-latency + write-side figures) — are the most load-bearing pair in the whole bibliography; see `Reference_Guide.md` for a one-paragraph summary of each reference if you want the "what is this and why is it here" without reading the papers.
 - If you want a deeper, source-by-source walkthrough, `NotebookLM_Podcast_Prompt.md` in this same folder is a ready-to-paste prompt for generating an audio explainer from the references.
 
 ### Figures

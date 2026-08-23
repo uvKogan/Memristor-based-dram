@@ -41,7 +41,9 @@ The key quantitative results are: (1) In wall-clock latency, 1T1R SLC
 ReRAM operates within 1.50x of DDR5-4800 under compute-bound workloads -
 where it runs 49x faster than the legacy PCM baseline (13-16x under
 sustained streaming) - while trailing DDR5 by 4.6x under
-high-parallelism AI inference; the selector-gated 1S1R SLC follows 1T1R
+high-parallelism AI inference (a memory-latency ratio under the
+cache-less trace capture of Section 2.1, not a projected application
+slowdown); the selector-gated 1S1R SLC follows 1T1R
 at a \~1.5x average-latency cost (1.3-1.7x across the suite) while
 offering 1.9x DDR5\'s die-level density (3.8x as MLC). (2) Under a
 repaired, ungated power model, selector-gated 1S1R ReRAM emerges as a
@@ -93,7 +95,8 @@ operating-point selection.
 ReRAM write-latency penalties are workload-dependent and are confined to
 write-active workloads, positioning selector-gated 22nm SLC ReRAM as a
 latency-competitive, density-superior DDR5 alternative for compute-bound
-and streaming workloads, with a clear research path - restoring
+workloads - and within a disclosed 1.9-2.1x of DDR5 under sustained
+streaming - with a clear research path - restoring
 idle-power gating to both the simulation stack and the architecture -
 standing between it and outright power parity. High-parallelism AI
 inference remains DDR5 territory.
@@ -149,21 +152,19 @@ inference remains DDR5 territory.
 // GEN-END lof
 = List of Tables
 <list-of-tables>
-// GEN-BEGIN lot
-- Table 1: NVSim device-level characterization per 1 Gb chip (22nm FinFET LOP, 1.
+- Table 1: NVSim device-level characterization per 1 Gb chip (22nm FinFET LOP, 1.4 V ReadVoltage nominal)
 
-- Table 2: Average total latency (ns)
+- Table 2: Average total latency (ns), full-DIMM configurations, matched-host window
 
-- Table 3: Total module power (W)
+- Table 3: Total module power (W), full-DIMM, repaired model, module-sum semantics
 
-- Table 4: Power-Delay Product (W·ns \= nJ)
+- Table 4: Power-Delay Product (W·ns \= nJ), full-DIMM, and six-workload geometric means
 
-- Table 5: Projected DIMM Write Endurance Lifetime (1T1R SLC Full DIMM, physical capacity 8 GB, 66.
+- Table 5: Projected DIMM write endurance lifetime (1T1R SLC full DIMM, 8 GB, matched-host window, uniform wear leveling)
 
-- Table 7: Projected die-level density versus DDR5 (\= 1.
+- Table 6: Projected die-level density versus DDR5 (\= 1.00) under quadratic feature-size scaling and 3D deck stacking
 
-- Table 6: Cross-technology summary, full-DIMM configurations.
-// GEN-END lot
+- Table 7: Cross-technology summary, full-DIMM configurations
 #pagebreak()
 = 1. Introduction & Background
 <introduction-background>
@@ -191,6 +192,22 @@ inference remains DDR5 territory.
 
 == 1.2. ReRAM Fundamentals
 <reram-fundamentals>
+Before the engineering choices, the device itself: a memristor (ReRAM
+cell) is a two-terminal metal-insulator-metal stack - typically an HfOx
+or TaOx oxide - whose electrical resistance #emph[is] its stored state.
+A programming voltage grows or ruptures a conductive filament of oxygen
+vacancies through the insulating oxide, switching the cell between a
+low-resistance state (LRS) and a high-resistance state (HRS); a read
+applies a small sense voltage that leaves the filament undisturbed
+\[14\]. Because the filament persists without power, storage is
+non-volatile - no refresh, no standby charge maintenance - and because
+state is resistive rather than capacitive, the cell has no capacitor to
+scale, which is precisely the wall DRAM's planar cell faces \[5\].
+Writes physically stress the filament, so endurance is finite (Section
+3.1.4), and filament formation is stochastic, which is why the
+resistance targets and sensing margins below are engineering choices
+rather than free parameters.
+
 - #strong[Process Selection:] I standardized on 22nm FinFET LOP (Low
   Operating Power). This node allows for logic-compatible integration
   #strong[\[8\]] while the LOP profile aligns with the thermal and power
@@ -212,11 +229,10 @@ inference remains DDR5 territory.
 
   - #strong[1T1R (Transistor-based):] Utilizes CMOS access transistors
     to completely eliminate sneak-paths. While this results in a
-    logic-compatible but larger bit-cell area - a commonly-used
-    engineering estimate of approximately $20 F^2$, grounded in the
-    transistor-drive-limited cell-sizing reasoning of
-    #strong[\[3\], \[14\]] rather than a number either paper states
-    outright - modern commercial foundries currently mass-produce 22nm
+    logic-compatible but larger bit-cell area - a commonly-used,
+    transistor-drive-limited engineering estimate of approximately
+    $20 F^2$ (derivation and demonstrated-endpoint caveats in Appendix
+    A) - modern commercial foundries currently mass-produce 22nm
     embedded ReRAM (eReRAM) macros at megabyte scale #strong[\[24\]],
     inherently validating its manufacturability far beyond the 1Mb
     subarrays evaluated here.
@@ -315,6 +331,19 @@ inference remains DDR5 territory.
     implementation, which triggers a floating-point exception in
     Mat.cpp\'s ISPV sensing logic.
     ]
+
+- #strong[Validation Scope]: The validation flow above establishes
+  #emph[internal] consistency, not hardware correlation. Input
+  parameters are anchored to real silicon and vendor documents - the
+  EMBER macro\'s published measurements \[6\], \[31\] and the vendor
+  DDR5 IDD datasheets of Section 2.3 - and every repair in Section 3.1.6
+  is verified against NVSim\'s device-level output or exact predicted
+  arithmetic (0.0% error). No end-to-end result, however, is validated
+  against a measured ReRAM DIMM or an instrumented DDR5 system - no
+  ReRAM main-memory module exists to measure. The "0.0% error" claims
+  throughout this book are therefore pipeline-fidelity guarantees (the
+  system level faithfully reflects its device-level inputs), not
+  accuracy guarantees against physical hardware.
 
 == 2.3. Hardware Baselines & Memory Models
 <hardware-baselines-memory-models>
@@ -830,9 +859,12 @@ under the highly active GPT-2 Inference (IFMAP) workload.]
 The repaired model also retires an artifact of this project\'s earlier
 analysis. Under the simulator\'s generic standby defaults, total power
 appeared to cluster at nearly the same level for every ReRAM
-configuration under any given workload - a convergence previously read
-as a named “Power Flatline.” With real per-technology leakage wired in,
-that flatline stands revealed as a modeling artifact; the true signature
+configuration under any given workload - a convergence this project\'s
+earlier analysis treated as a real effect, here named the “Standby
+Convergence” (deliberately not “flatline”: the genuine Flatline Paradox
+of Section 3.2 is an unrelated multi-rank scaling finding). With real
+per-technology leakage wired in, that convergence stands revealed as a
+modeling artifact; the true signature
 is leakage-class separation. The four ReRAM full-DIMM configurations
 fall into two power tiers set entirely by their standby physics - 50.9 W
 for the transistor-gated 1T1R family and 1.12-1.30 W for the
@@ -859,7 +891,12 @@ under every workload. The architectural consequence is decisive: 1S1R
 lands within 1.7x of DDR5 at the conservative calibration floor (within
 11% of parity at the ceiling) with zero refresh cost and its gating
 headroom unexercised - a credible successor profile - while an always-on
-1T1R DIMM, at 65-78x DDR5\'s power, is infeasible without gating. The
+1T1R DIMM, at 65-78x DDR5\'s power, is infeasible without gating. One
+honest bound on that comparison: both ends of the DDR5 band are vendor
+#emph[specification] currents (Section 2.3), not measured typicals - a
+typical-current module sits below the spec-limit ceiling - so the
+11%-of-parity figure is the most favorable end of a disclosed range, not
+an expected-case estimate. The
 selector\'s leakage discipline is thereby elevated from a device
 curiosity to the deciding architectural requirement.
 
@@ -1252,7 +1289,14 @@ write streaming, directly motivating the wear-leveling controller and
 write-coalescing cache proposed in Section 4.2. Note additionally that
 these lifetimes assume ideal uniform wear leveling; hot-spot write
 patterns without such a controller would reduce projected lifetime
-proportionally.
+proportionally. That proportionality also bounds the exposure rather
+than leaving it open-ended: a controller that lets the hottest region
+absorb twice its uniform share of writes simply halves every figure
+above - the 128 GB SLC configurations still clear the server target
+(8.7 years for 1T1R, 12.4 for the selector), while the halved 64 GB
+figures (4.3-6.2 years) sit at the target\'s lower edge - so imperfect
+leveling shifts where the capacity threshold lies, not whether one
+exists.
 
 === #strong[3.1.5 Design Robustness: ReadVoltage Sensitivity]
 <design-robustness-readvoltage-sensitivity>
@@ -1636,7 +1680,7 @@ at 0.22x (0.44x as MLC) - a 20F² access-transistor cell fabricated at
 22nm cannot compete with 10 nm-class DRAM on area, which reinforces
 1T1R\'s latency-niche verdict. At the cell level, the comparison becomes
 node-independent and exact: DRAM stores one bit per 6F², 1T1R one per
-20F² - a transistor-drive-limited figure \[14\] - and the selector
+20F² (Appendix A), and the selector
 cross-point one per 4F² (two per 4F² as MLC) - so at any matched process
 node, 1S1R MLC is 3.0x denser than DRAM and 1S1R SLC 1.5x denser, while
 1T1R is intrinsically 3.3x less dense under the planar-access-transistor
@@ -1657,12 +1701,12 @@ planar DRAM does not possess. Node scaling further compounds through the
 endurance capacity law of Section 3.1.4: a denser module is, by that
 law, directly a longer-lived module.
 
-Table 7 makes the third level concrete: the measured die-level ratios of
+Table 6 makes the third level concrete: the measured die-level ratios of
 Figure 26, scaled quadratically to 16nm- and 12nm-class nodes, with the
 back-end-of-line deck-stacking lever that only the cross-point
 possesses.
 
-#strong[Table 7: Projected die-level density versus DDR5 (\= 1.00) under
+#strong[Table 6: Projected die-level density versus DDR5 (\= 1.00) under
 quadratic feature-size scaling and 3D deck stacking.]
 
 #align(center)[#table(
@@ -1713,7 +1757,19 @@ is a front-end-of-line device.]
 These projections are bounded claims, not measurements: the 16nm and
 12nm columns are geometry rather than NVSim characterizations, they
 optimistically assume peripheral circuits shrink with the cell array,
-and selector device physics below the 2x-nm regime is unvalidated. The
+and selector device physics below the 2x-nm regime is unvalidated.
+Every ratio in the table is also linear in the assumed cell area, and
+that sensitivity is worth stating explicitly because the cell areas are
+assumptions, not measurements (Appendix A): demonstrated 1T1R endpoints
+span a 14nm FinFET embedded macro at 112F² \[20\] - which would drag
+1T1R\'s 22nm ratio from 0.22x down to roughly 0.04x - and a DRAM-process
+recessed-channel part at 6F² \[33\] - which would lift it to roughly
+0.7x; on the selector side, 4F² is the idealized floor, and a realized
+cell at twice that area would halve every 1S1R entry, dropping 22nm SLC
+to DDR5 parity (0.96x) while MLC retains 1.92x before node scaling
+restores the margin. The density verdict is therefore robust for the
+selector cross-point but conditional on cell-area realization for 1T1R.
+The
 counterpoint is equally real, and moving on three fronts: DRAM\'s escape
 from the planar capacitor is on the incumbents\' public roadmap, with
 Samsung outlining vertical-channel-transistor 3D DRAM for the second
@@ -1734,7 +1790,7 @@ footprint at lower packaging cost - a response to the same supply-side
 crunch behind this project\'s premise (Section 1.1), though the design
 remains patent-stage, discloses no independent performance data, and is
 not targeted for commercialization before 2030 \[34\]\[35\]. The window
-Table 7 quantifies is therefore
+Table 6 quantifies is therefore
 real but not permanent - it is the interval in which a cross-point that
 ports to logic-compatible nodes today faces a DRAM that must first
 re-architect its cell to go vertical. Every density multiplier in the
@@ -1764,7 +1820,7 @@ with thinner-wire RC the main unmodeled risk. Endurance splits both
 ways: device variability - the field\'s named barrier to large arrays
 and multilevel operation, rooted in the stochastic filament process
 \[14\] - is unvalidated at scaled dimensions, but the capacity law
-converts every density multiplier in Table 7 into an equal lifetime
+converts every density multiplier in Table 6 into an equal lifetime
 multiplier at fixed footprint. The caveats of the preceding paragraph
 apply with full force - this is bounding geometry, not simulation, and
 per-transistor leakage densities worsen at advanced nodes, making
@@ -1790,7 +1846,7 @@ genuinely risks at the device level is variability - the cycle-to-cycle
 and device-to-device spread rooted in the stochastic motion of the
 oxygen vacancies that form the filament, which the field itself names
 the major remaining barrier to large arrays and multilevel operation
-\[14\] - which is exactly why Table 7\'s 16nm and 12nm columns are
+\[14\] - which is exactly why Table 6\'s 16nm and 12nm columns are
 labeled projections rather than measurements, and why the memory
 supply-demand crisis that motivates this work (Section 1.1) may be the
 demand-side event that finally changes the economics.
@@ -1881,10 +1937,10 @@ item (Section 4.1).
 
 #pagebreak()
 <section-1>
-Table 6 places every axis of the comparison side by side - the tabular
+Table 7 places every axis of the comparison side by side - the tabular
 summary of the entire evaluation.
 
-#strong[Table 6: Cross-technology summary, full-DIMM configurations.]
+#strong[Table 7: Cross-technology summary, full-DIMM configurations.]
 
 #align(center)[#table(
   columns: 7,
@@ -1926,7 +1982,7 @@ summary of the entire evaluation.
   [737.1],
   [1.92],
   [24.8 yr],
-  [flagship: one gating policy from DDR5 parity],
+  [flagship: one credible - but unexercised - gating policy from DDR5 parity],
   [#strong[1T1R MLC]],
   [182.6],
   [50.877],
@@ -2025,7 +2081,7 @@ Power analysis (3.1.2), executed on the repaired power model,
 established DDR5\'s structural refresh burden (33-45% of module power on
 every workload, from real rank-level counters under the
 vendor-calibrated model) and replaced the earlier technology-blind
-“flatline” with a leakage-class hierarchy: 50.9 W ungated 1T1R, 1.12 W
+“Standby Convergence” artifact with a leakage-class hierarchy: 50.9 W ungated 1T1R, 1.12 W
 ungated 1S1R, 0.651 W DDR5 (calibration floor), 0.040 W PCM. Real ReRAM
 dynamic power is small and now technology-differentiated (12-98 mW
 module-wide under GCC), so ungated ReRAM power is leakage - and the
@@ -2124,11 +2180,10 @@ highest-leverage item of future work.
 - #strong[Recessed-Channel 1T1R Density:] this evaluation models 1T1R
   with a planar/FinFET, width-driven CMOS access transistor (20F²,
   Appendix A), the only access-device topology NVSim supports for this
-  project. A commercial 16Gb, 27nm ReRAM has demonstrated a
-  DRAM-process buried recessed-channel access transistor instead,
-  reaching a 6F² cell - parity with DRAM \[33\] - though paired with a
-  Cu-filament CBRAM switching layer rather than the HfOx/TaOx family
-  simulated here. Closing this gap for the oxide-RRAM material system
+  project. A commercial part has demonstrated a DRAM-process buried
+  recessed-channel access transistor instead, reaching a 6F² cell -
+  parity with DRAM \[33\] - though with a different switching-layer
+  material (full discussion in Appendix A). Closing this gap for the oxide-RRAM material system
   modeled in this book would require either patching NVSim with a
   recessed-channel access-device model or deriving an equivalent RC/
   drive-current model outside NVSim and feeding it back in; either is
