@@ -290,3 +290,48 @@ and the selector write/read device-ratio claim) and one in the Conclusion were f
 pre-`system_v4`** or even original-3x/4x-placeholder-era data — never updated through either of the
 two prior MLC-multiplier correction rounds. All four caught and fixed as part of the same sweep,
 independent of today's read-latency correction.
+
+## Repo maintenance sweep (2026-08-23)
+
+Lead-approved sweep (Tiers B and C of the proposal; Tier A — deleting gem5
+`build/`+`m5out/`, `ml_trace_output/`, SCALE-Sim — was explicitly declined, so
+all large regenerable outputs remain in place).
+
+**Tier B — superseded result generations, moved (not deleted) into
+`archive/results_pre_v6_20260823/`.** Current generation kept in `results/`:
+`system_v6/` + `system_v6_input/`, `final_graphs_v8/`, `slide_graphs/`,
+`hardware/`, `logs/`, the cycle reports, and the root-level JSON/log files.
+
+| Old path (under `results/`) | New path (under `archive/results_pre_v6_20260823/`) |
+|---|---|
+| `system/` | `system/` |
+| `system_v3/` | `system_v3/` |
+| `system_v4/` | `system_v4/` |
+| `system_v5/` | `system_v5/` |
+| `system_v5_input/` | `system_v5_input/` |
+| `system_v5_micron/` | `system_v5_micron/` |
+| `final_graphs_v7/` | `final_graphs_v7/` |
+
+**Tier C — orphaned root scripts, `git mv`'d to `archive/scripts/`.** Verified
+by grep before moving: none is referenced by `mbmm_master.py`, any stage
+script, any import, or any doc.
+
+| Script | Why archived |
+|---|---|
+| `run_gem5_spec2017.py`, `run_gem5_trace.py` | gem5-era trace generation; the pipeline has been trace-based (`.nvt` inputs in `benchmarks/`) since the gem5 decoupling |
+| `gen_stream.py` | one-off generator for the STREAM benchmark source; `benchmarks/stream.c` and `stream.nvt` already exist |
+| `run_voltage_sweep.py`, `plot_voltage_sweep.py` | one-off §3.1.5 ReadVoltage sensitivity study (Figure 19); results live in `results/sweep_voltage_results.json` and the book |
+
+**Deliberately kept at root:** `cleanup_traces.sh` — re-confirmed still
+functional (sweeps `simulators/gem5/m5out/`, which still exists since Tier A
+was declined); previously audited and kept in the 2026-07-22 cleanup above.
+`logging_config.py` remains imported by 5 live scripts (the 4 previously noted
+plus `visualize_slides.py`).
+
+**Flags raised, no action taken:** (1) `simulators/gem5/` carries local
+NVMain-integration patches (`src/mem/NVMainMemory.cc`, modified
+`src/mem/SConscript` and `configs/common/Options.py`) that exist only on this
+disk — worth exporting to a tracked patch file. (2) `resources/` (137M) is
+gitignored, so the thesis source papers exist in exactly one place — worth an
+external backup. (3) `simulators/SCALE-Sim` is a clean clone at commit
+`9f98c43` (recorded here in case it is ever deleted/re-cloned).
