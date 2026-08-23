@@ -1,6 +1,6 @@
 # Reference Guide — MBMM Project Book
 
-A quick-reference summary of all 35 sources cited in `Project_Book.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts.
+A quick-reference summary of all 40 sources cited in `Project_Book.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts.
 
 The book's MLC penalty multipliers are: **1.5x read latency, 3.263x write latency, 1.1x read energy, 3.0x write energy** (2 bits/cell vs. 1 bit/cell), all sourced from the EMBER macro's two publications, [6] and [31] below.
 
@@ -132,6 +132,25 @@ Real Microsoft server profiling data (Bing, Cosmos): 67-97% CPU utilization but 
 
 **[32] Izraelevitz et al., "Basic Performance Measurements of the Intel Optane DC PMM," arXiv, 2019**
 Confirms Optane's real DDR-T interface: electrically DDR4-compatible but running a different, latency-tolerant protocol. Used as industry precedent that even a major NVM product didn't try to match the newest DRAM PHY generation.
+
+## Related Work (Section 1.3 — academic prior art)
+
+**[36] B. C. Lee, E. Ipek, O. Mutlu, D. Burger, "Architecting Phase Change Memory as a Scalable DRAM Alternative," ISCA 2009**
+One of the three founding ISCA 2009 NVM-main-memory papers. Narrows PCM's raw 1.6x delay / 2.2x energy deficit vs DRAM to within 1.2x / 1.0x via row-buffer reorganization and partial writes. Cited in §1.3 as the origin of the field's template (hide the write penalty, level the wear, buy density). Verified: pp. 2-13, DOI 10.1145/1555754.1555758.
+
+**[37] M. K. Qureshi, V. Srinivasan, J. A. Rivers, "Scalable High Performance Main Memory System Using Phase-Change Memory Technology," ISCA 2009**
+The hybrid-memory founding paper: large PCM store fronted by a small DRAM buffer (~3% of PCM capacity) with lazy write, line-level writeback, and fine-grained wear leveling. Cited in §1.3. Verified: pp. 24-33, DOI 10.1145/1555754.1555760.
+
+**[38] P. Zhou, B. Zhao, J. Yang, Y. Zhang, "A Durable and Energy Efficient Main Memory Using Phase Change Memory Technology," ISCA 2009**
+The durability-focused member of the ISCA 2009 trio: redundant-bit-write removal, row shifting, and segment-swapping wear leveling extend projected PCM lifetime to 13-22 years. Cited in §1.3. Verified: pp. 14-23, DOI 10.1145/1555754.1555759.
+
+**[39] C. Xu et al., "Overcoming the Challenges of Crossbar Resistive Memory Architectures," HPCA 2015**
+The closest prior work to this whole book: crossbar ReRAM as main memory, modeling circuit-level IR-drop/sneak-current-induced data-dependent RESET latency, recovering to within ~10% of an ideal DRAM-only system via split-phase RESET and compression-based encoding. §1.3 explicitly contrasts its circuit-level write timing with this book's calibrated array-level abstraction — complementary levels of analysis. Verified: pp. 476-488, DOI 10.1109/HPCA.2015.7056056.
+
+**[40] E. Kültürsay, M. Kandemir, A. Sivasubramaniam, O. Mutlu, "Evaluating STT-RAM as an Energy-Efficient Main Memory Alternative," ISPASS 2013**
+The parallel evaluation for the competing NVM: unmodified STT-RAM main memory is not competitive with DRAM, but partial writes + row-buffer bypass make it performance-comparable at ~60% lower memory energy. Cited in §1.3. Verified: pp. 256-267, DOI 10.1109/ISPASS.2013.6557176.
+
+*(Note: §1.3 also cites the pre-existing [23] (Optane business exit) and [32] (Optane DC PMM measurements) — [32] now does double duty as the field's only real-hardware datapoint.)*
 
 ---
 
