@@ -328,10 +328,12 @@ was declined); previously audited and kept in the 2026-07-22 cleanup above.
 `logging_config.py` remains imported by 5 live scripts (the 4 previously noted
 plus `visualize_slides.py`).
 
-**Flags raised, no action taken:** (1) `simulators/gem5/` carries local
-NVMain-integration patches (`src/mem/NVMainMemory.cc`, modified
-`src/mem/SConscript` and `configs/common/Options.py`) that exist only on this
-disk — worth exporting to a tracked patch file. (2) `resources/` (137M) is
+**Flags raised:** (1) `simulators/gem5/` carries local NVMain-integration
+patches (`src/mem/NVMainMemory.{cc,hh,py}`, modified `src/mem/SConscript` and
+`configs/common/Options.py`) that existed only on this disk — RESOLVED
+2026-08-23: exported to tracked `simulators/gem5-nvmain-patches/` (diff +
+hook files + restore instructions), patch verified with
+`git apply --check --reverse`. (2) `resources/` (137M) is
 gitignored, so the thesis source papers exist in exactly one place — worth an
 external backup. (3) `simulators/SCALE-Sim` is a clean clone at commit
 `9f98c43` (recorded here in case it is ever deleted/re-cloned).
