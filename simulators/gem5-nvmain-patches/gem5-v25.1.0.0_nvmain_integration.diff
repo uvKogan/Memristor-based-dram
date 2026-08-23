@@ -1,0 +1,42 @@
+diff --git a/configs/common/Options.py b/configs/common/Options.py
+index 1e65262827..eab60ef29f 100644
+--- a/configs/common/Options.py
++++ b/configs/common/Options.py
+@@ -142,6 +142,8 @@ def addNoISAOptions(parser):
+         choices=ObjectList.mem_list.get_names(),
+         help="type of memory to use",
+     )
++    # parser.add_argument("--nvmain-config", type=str, default=None,
++    #     help="NVMain configuration file to use.")
+     parser.add_argument(
+         "--mem-channels", type=int, default=1, help="number of memory channels"
+     )
+@@ -688,6 +690,12 @@ def addCommonOptions(parser, default_isa: Optional[ISA] = None):
+         default=None,
+         help="Override vendor string returned by CPUID instruction in X86.",
+     )
++    parser.add_argument(
++        "--nvmain-config", 
++        type=str, 
++        default=None,
++        help="NVMain configuration file to use."
++    )
+ 
+ 
+ def addSEOptions(parser):
+diff --git a/src/mem/SConscript b/src/mem/SConscript
+index c427f0de81..1dcb9b9ca8 100644
+--- a/src/mem/SConscript
++++ b/src/mem/SConscript
+@@ -167,3 +167,10 @@ DebugFlag('TokenPort')
+ DebugFlag("MemChecker")
+ DebugFlag("MemCheckerMonitor")
+ DebugFlag("QOS")
++
++SimObject('NVMainMemory.py', sim_objects=['NVMainMemory'])
++Source('NVMainMemory.cc')
++# Tell the compiler where the NVMain headers are
++env.Append(CPPPATH=['/home/yuvalk/MBMM/simulators/nvmain'])
++# Execute the NVMain build script to link the ReRAM engine into gem5
++SConscript('/home/yuvalk/MBMM/simulators/nvmain/SConscript')
+\ No newline at end of file
