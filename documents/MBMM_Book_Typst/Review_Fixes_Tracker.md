@@ -61,9 +61,9 @@ Status values: `todo` / `in-progress` / `done` / `blocked` / `wont-do` / `prep-d
 
 | ID | Item | Status | Owner |
 |----|------|--------|-------|
-| T3-1 | Related Work section: proposed as new §1.3; 6 candidate sources listed (ISCA'09 PCM trio, Xu HPCA'15 crossbar ReRAM, Kültürsay ISPASS'13 STT-RAM, Izraelevitz Optane measurements); each requires web verification before citing | prep-done (awaiting sign-off) | Claude f2ad0d1b |
-| T3-2 | §3.1.6 placement: recommendation is DO NOT MOVE (35 in-body cross-references); add a one-paragraph audit summary at top of §3.1 instead | prep-done (awaiting sign-off) | Claude f2ad0d1b |
-| T3-3 | Conclusion rewrite: keep opening synthesis, compress five per-section recaps into one verdicts paragraph, add a consolidated honest-scope closing paragraph; draft-first, side-by-side review | prep-done (awaiting sign-off) | Claude f2ad0d1b |
+| T3-1 | Related Work: new §1.3 added with all sources web-verified (titles/venues/pages/DOIs). New refs [36]-[40] (ISCA'09 PCM trio, Xu HPCA'15, Kültürsay ISPASS'13); Izraelevitz was ALREADY ref [32] and Optane-exit [23] — reused, no duplicates. Reference count now **40**; `Reference_Guide.md` + `Reading_Guide.md` synced | done | Claude f2ad0d1b |
+| T3-2 | §3.1.6 placement: audit-summary paragraph added at top of §3.1 ("fourteen found, twelve repaired, two permanent"); section itself NOT moved (35 in-body cross-references preserved) | done | Claude f2ad0d1b |
+| T3-3 | Conclusion rewrite: full replacement text drafted in `Conclusion_Rewrite_Draft.md` (verdicts paragraph + consolidated honest-scope paragraph); book untouched pending Lead side-by-side review | draft ready (awaiting approval) | Claude f2ad0d1b |
 
 ### Explicitly NOT doing (critique findings triaged as overstated)
 
@@ -106,5 +106,11 @@ Append entries newest-last. Template:
 ### 2026-08-23 — T1-8, T1-9 + parallel-session reconciliation — Claude session f2ad0d1b
 - File(s): `Project_Book.typ`, `Project_Book.pdf`, `Presentation_Fixes_Tracker.md`, `Presentation_Outline.md`, `presentation_deck.html`
 - What changed: Gating-parity claim reworded as projection-contingent at all four sites (new anchors: Abstract `Power parity is therefore`, §3.3 `Power parity for 1S1R SLC is therefore a projection`, Table 7 cell `flagship; power parity contingent on future gating work`, Conclusion `credible, bounded projection to DDR5 power parity`); "intrinsically" dropped in §3.3. Parallel session's tracker reconciled: statuses flipped to done/in-progress with pointers here, renumbering + Standby Convergence notices added at top. Deck slide-16 speaker note and outline updated — they claimed the book still said "competitive for streaming"; it no longer does.
+- Compile gate: pass
+- Staged: committed (`3331683`)
+
+### 2026-08-23 — T3-1, T3-2 executed; T3-3 drafted — Claude session f2ad0d1b
+- File(s): `Project_Book.typ`, `Project_Book.pdf`, `Reference_Guide.md`, `Reading_Guide.md`, `Conclusion_Rewrite_Draft.md` (new)
+- What changed: New §1.3 Related Work (anchor: `== 1.3. Related Work`) citing new refs [36]-[40] plus existing [23]/[32]; five verified bibliography entries inserted after [35]; reference count 35→40. Audit-summary paragraph added at top of §3.1 (anchor: `One framing note before the numbers`). Conclusion replacement text drafted only — NOT applied. ToC updates automatically (typst `#outline()`).
 - Compile gate: pass
 - Staged: yes (uncommitted)

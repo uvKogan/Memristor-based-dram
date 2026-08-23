@@ -257,6 +257,58 @@ rather than free parameters.
   architectural evaluation from fabrication economics and market
   volatility.
 
+== 1.3. Related Work
+<related-work>
+The architectural case for replacing DRAM with a non-volatile main
+memory was first made at scale by three concurrent ISCA 2009 studies,
+all targeting phase-change memory. Lee et al. architected PCM as a
+scalable DRAM alternative, narrowing a raw 1.6x delay / 2.2x energy
+deficit to within 1.2x / 1.0x through row-buffer reorganization and
+partial writes \[36\]; Qureshi et al. hybridized a large PCM store
+behind a small DRAM buffer (\~3% of PCM capacity) with lazy writes and
+fine-grained wear leveling \[37\]; and Zhou et al. attacked durability
+directly, extending projected PCM lifetime to 13-22 years via
+redundant-bit-write removal and row-shifting wear leveling \[38\]. That
+generation established the field\'s enduring template - hide the write
+penalty, level the wear, buy density where latency cannot be hidden -
+but it evaluated DDR2/DDR3-era baselines, and its commercial
+embodiment, Intel\'s Optane/3D XPoint, was ultimately discontinued on
+cost economics rather than physics \[23\].
+
+For the resistive technology evaluated here, the closest prior work is
+Xu et al.\'s HPCA 2015 study of crossbar ReRAM as main memory, which
+characterized the IR-drop- and sneak-current-induced, data-dependent
+RESET latency of large crossbars and recovered to within \~10% of an
+ideal DRAM-only system through split-phase RESET and compression-based
+encoding \[39\]. Kültürsay et al. ran the parallel exercise for
+STT-RAM, finding an unmodified STT-RAM main memory uncompetitive but a
+lightly optimized one performance-comparable to DRAM at \~60% lower
+memory energy \[40\]. On the empirical side, Izraelevitz et al.
+published the first comprehensive third-party characterization of the
+only NVM main-memory module ever shipped - the Optane DC PMM - and
+found its behavior substantially more nuanced than the \"slow,
+persistent DRAM\" abstraction earlier emulation-based studies assumed
+\[32\]: a standing caution for every simulation-only evaluation, this
+one included (Section 2.2, Validation Scope).
+
+Against that body of work, this book\'s contribution is fivefold: (a)
+the baseline is commodity DDR5 with vendor-calibrated power, not the
+DDR2/DDR3-era DRAM of the founding studies; (b) the ReRAM inputs are a
+device-anchored 22nm NVSim characterization propagated into
+cycle-accurate NVMain simulation, rather than abstract latency/energy
+multipliers; (c) transistor-gated 1T1R and selector-gated 1S1R are
+compared head-to-head at a matched process node, making the selector\'s
+leakage discipline - not a single technology\'s viability - the object
+of study; (d) the simulation toolchain itself is audited and repaired
+(Section 3.1.6), where prior studies take the NVSim-to-NVMain wiring on
+trust; and (e) endurance is projected from measured per-subarray write
+counts under real traces rather than analytic write rates. The
+complementary boundary is equally explicit: this work models the
+crossbar at NVSim\'s calibrated array-level abstraction (Section 1.2)
+and does not reproduce \[39\]\'s circuit-level, data-dependent write
+timing - the two levels of analysis answer different questions, and
+integrating them is part of the agenda in Section 4.1.
+
 = 2. Infrastructure & Methodology
 <infrastructure-methodology>
 == 2.1. Decentralized Structure & Simulation Stack
@@ -573,6 +625,20 @@ refresh-free but leakage-bound power identity (including where the
 write-energy cost actually surfaces) in Section 3.1.2, their balance in
 Section 3.1.3, write endurance in Section 3.1.4, and density in Section
 3.3.
+
+One framing note before the numbers, so the trust boundary is explicit
+from the outset: every figure in this chapter passed through a
+simulation-fidelity audit of the NVSim-to-NVMain toolchain that found
+#strong[fourteen] silent failure modes, of which #strong[twelve] were
+repaired - each repair validated against device-level anchors or exact
+predicted arithmetic, and the affected simulations re-run - while
+#strong[two] remain as disclosed permanent limitations rather than
+bugs: idle-power gating is disabled in the simulator source (so all
+ReRAM power figures are worst-case ungated), and the traces carry
+weak provenance (cache-less capture, and one AI trace unattributable to
+a preserved generator configuration). The full audit, with the repair
+arithmetic, is Section 3.1.6; results below cite its item numbers where
+a specific repair or caveat applies.
 
 === 3.1.1 Latency Analysis: The MLC Write Penalty
 <latency-analysis-the-mlc-write-penalty>
@@ -2278,6 +2344,16 @@ data, has been made publicly available.
 #strong[\[34\]] Intel Corporation, \"Ultra High Bandwidth Memory with Backend Transistors,\" U.S. Patent Application Publication No. US 2026/0191095 A1, Appl. No. 19/001,921, filed Dec. 26, 2024, published Jul. 2, 2026. \[Online\]. Available: https:\/\/www.freepatentsonline.com/y2026/0191095.html. \[Accessed: Aug. 22, 2026\].
 
 #strong[\[35\]] TrendForce, \"Intel Patent Reveals XBM Matching HBM4 Footprint Without Interposers; Commercialization Seen After 2030,\" Jul. 8, 2026. \[Online\]. Available: https:\/\/www.trendforce.com/news/2026/07/08/news-intel-patent-reveals-xbm-matching-hbm4-footprint-without-interposers-commercialization-seen-after-2030/. \[Accessed: Aug. 22, 2026\].
+
+#strong[\[36\]] B. C. Lee, E. Ipek, O. Mutlu, and D. Burger, \"Architecting Phase Change Memory as a Scalable DRAM Alternative,\" in #emph[Proc. 36th Annu. Int. Symp. Computer Architecture (ISCA)], 2009, pp. 2-13. DOI: 10.1145/1555754.1555758
+
+#strong[\[37\]] M. K. Qureshi, V. Srinivasan, and J. A. Rivers, \"Scalable High Performance Main Memory System Using Phase-Change Memory Technology,\" in #emph[Proc. 36th Annu. Int. Symp. Computer Architecture (ISCA)], 2009, pp. 24-33. DOI: 10.1145/1555754.1555760
+
+#strong[\[38\]] P. Zhou, B. Zhao, J. Yang, and Y. Zhang, \"A Durable and Energy Efficient Main Memory Using Phase Change Memory Technology,\" in #emph[Proc. 36th Annu. Int. Symp. Computer Architecture (ISCA)], 2009, pp. 14-23. DOI: 10.1145/1555754.1555759
+
+#strong[\[39\]] C. Xu, D. Niu, N. Muralimanohar, R. Balasubramonian, T. Zhang, S. Yu, and Y. Xie, \"Overcoming the Challenges of Crossbar Resistive Memory Architectures,\" in #emph[Proc. 21st IEEE Int. Symp. High Performance Computer Architecture (HPCA)], 2015, pp. 476-488. DOI: 10.1109/HPCA.2015.7056056
+
+#strong[\[40\]] E. Kültürsay, M. Kandemir, A. Sivasubramaniam, and O. Mutlu, \"Evaluating STT-RAM as an Energy-Efficient Main Memory Alternative,\" in #emph[Proc. IEEE Int. Symp. Performance Analysis of Systems and Software (ISPASS)], 2013, pp. 256-267. DOI: 10.1109/ISPASS.2013.6557176
 
 #pagebreak() <section-3>
 = Appendix A: Simulation Parameters and Literature Grounding

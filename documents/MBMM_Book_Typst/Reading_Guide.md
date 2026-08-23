@@ -17,7 +17,7 @@ Don't read front-to-back on a first pass. Read in this order instead:
 5. **Conclusion** — should feel like a compressed replay of what you just read, not new information.
 6. **Appendix A** — read last, as a reference appendix for "where did this parameter/multiplier come from," not as narrative.
 
-Skip on a first pass: the Introduction/Background (1.x) and Methodology (2.x) sections if you already know the project — they're setup, not findings.
+Skip on a first pass: the Introduction/Background (1.x) and Methodology (2.x) sections if you already know the project — they're setup, not findings. Exception: **§1.3 Related Work** (added 2026-08-23) is worth reading even if you know the project — it's the "what's novel here" answer an examiner will ask for.
 
 ---
 
@@ -39,7 +39,7 @@ Skip on a first pass: the Introduction/Background (1.x) and Methodology (2.x) se
 - Each table states its power/gating assumption explicitly ("ReRAM worst-case ungated; DRAM/PCM standard idle"). This asymmetry is intentional and disclosed (it's audit item 5), but it means you should never directly compare a ReRAM power number to a DDR5 power number without remembering one is worst-case and the other is realistic-idle.
 
 ### References
-- All 35 references are cited somewhere in the body (verified) and numbered sequentially. The EMBER papers — **[6]** (conference, gives read-energy figures) and **[31]** (journal follow-up, gives read-latency + write-side figures) — are the most load-bearing pair in the whole bibliography; see `Reference_Guide.md` for a one-paragraph summary of each reference if you want the "what is this and why is it here" without reading the papers.
+- All 40 references are cited somewhere in the body (verified) and numbered sequentially. The EMBER papers — **[6]** (conference, gives read-energy figures) and **[31]** (journal follow-up, gives read-latency + write-side figures) — are the most load-bearing pair in the whole bibliography; see `Reference_Guide.md` for a one-paragraph summary of each reference if you want the "what is this and why is it here" without reading the papers.
 - If you want a deeper, source-by-source walkthrough, `NotebookLM_Podcast_Prompt.md` in this same folder is a ready-to-paste prompt for generating an audio explainer from the references.
 
 ### Figures
