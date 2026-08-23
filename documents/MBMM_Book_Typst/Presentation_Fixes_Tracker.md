@@ -50,11 +50,11 @@ Status legend: `[ ]` open · `[~]` in progress · `[x]` done · `[-]` decided no
       correlation stated plainly; "0.0% error" reframed as a pipeline-fidelity
       guarantee, not hardware accuracy.
 
-- [~] **No related-work section anywhere in the book.** Proposal drafted, awaiting
-      Lead sign-off: new §1.3, six candidate sources (ISCA'09 PCM trio, Xu HPCA'15
-      crossbar ReRAM, Kültürsay ISPASS'13 STT-RAM, Izraelevitz Optane measurements)
-      — see `Tier3_Prep_Proposals.md` (item T3-1). Still a required slide for the
-      talk regardless.
+- [x] **No related-work section anywhere in the book.** Done 2026-08-23: §1.3
+      added with web-verified refs [36]-[40] (ISCA'09 PCM trio, Xu HPCA'15,
+      Kültürsay ISPASS'13) plus existing [23]/[32] (Optane exit / measurements)
+      — Izraelevitz was already ref [32], so no duplicate was added. Reference
+      count is 40. Still a required slide for the talk.
 
 - [x] **Trace fidelity caveat surfaces too late.** Done: the Abstract's 4.6x now
       carries the caveat inline ("memory-latency ratio under the cache-less trace
@@ -71,14 +71,15 @@ Status legend: `[ ]` open · `[~]` in progress · `[x]` done · `[-]` decided no
       Table 6, summary → Table 7, matching body order), list rebuilt with full
       captions, dead `GEN-BEGIN` generator markers removed (no generator script
       exists in the repo).
-- [~] **§3.1.6 positioned after the results that depend on it.** Recommendation
-      drafted (Tier3_Prep_Proposals.md, T3-2): do NOT move it — 35 in-body
-      cross-references — add a one-paragraph audit summary at the top of §3.1 instead.
-      Awaiting sign-off.
-- [~] **Conclusion re-derives instead of synthesizing.** Compression approach
-      proposed (T3-3): keep opening synthesis, collapse five recap paragraphs into
-      one verdicts paragraph, add a consolidated honest-scope close. Draft-first;
-      awaiting sign-off.
+- [x] **§3.1.6 positioned after the results that depend on it.** Done 2026-08-23
+      (Option A, Lead-decided): audit-summary paragraph added at the top of §3.1
+      ("fourteen found, twelve repaired, two permanent"); section NOT moved — all
+      35 in-body cross-references intact.
+- [x] **Conclusion re-derives instead of synthesizing.** Done 2026-08-23
+      (Lead-approved via `Lead_Decisions_and_Handoff.md`): six recap paragraphs
+      replaced by a per-axis verdicts paragraph + a consolidated honest-scope
+      paragraph (four disclosed limitations in one place, with inline section
+      citations). Opening synthesis and §4.1-4.3 untouched.
 - [x] **Naming collision.** Done: the debunked §3.1.2 artifact is renamed "Standby
       Convergence" with an explicit in-text note that it is unrelated to the
       Flatline Paradox.
@@ -90,8 +91,10 @@ Status legend: `[ ]` open · `[~]` in progress · `[x]` done · `[-]` decided no
 
 ## Explicitly not fixing (for now)
 
-- [-] Appendix C repo link is a search-redirect URL rather than a direct GitHub link —
-      cosmetic, low priority.
+- [x] Appendix C repo link was a Google-search-redirect URL (with a leaked
+      `authuser=3` account parameter) rather than a direct GitHub link — fixed
+      2026-08-23, link target now `https://github.com/uvKogan/MBMM` directly.
+      (Section retained for history; nothing is deferred anymore.)
 
 ## What's genuinely strong (don't touch)
 
