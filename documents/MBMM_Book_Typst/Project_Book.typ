@@ -2261,7 +2261,7 @@ data, has been made publicly available.
 
 #blockquote[
 #strong[Project Repository:]
-#link("https://www.google.com/search?q=https://github.com/uvKogan/MBMM&authuser=3")[#underline[https:\/\/github.com/uvKogan/MBMM]]
+#link("https://github.com/uvKogan/MBMM")[#underline[https:\/\/github.com/uvKogan/MBMM]]
 ]
 
 #pagebreak()

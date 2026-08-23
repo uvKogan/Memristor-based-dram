@@ -120,3 +120,9 @@ Append entries newest-last. Template:
 - What changed: §4's six per-section recap paragraphs (old anchors: `Latency analysis (3.1.1) revealed` through `convert added ranks into latency gains.`) replaced by two paragraphs (new anchors: `Each results axis resolves to a one-line verdict.` and `The scope of these claims is bounded by four disclosed limitations`), per `Conclusion_Rewrite_Draft.md` with the Lead's two citation additions from `Lead_Decisions_and_Handoff.md`. Opening synthesis paragraph and §4.1-4.3 untouched. Note for the handoff file: its T3-1 spec assumed refs [36]-[41]; actual is [36]-[40] because Izraelevitz was already ref [32] (and Optane-exit [23]) — no duplicates were added. Its T3-2 question (options A-D) is still open with the Lead; Option A is what's currently implemented.
 - Compile gate: pass
 - Staged: yes (uncommitted)
+
+### 2026-08-23 — pre-review leftover sweep — Claude session f2ad0d1b
+- File(s): `Project_Book.typ`, `Project_Book.pdf`, `Presentation_Fixes_Tracker.md`
+- What changed: Appendix C repo link target fixed — was a Google-search redirect carrying a leaked `authuser=3` parameter; now links `https://github.com/uvKogan/MBMM` directly (display text unchanged; anchor: `#link("https://github.com/uvKogan/MBMM")`). This closes the last deferred `[-]` item. `Presentation_Fixes_Tracker.md`'s three stale `[~]` entries (related work, §3.1.6, Conclusion) flipped to `[x]` with final outcomes — all book-fix work is now complete in both trackers.
+- Compile gate: pass
+- Staged: yes (uncommitted)
