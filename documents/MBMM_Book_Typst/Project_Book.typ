@@ -29,8 +29,9 @@ research evaluates 22nm Memristor-based Non-Volatile Memory (NVM) as a
 DRAM replacement in standard DIMMs. Utilizing a cross-layer pipeline
 bridging NVSim #strong[\[3\]] and NVMain 2.0 #strong[\[4\]], I
 characterize 1T1R (transistor-gated) and 1S1R (selector-gated)
-architectures across six benchmarks spanning compute-bound,
-memory-streaming, and AI-inference workloads. Under
+architectures across six workloads - drawn from five benchmarks, with
+AlexNet split into read-dominant and write-dominant phases - spanning
+compute-bound, memory-streaming, and AI-inference behavior. Under
 bandwidth-saturating, high-MLP workloads, multi-rank configurations
 achieve substantial latency reductions through rank-level interleaving.
 However, single-threaded latency-bound workloads exhibit a \"Flatline
@@ -2093,7 +2094,7 @@ anchor arithmetic and an independent blind re-verification, with the
 affected simulations re-run. Using a cross-layer simulation pipeline
 spanning device physics (NVSim), cycle-accurate memory simulation
 (NVMain 2.0), and real workload traces from gem5 and SCALE-Sim, I
-evaluated 20 memory configurations across 6 benchmarks. The key
+evaluated 20 memory configurations across 6 workloads. The key
 quantitative findings are: 1T1R SLC ReRAM operates within 1.50x of
 DDR5-4800\'s wall-clock latency under compute-bound execution - where it
 runs 49x faster than the legacy PCM baseline (13-16x under sustained
@@ -2491,7 +2492,7 @@ Python 3.10+, matplotlib 3.9, pandas 2.2.
 Pipeline interface: The master orchestration script mbmm\_master.py
 accepts \-\-cycles (simulation window), \-\-trace (NVMain trace file), and
 \-\-models (space-separated list of named configurations). A complete
-simulation run across all 20 configurations and 6 benchmarks at 200M
+simulation run across all 20 configurations and 6 workloads at 200M
 cycles completes in approximately 8-12 hours on a standard Linux
 workstation. All statistical outputs
 (processed\_bar\_chart\_metrics.csv, processed\_hero\_metrics.csv,
