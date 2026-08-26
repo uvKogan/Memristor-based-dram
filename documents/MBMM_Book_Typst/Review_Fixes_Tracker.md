@@ -132,3 +132,9 @@ Append entries newest-last. Template:
 - What changed: With every item closed, the finished process docs were `git mv`'d out of the book folder: `Tier3_Prep_Proposals.md`, `Conclusion_Rewrite_Draft.md`, `Lead_Decisions_and_Handoff.md`, `TYPST_QA_REPORT.md`, `qa_screenshots/` → `archive/documents/book_review_pass_2026-08/`. Any mention of those filenames in earlier log entries above now resolves to that archive path. Both trackers stay in place until the talk is delivered (they are the parallel-session coordination surface). The folder `README.md` was rewritten — it still claimed docx parity and refs [1]-[30], both false since this fix pass began.
 - Compile gate: n/a (no book edit)
 - Staged: yes (uncommitted)
+
+### 2026-08-26 — review finding: "six benchmarks" → "six workloads" — Claude session f2ad0d1b
+- File(s): `Project_Book.typ`, `Project_Book.pdf`
+- What changed: The evaluated set is five benchmark programs (GCC, LBM, STREAM, GPT-2, AlexNet) yielding six workload traces (AlexNet split into IFMAP/OFMAP), and the book already said "workloads" at its other count sites (§3.1.1, §2.4, §3.1.3). Fixed the three inconsistent "benchmarks" sites: Abstract now reads "across six workloads - drawn from five benchmarks, with AlexNet split into read-dominant and write-dominant phases"; Conclusion and Appendix C now say "6 workloads". Found by the Lead during the review read.
+- Compile gate: pass
+- Staged: yes (uncommitted)
