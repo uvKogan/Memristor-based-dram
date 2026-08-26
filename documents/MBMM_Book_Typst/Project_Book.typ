@@ -32,11 +32,12 @@ characterize 1T1R (transistor-gated) and 1S1R (selector-gated)
 architectures across six workloads - drawn from five benchmarks, with
 AlexNet split into read-dominant and write-dominant phases - spanning
 compute-bound, memory-streaming, and AI-inference behavior. Under
-bandwidth-saturating, high-MLP workloads, multi-rank configurations
-achieve substantial latency reductions through rank-level interleaving.
-However, single-threaded latency-bound workloads exhibit a \"Flatline
-Paradox\": insufficient Memory Level Parallelism (MLP) leaves ranks
-idle, preventing latency or power scaling regardless of chip count.
+bandwidth-saturating workloads with high memory-level parallelism
+(MLP - many independent memory requests in flight at once), multi-rank
+configurations achieve substantial latency reductions through rank-level
+interleaving. However, single-threaded latency-bound workloads exhibit a
+\"Flatline Paradox\": insufficient MLP leaves ranks idle, preventing
+latency or power scaling regardless of chip count.
 
 The key quantitative results are: (1) In wall-clock latency, 1T1R SLC
 ReRAM operates within 1.50x of DDR5-4800 under compute-bound workloads -
@@ -75,8 +76,8 @@ against a different offered load and admitted trace population, an
 unsourced DDR5 CAS/RCD/RP timing placeholder, and unsourced ReRAM MLC
 read/write latency and energy penalty multipliers attributed to a
 citation that does not support them (later found to include a further,
-independent data error in the MLC read-latency figure, also corrected)
-- of which this work repaired twelve, validating every repair against
+independent data error in the MLC read-latency figure, also
+corrected) - of which this work repaired twelve, validating every repair against
 device-level anchors (0.0%
 error) or exact predicted arithmetic, and re-running the affected
 simulations (the DRAM and PCM baselines model standard idle behavior;

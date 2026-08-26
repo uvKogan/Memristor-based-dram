@@ -138,3 +138,15 @@ Append entries newest-last. Template:
 - What changed: The evaluated set is five benchmark programs (GCC, LBM, STREAM, GPT-2, AlexNet) yielding six workload traces (AlexNet split into IFMAP/OFMAP), and the book already said "workloads" at its other count sites (§3.1.1, §2.4, §3.1.3). Fixed the three inconsistent "benchmarks" sites: Abstract now reads "across six workloads - drawn from five benchmarks, with AlexNet split into read-dominant and write-dominant phases"; Conclusion and Appendix C now say "6 workloads". Found by the Lead during the review read.
 - Compile gate: pass
 - Staged: yes (uncommitted)
+
+### 2026-08-26 — review finding: MLP acronym used before its expansion — Claude session f2ad0d1b
+- File(s): `Project_Book.typ`, `Project_Book.pdf`
+- What changed: Abstract used "high-MLP workloads" three lines before defining the acronym. Expansion moved to first use: "workloads with high memory-level parallelism (MLP - many independent memory requests in flight at once)"; the later sentence now says just "insufficient MLP". Found by the Lead during the review read.
+- Compile gate: pass
+- Staged: yes (uncommitted)
+
+### 2026-08-26 — stray-bullet fix (Typst line-initial dash) — Claude session f2ad0d1b
+- File(s): `Project_Book.typ`, `Project_Book.pdf`
+- What changed: A line-wrapped " - " landing at line start renders as a list bullet in Typst. Two instances fixed, both in the Abstract: (1) the just-added MLP definition (introduced by the previous entry's edit, caught by the Lead in the rendered PDF); (2) a pre-existing one in the audit sentence ("- of which this work repaired twelve"), found by sweeping every line-initial dash in the file. The only other line-initial dashes are genuine list items (verified). Editing rule for all workers: never let a wrap put "- " at the start of a line in prose.
+- Compile gate: pass
+- Staged: yes (uncommitted)
