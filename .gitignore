@@ -38,3 +38,8 @@ __pycache__/
 *.pyc
 archive/final_graphs/
 archive/final_graphs_v2/
+
+# Archived raw simulation-result generations (same rationale as results/
+# above — bulky, regenerable, not source) — matches this and future
+# "results_pre_vN_YYYYMMDD" archival rounds
+archive/results_pre_v*/
