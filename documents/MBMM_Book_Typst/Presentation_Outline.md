@@ -276,7 +276,10 @@ callouts + badge, no chart)*
 **Slide 33 — Other fronts**
 - On-slide: wear-leveling controller / write-coalescing cache ·
   recessed-channel 1T1R density (could overturn the density verdict) ·
-  node scaling + 3D deck stacking
+  node scaling + 3D deck stacking · a standalone device-to-system
+  simulator wrapper — generalizing "The Bridge" (the NVSim→NVMain ETL
+  pipeline) into a reusable tool decoupled from this specific project
+  (idea originated in discussion with the HW/SW co-design course tutor)
 
 ---
 

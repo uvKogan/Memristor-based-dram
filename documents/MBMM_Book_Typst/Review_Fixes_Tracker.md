@@ -65,6 +65,12 @@ Status values: `todo` / `in-progress` / `done` / `blocked` / `wont-do` / `prep-d
 | T3-2 | §3.1.6 placement: audit-summary paragraph added at top of §3.1 ("fourteen found, twelve repaired, two permanent"); section itself NOT moved (35 in-body cross-references preserved) | done | Claude f2ad0d1b |
 | T3-3 | Conclusion rewrite APPLIED: six recap paragraphs replaced with verdicts paragraph + consolidated honest-scope paragraph, plus the Lead's two citation additions (§3.3 cell-area passage, §3.1.4 hot-spot bound). Approved via `Lead_Decisions_and_Handoff.md` 2026-08-23 | done | Claude f2ad0d1b |
 
+### Tier 4 — post-review additions (originated outside the critique pass)
+
+| ID | Item | Status | Owner |
+|----|------|--------|-------|
+| T4-1 | New §4.1 bullet "Standalone Device-to-System Simulator Wrapper" — generalizing "The Bridge" ETL pipeline into a reusable, project-independent tool. Idea originated in the author's HW/SW co-design coursework, not from the critique pass; Lead-approved directly. See `Future_Work_Addition_Handoff.md` for the original proposal. | done | Claude (meeting-prep session) |
+
 ### Explicitly NOT doing (critique findings triaged as overstated)
 
 - Abstract gating caveat "doesn't travel" — it does; the Abstract discloses "unexercised / disabled in source" inline twice. Only the summary table's cell needed the hedge (T1-3).
@@ -96,6 +102,12 @@ Append entries newest-last. Template:
 - What changed: All Tier 1 + Tier 2 items as described in the tables above. Highest-impact for other workers: Table 6/7 number swap, "Power Flatline"→"Standby Convergence" rename, Abstract streaming/4.6x qualifiers (see NOTICES at top). New anchors: primer starts `Before the engineering choices, the device itself`; validation bullet starts `#strong[Validation Scope]`; sensitivity passage starts `Every ratio in the table is also linear in the assumed cell area`; endurance bound starts `That proportionality also bounds the exposure`; spec-vs-typical sentence starts `One honest bound on that comparison`.
 - Compile gate: pass (verified after final .typ edit)
 - Staged: no (pending Lead Researcher review)
+
+### 2026-08-30 — T4-1 — Claude (meeting-prep session)
+- File(s): `Project_Book.typ`
+- What changed: Added new §4.1 bullet "Standalone Device-to-System Simulator Wrapper" after the "Native MLC Logic" item. No citation added, so `Reference_Guide.md` count is unaffected; `Reading_Guide.md` §4 coverage not checked for a corresponding mention (worth a quick look if it enumerates §4.1 items individually).
+- Compile gate: pass
+- Staged: no (Lead Researcher to commit)
 
 ### 2026-08-23 — T3-1/T3-2/T3-3 prep — Claude session f2ad0d1b
 - File(s): `Tier3_Prep_Proposals.md` (new)

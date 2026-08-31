@@ -2201,6 +2201,17 @@ highest-leverage item of future work.
   replace my current \"Analytical Penalty Method\" with native
   circuit-level characterization of iterative sensing.
 
+- #strong[Standalone Device-to-System Simulator Wrapper]: Generalizing
+  \"The Bridge\" (Section 2.1) - the cross-layer ETL pipeline that
+  translates NVSim\'s device-level physical metrics into NVMain\'s
+  cycle-accurate architectural parameters - into a reusable,
+  project-independent simulator wrapper. The toolchain audit (Section
+  3.1.6) already demonstrated that this translation layer is precisely
+  where correctness risk concentrates; packaging it as a standalone,
+  hardened tool would let other device-level-to-system-level simulation
+  pairings benefit from the same repairs and validation discipline,
+  beyond this project\'s specific NVSim/NVMain pairing.
+
 == 4.2. Future Work: Architectural Extensions and System Scaling
 <future-work-architectural-extensions-and-system-scaling>
 - #strong[The L3 Cache Mitigation:] Evaluating the integration of a
