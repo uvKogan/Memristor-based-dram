@@ -330,7 +330,21 @@ integrating them is part of the agenda in Section 4.1.
 - #strong[Simulation Pipeline]: The pipeline follows a structured
   sequence: hardware characterization in NVSim $arrow.r$ diagnostic
   extraction to JSON $arrow.r$ system configuration generation $arrow.r$
-  cycle-accurate trace execution in NVMain.
+  cycle-accurate trace execution in NVMain. NVSim characterizes exactly
+  #strong[one] #strong[1 Gb] chip (Table 1); NVMain never re-touches
+  cell-level physics; it replicates that same chip #strong[1, 8, 16, or
+  64] times per configuration and wraps the result in its own
+  controller, decoder, and interconnect - components NVSim has no
+  concept of. The diagram below illustrates this end to end.
+
+#block(breakable: false)[
+#image("media/media/pipeline_architecture.svg", width: 6.5in)
+]
+#align(center)[#emph[Diagram: NVSim's device characterization (one
+chip) becomes an NVMain system via replication and NVMain's own
+controller logic - not part of the numbered Figure/List of Figures
+sequence, since it illustrates pipeline architecture rather than a
+simulation result.]]
 
 - #strong[Decoupled Benchmarking]: To ensure simulation stability, I
   bypassed brittle integrated wrappers in favor of a robust trace-based
@@ -422,9 +436,16 @@ integrating them is part of the agenda in Section 4.1.
   template configuration.
 
 - #strong[The Microsoft PCM 2009 Baseline:] A legacy non-volatile memory
-  baseline modeled after the architectural parameters established by Lee
-  et al. #strong[\[11\]], used to benchmark modern 22nm ReRAM against
-  older NVM scaling constraints. It runs at its cited derivation basis
+  baseline, named for its architectural framing in Lee et al.
+  #strong[\[11\]], used to benchmark modern 22nm ReRAM against older NVM
+  scaling constraints. Unlike ReRAM, PCM was never run through NVSim\'s
+  device-characterization pipeline: its concrete timing and energy
+  parameters are inherited unmodified from NVMain\'s own bundled example
+  configuration (#strong[pcm\_microsoft\_2009.config]), whose header
+  attributes those specific numbers to a different device paper - Choi
+  et al.\'s 20nm, 1.8 V, 8 Gb PRAM (ISSCC 2012) #strong[\[41\]] - not to
+  Lee et al. This project did not independently re-derive or verify
+  those inherited numbers. It runs at its cited derivation basis
   of CLK \= 400 MHz - restored during the fidelity audit (Section 3.1.6,
   item 9) after a stray clock override was found running it twice as
   fast as its timing parameters intend - and runs a 33.3M-cycle budget
@@ -478,7 +499,7 @@ FinFET LOP, 1.4 V ReadVoltage nominal).]
   align: (col, row) => (auto,auto,auto,auto,auto,auto,auto,auto,).at(col),
   inset: 6pt,
   table.header(
-    [#strong[Configuration]],
+    [#strong[Config.]],
     [#strong[Cell size]],
     [#strong[Read lat. (ns)]],
     [#strong[Write lat. (ns)]],
@@ -551,7 +572,7 @@ parallel AI:
   isolate the ReRAM write-latency penalty, while GPT-2 evaluates massive
   transformer-based memory-level parallelism (MLP).
 
-=== #strong[2.4.1. Diagnostic Trace Dictionary]
+=== 2.4.1. Diagnostic Trace Dictionary
 <diagnostic-trace-dictionary>
 The following specific traces were executed across all simulated
 architectures to isolate distinct memory behaviors:
@@ -615,7 +636,7 @@ comparison.
 <section>
 = 3. Results: Multi-Rank Architecture & Scaling
 <results-multi-rank-architecture-scaling>
-== 3.1. #strong[Granular Workload Diagnostics] (Latency & Power Bar Charts)
+== 3.1. Granular Workload Diagnostics (Latency & Power Bar Charts)
 <granular-workload-diagnostics-latency-power-bar-charts>
 To fully understand the system-level tradeoffs of memristor-based main
 memory, I isolated the physical variables of latency and power across
@@ -810,7 +831,7 @@ suite, complementing the per-workload bar charts.
 83.33 ms matched-host window (Section 3.1.6, item 11).]
 
 #align(center)[#table(
-  columns: 7,
+  columns: (1.5fr, 1.4fr, 1fr, 1.15fr, 1.15fr, 1.15fr, 1.15fr),
   align: (col, row) => (auto,auto,auto,auto,auto,auto,auto,).at(col),
   inset: 6pt,
   table.header(
@@ -977,7 +998,10 @@ under the continuous memory-streaming LBM (SPEC2017) workload.]
 ]
 
 This leakage dominance also exposes a genuine tug-of-war in the dynamic
-term under streaming write-heavy workloads like lbm (Figure 9;
+term under a workload like lbm, write-heavy in service-time impact
+despite being read-majority by request count (58/42 read/write, Section
+2.4.1) - its slower write latency dominates total device-busy time even
+though writes are the minority of requests (Figure 9;
 components this small cannot be resolved visually against the 50.9 W
 static tier - the values come directly from the NVMain energy counters).
 The MLC configuration\'s extended Iterative Step-and-Verify (ISPV)
@@ -1053,7 +1077,7 @@ tiers directly comparable across every workload.
 module-sum semantics.]
 
 #align(center)[#table(
-  columns: 7,
+  columns: (1.5fr, 1.4fr, 1fr, 1.15fr, 1.15fr, 1.15fr, 1.15fr),
   align: (col, row) => (auto,auto,auto,auto,auto,auto,auto,).at(col),
   inset: 6pt,
   table.header(
@@ -1196,7 +1220,7 @@ means, the tabular form of Figures 13-18 and 27.
 six-workload geometric means.]
 
 #align(center)[#table(
-  columns: 7,
+  columns: (1.5fr, 1.4fr, 1fr, 1.15fr, 1.15fr, 1.15fr, 1.15fr),
   align: (col, row) => (auto,auto,auto,auto,auto,auto,auto,).at(col),
   inset: 6pt,
   table.header(
@@ -1264,7 +1288,7 @@ six-workload geometric means.]
 worst-case ungated; DRAM/PCM standard idle (Section 3.1.6, item 5).
 Source: results/system\_v6 processed CSVs.]
 
-=== #strong[3.1.4 Endurance Viability Analysis]
+=== 3.1.4 Endurance Viability Analysis
 <endurance-viability-analysis>
 A key viability question for ReRAM as a main memory replacement is write
 endurance: how many write cycles before cell degradation? While SLC
@@ -1367,7 +1391,7 @@ figures (4.3-6.2 years) sit at the target\'s lower edge - so imperfect
 leveling shifts where the capacity threshold lies, not whether one
 exists.
 
-=== #strong[3.1.5 Design Robustness: ReadVoltage Sensitivity]
+=== 3.1.5 Design Robustness: ReadVoltage Sensitivity
 <design-robustness-readvoltage-sensitivity>
 A persistent concern with resistive memories is parameter sensitivity:
 do the efficiency conclusions hold if the actual fabricated device
@@ -1404,7 +1428,7 @@ across all three voltages. Right: System-level PDP changes by less than
 robust to process variation in the ReadVoltage operating point.]
 ]
 
-=== #strong[3.1.6 Simulation-Fidelity Audit: Where the Toolchain Could Not Be Trusted - and How It Was Repaired]
+=== 3.1.6 Simulation-Fidelity Audit: Where the Toolchain Could Not Be Trusted - and How It Was Repaired
 <simulation-fidelity-audit-where-the-toolchain-could-not-be-trusted---and-how-it-was-repaired>
 A systematic audit of the NVSim-to-NVMain flow, conducted against the
 raw simulator sources and statistics files, found fourteen silent
@@ -1632,7 +1656,7 @@ of item (3) is completely insensitive to that target across four orders
 of magnitude of HRS - so no further re-simulation was triggered by that
 finding; see Appendix A for the sweep itself.
 
-== 3.2. #strong[Architectural Scaling & Memory Level Parallelism] (Pareto Frontiers)
+== 3.2. Architectural Scaling & Memory Level Parallelism (Pareto Frontiers)
 <architectural-scaling-memory-level-parallelism-pareto-frontiers>
 While granular diagnostics reveal the baseline physical characteristics
 of 22nm ReRAM, understanding its viability as a main memory replacement
@@ -1723,7 +1747,7 @@ activity level perturbs module power by under 0.3% for 1T1R and by at
 most \~11% for 1S1R (LBM) - never enough to change tier - and the latency
 benefit of added ranks remains gated on workload MLP.
 
-== 3.3. #strong[Global Viability] (Hero Graphs)
+== 3.3. Global Viability (Hero Graphs)
 <global-viability-hero-graphs>
 With the scaling dynamics established, the final evaluation must address
 the core question: does 22nm ReRAM present a globally viable alternative
@@ -1783,7 +1807,7 @@ quadratic feature-size scaling and 3D deck stacking.]
   align: (col, row) => (auto,auto,auto,auto,auto,auto,).at(col),
   inset: 6pt,
   table.header(
-    [#strong[Configuration]],
+    [#strong[Config.]],
     [#strong[22nm (measured)]],
     [#strong[16nm (projected)]],
     [#strong[12nm (projected)]],
@@ -1806,14 +1830,14 @@ quadratic feature-size scaling and 3D deck stacking.]
   [0.22],
   [0.42],
   [0.74],
-  [—],
-  [—],
+  [N/A],
+  [N/A],
   [#strong[1T1R MLC]],
   [0.44],
   [0.83],
   [1.48],
-  [—],
-  [—],
+  [N/A],
+  [N/A],
 )
 ]
 
@@ -2014,7 +2038,7 @@ summary of the entire evaluation.
 #strong[Table 7: Cross-technology summary, full-DIMM configurations.]
 
 #align(center)[#table(
-  columns: 7,
+  columns: (2fr, 1fr, 1.2fr, 1fr, 0.9fr, 1.1fr, 1.7fr),
   align: (col, row) => (auto,auto,auto,auto,auto,auto,auto,).at(col),
   inset: 6pt,
   table.header(
@@ -2024,7 +2048,7 @@ summary of the entire evaluation.
     [#strong[Geo-mean PDP (W·ns)]],
     [#strong[Die density (× DDR5)]],
     [#strong[Worst-case lifetime \@128 GB]],
-    [#strong[Architectural role]],
+    [#strong[Role]],
   ),
   [#strong[DDR5-4800]],
   [87.2],
@@ -2189,7 +2213,14 @@ defensible idle-gating policy: every ReRAM figure in this book is
 worst-case ungated, and the 1.7x gap separating 1S1R SLC from DDR5 - as
 well as the 0.04 W PCM floor - can only be closed or conceded once
 idle-gating can actually be simulated. This is the single
-highest-leverage item of future work.
+highest-leverage item of future work. This work should model both
+sides symmetrically: DDR5\'s own self-refresh current (JEDEC IDD6) is
+present as a field in this project\'s DDR5 configuration but was never
+traced to its datasheet and is confirmed dead in NVMain\'s power
+model, so the DDR5 floor used throughout this book is its
+#emph[ungated] standby behavior, not its own best-case sleep state -
+sourcing a real IDD6 value would let idle-gating be compared
+gated-to-gated rather than gated-projection-versus-ungated-actual.
 
 - #strong[Parameter Optimization]: Conduct a sensitivity analysis on
   NVSim parameters, such as ReadVoltage and WritePulseWidth, to identify
@@ -2211,6 +2242,23 @@ highest-leverage item of future work.
   hardened tool would let other device-level-to-system-level simulation
   pairings benefit from the same repairs and validation discipline,
   beyond this project\'s specific NVSim/NVMain pairing.
+
+- #strong[FPGA-Based Hardware-in-the-Loop Validation of Power-Down
+  Policy]: Every result in this book is validated only against
+  NVMain\'s own internal consistency (Section 2.2) - no fabricated
+  ReRAM hardware exists to check system-level, as opposed to
+  device-level, behavior against. A tractable next step, complementary
+  to Power-Down Restoration above, is an FPGA emulation of just the
+  idle-gating/power-down state machine - using the same
+  literature-calibrated device parameters already characterized in
+  this book, but exercised under real hardware clock-edge timing
+  rather than software simulation - to check whether the controller\'s
+  power-down and wake behavior matches its simulated prediction. This
+  would strengthen the system-level validation claim without requiring
+  access to fabricated ReRAM silicon, which remains out of reach; it
+  would not, by itself, validate NVSim\'s own device-level circuit
+  numbers against real silicon, since the emulated cell still runs on
+  the same literature-derived parameters.
 
 == 4.2. Future Work: Architectural Extensions and System Scaling
 <future-work-architectural-extensions-and-system-scaling>
@@ -2264,6 +2312,22 @@ highest-leverage item of future work.
   selector\'s leakage discipline widens - propagating every density gain
   through the endurance capacity law, which converts capacity directly
   into lifetime.
+
+- #strong[Interface Parity: Dual-Channel and Faster-PHY ReRAM]: Every
+  ReRAM configuration in this book runs behind a deliberately
+  conservative single-channel 800 MHz interface (Section 2.3) - a
+  modeling choice made to isolate the device-technology comparison from
+  a confounding interface-engineering difference, not a limitation of
+  the memristor media itself. Part of the 4.6x AI-inference latency gap
+  (Section 3.1.1) is attributable to this asymmetry against DDR5\'s
+  dual-channel architecture. Future work should evaluate a dual-channel
+  ReRAM interface and/or a faster PHY paired with the same characterized
+  media - both explicitly flagged elsewhere in this book as available
+  mitigations, not hidden costs. The FPGA-based hardware-in-the-loop
+  validation platform proposed above (Section 4.1) is a natural fit for
+  this exploration: the same emulated controller could be extended from
+  single-channel to dual-channel scheduling to measure the real benefit
+  under real hardware timing, rather than purely in software simulation.
 
 == 4.3 Data Availability and Reproducibility
 <data-availability-and-reproducibility>
@@ -2346,6 +2410,8 @@ data, has been made publicly available.
 #strong[\[39\]] C. Xu, D. Niu, N. Muralimanohar, R. Balasubramonian, T. Zhang, S. Yu, and Y. Xie, \"Overcoming the Challenges of Crossbar Resistive Memory Architectures,\" in #emph[Proc. 21st IEEE Int. Symp. High Performance Computer Architecture (HPCA)], 2015, pp. 476-488. DOI: 10.1109/HPCA.2015.7056056
 
 #strong[\[40\]] E. Kültürsay, M. Kandemir, A. Sivasubramaniam, and O. Mutlu, \"Evaluating STT-RAM as an Energy-Efficient Main Memory Alternative,\" in #emph[Proc. IEEE Int. Symp. Performance Analysis of Systems and Software (ISPASS)], 2013, pp. 256-267. DOI: 10.1109/ISPASS.2013.6557176
+
+#strong[\[41\]] Y. Choi et al., \"A 20nm 1.8V 8Gb PRAM with 40MB/s Program Bandwidth,\" in Proc. IEEE Int. Solid-State Circuits Conf. (ISSCC), San Francisco, CA, Feb. 2012, pp. 46-48.
 
 #pagebreak() <section-3>
 = Appendix A: Simulation Parameters and Literature Grounding

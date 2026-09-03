@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 480" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1240" height="480" fill="#ffffff"/>
+
+  <!-- Orchestrator bar -->
+  <rect x="20" y="10" width="1200" height="42" rx="6" fill="#f2f2f2" stroke="#999999" stroke-width="1.5"/>
+  <text x="620" y="36" text-anchor="middle" font-size="17" font-weight="bold" fill="#222222">mbmm_master.py: orchestrates every stage + runs the validation gate (Section 2.2)</text>
+
+  <!-- Arrow marker -->
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#333333"/>
+    </marker>
+  </defs>
+
+  <!-- Box 1: NVSim -->
+  <rect x="20" y="90" width="270" height="150" rx="8" fill="#eaf4fb" stroke="#3a7ca5" stroke-width="2"/>
+  <text x="155" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#3a7ca5">1_run_nvsim_hardware.py</text>
+  <text x="155" y="140" text-anchor="middle" font-size="13" fill="#222222">NVSim</text>
+  <text x="155" y="158" text-anchor="middle" font-size="13" fill="#222222">device characterization</text>
+  <text x="155" y="184" text-anchor="middle" font-size="12" fill="#444444">Output: ONE chip datasheet</text>
+  <text x="155" y="202" text-anchor="middle" font-size="12" fill="#444444">1 Gb capacity, latency (ns),</text>
+  <text x="155" y="220" text-anchor="middle" font-size="12" fill="#444444">energy (nJ), leakage (mW), area</text>
+
+  <line x1="292" y1="165" x2="322" y2="165" stroke="#333333" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Box 2: Extract -->
+  <rect x="325" y="90" width="270" height="150" rx="8" fill="#eef7ea" stroke="#5a8f3c" stroke-width="2"/>
+  <text x="460" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#5a8f3c">2_extract_hardware_metrics.py</text>
+  <text x="460" y="140" text-anchor="middle" font-size="13" fill="#222222">Regex-parse raw NVSim text</text>
+  <text x="460" y="158" text-anchor="middle" font-size="13" fill="#222222">+ derive analytical MLC</text>
+  <text x="460" y="184" text-anchor="middle" font-size="12" fill="#444444">Output: hardware_metrics.json</text>
+  <text x="460" y="202" text-anchor="middle" font-size="12" fill="#444444">(one SLC/MLC pair per device,</text>
+  <text x="460" y="220" text-anchor="middle" font-size="12" fill="#444444">still per-chip, not yet a system)</text>
+
+  <line x1="597" y1="165" x2="627" y2="165" stroke="#333333" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Box 3: Config factory -->
+  <rect x="630" y="90" width="290" height="150" rx="8" fill="#fdf1e3" stroke="#c07a25" stroke-width="2"/>
+  <text x="775" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#c07a25">3_gen_nvmain_config.py</text>
+  <text x="775" y="140" text-anchor="middle" font-size="13" fill="#222222">"The Bridge": architecture factory</text>
+  <text x="775" y="158" text-anchor="middle" font-size="13" fill="#222222">replicates the chip, adds no new physics</text>
+  <text x="775" y="184" text-anchor="middle" font-size="12" fill="#444444">Output: NVMain .config</text>
+  <text x="775" y="202" text-anchor="middle" font-size="12" fill="#444444">ns&#8594;cycles @ 800 MHz, per-chip</text>
+  <text x="775" y="220" text-anchor="middle" font-size="12" fill="#444444">leakage&#8594;rank standby energy</text>
+
+  <line x1="922" y1="165" x2="952" y2="165" stroke="#333333" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Box 4: NVMain execution -->
+  <rect x="955" y="90" width="265" height="150" rx="8" fill="#f5ecf7" stroke="#8a4fa3" stroke-width="2"/>
+  <text x="1087" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#8a4fa3">4_execute_simulation.py</text>
+  <text x="1087" y="140" text-anchor="middle" font-size="13" fill="#222222">NVMain 2.0</text>
+  <text x="1087" y="158" text-anchor="middle" font-size="13" fill="#222222">FRFCFS controller + decoder</text>
+  <text x="1087" y="184" text-anchor="middle" font-size="12" fill="#444444">+ interconnect, executes the</text>
+  <text x="1087" y="202" text-anchor="middle" font-size="12" fill="#444444">real workload trace, charges</text>
+  <text x="1087" y="220" text-anchor="middle" font-size="12" fill="#444444">NVSim's numbers per access</text>
+
+  <!-- Fan-out under box 3: replication -->
+  <line x1="775" y1="240" x2="775" y2="264" stroke="#333333" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <text x="775" y="282" text-anchor="middle" font-size="12" font-weight="bold" fill="#222222">Same chip, replicated, not re-simulated:</text>
+
+  <g font-size="11" fill="#222222" text-anchor="middle">
+    <!-- single: 1 square, center x=230 -->
+    <rect x="213" y="300" width="34" height="34" fill="#fdf1e3" stroke="#c07a25"/>
+    <text x="230" y="352">single</text>
+    <text x="230" y="366">1 chip</text>
+
+    <!-- 8chip: 2 squares, center x=470 -->
+    <rect x="441" y="300" width="34" height="34" fill="#fdf1e3" stroke="#c07a25"/>
+    <rect x="449" y="308" width="34" height="34" fill="#fdf1e3" stroke="#c07a25"/>
+    <text x="470" y="360">8chip</text>
+    <text x="470" y="374">8 chips</text>
+
+    <!-- 16chip: 3 squares, center x=710 -->
+    <rect x="677" y="300" width="34" height="34" fill="#fdf1e3" stroke="#c07a25"/>
+    <rect x="685" y="308" width="34" height="34" fill="#fdf1e3" stroke="#c07a25"/>
+    <rect x="693" y="316" width="34" height="34" fill="#fdf1e3" stroke="#c07a25"/>
+    <text x="710" y="368">16chip</text>
+    <text x="710" y="382">2 ranks &#215; 8</text>
+
+    <!-- full_dimm: 4 squares, center x=960 -->
+    <rect x="923" y="300" width="34" height="34" fill="#fdf1e3" stroke="#c07a25"/>
+    <rect x="931" y="308" width="34" height="34" fill="#fdf1e3" stroke="#c07a25"/>
+    <rect x="939" y="316" width="34" height="34" fill="#fdf1e3" stroke="#c07a25"/>
+    <rect x="947" y="324" width="34" height="34" fill="#fdf1e3" stroke="#c07a25"/>
+    <text x="960" y="376">full_dimm</text>
+    <text x="960" y="390">8 ranks &#215; 8 = 64 chips</text>
+  </g>
+
+  <text x="620" y="430" text-anchor="middle" font-size="12" fill="#555555" font-style="italic">NVSim characterizes ONE chip. NVMain's controller/decoder/interconnect (not NVSim) turn 1&#8211;64 of them into a DIMM.</text>
+</svg>

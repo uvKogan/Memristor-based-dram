@@ -476,14 +476,16 @@ def slide_endurance():
     labels = list(workloads.keys())
     at_8gb = [lifetime_years(r, 8) for r in workloads.values()]
     at_64gb = [lifetime_years(r, 64) for r in workloads.values()]
+    at_128gb = [lifetime_years(r, 128) for r in workloads.values()]
 
     x = np.arange(len(labels))
-    width = 0.35
+    width = 0.26
     fig, ax = plt.subplots(figsize=(11, 7))
-    ax.bar(x - width / 2, at_8gb, width, label='8 GB (modeled)', color='#4682B4', edgecolor='black', linewidth=1.2)
-    ax.bar(x + width / 2, at_64gb, width, label='64 GB (server-class)', color='#87CEEB', edgecolor='black', linewidth=1.2)
+    ax.bar(x - width, at_8gb, width, label='8 GB (modeled)', color='#4682B4', edgecolor='black', linewidth=1.2)
+    ax.bar(x, at_64gb, width, label='64 GB (server-class)', color='#87CEEB', edgecolor='black', linewidth=1.2)
+    ax.bar(x + width, at_128gb, width, label='128 GB (server-class)', color='#B0E0E6', edgecolor='black', linewidth=1.2)
     ax.axhspan(5, 10, color='green', alpha=0.12, zorder=0)
-    ax.text(len(labels) - 0.5, 7.5, '5–10 yr\nserver target', ha='right', va='center', fontsize=12, color='darkgreen')
+    ax.text(len(labels) - 0.5, 7.5, '5-10 yr\nserver target', ha='right', va='center', fontsize=12, color='darkgreen')
 
     ax.set_yscale('log')
     ax.set_xticks(x)
@@ -493,12 +495,13 @@ def slide_endurance():
     ax.legend()
     ax.grid(axis='y', which='both', alpha=0.3)
 
-    for i, (v8, v64) in enumerate(zip(at_8gb, at_64gb)):
-        ax.text(i - width / 2, v8, f'{v8:.1f}y', ha='center', va='bottom', fontsize=11, fontweight='bold')
-        ax.text(i + width / 2, v64, f'{v64:.0f}y', ha='center', va='bottom', fontsize=11, fontweight='bold')
+    for i, (v8, v64, v128) in enumerate(zip(at_8gb, at_64gb, at_128gb)):
+        ax.text(i - width, v8, f'{v8:.1f}y', ha='center', va='bottom', fontsize=10, fontweight='bold')
+        ax.text(i, v64, f'{v64:.0f}y', ha='center', va='bottom', fontsize=10, fontweight='bold')
+        ax.text(i + width, v128, f'{v128:.0f}y', ha='center', va='bottom', fontsize=10, fontweight='bold')
 
     _save(fig, "26_endurance.png",
-          footnote="Assumes ideal uniform wear leveling — no wear-leveling controller implemented in this codebase.")
+          footnote="Assumes ideal uniform wear leveling - no wear-leveling controller implemented in this codebase.")
 
 
 # ============================================================================

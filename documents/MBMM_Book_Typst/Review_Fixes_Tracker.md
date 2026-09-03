@@ -1,22 +1,22 @@
-# Review Fixes Tracker — Project_Book.typ
+# Review Fixes Tracker - Project_Book.typ
 
 Coordination file for the super-critique fix pass (critique triaged 2026-08-22).
 **Multiple workers (AI sessions / humans) may edit the book in parallel. This file is the single source of truth for who changed what.**
 
 ## ⚠️ NOTICES FOR PARALLEL WORKERS (read before citing the book)
 
-Applied 2026-08-23 — these change names/numbers you may be quoting (relevant to the presentation-planning session):
+Applied 2026-08-23 - these change names/numbers you may be quoting (relevant to the presentation-planning session):
 
 1. **Tables 6 and 7 SWAPPED numbers.** The density-projection table (16nm/12nm/deck-stacking) is now **Table 6**; the cross-technology summary table is now **Table 7**. Body order and List of Tables now match.
-2. **"Power Flatline" no longer exists.** The debunked §3.1.2 artifact is renamed **"Standby Convergence"**. "Flatline Paradox" (the real §3.2 multi-rank finding) is unchanged — they are different things.
+2. **"Power Flatline" no longer exists.** The debunked §3.1.2 artifact is renamed **"Standby Convergence"**. "Flatline Paradox" (the real §3.2 multi-rank finding) is unchanged - they are different things.
 3. The Abstract's closing claim now scopes streaming honestly: "…for compute-bound workloads - and within a disclosed 1.9-2.1x of DDR5 under sustained streaming".
-4. The `GEN-BEGIN lot` markers are gone — no generator script exists anywhere in the repo (verified); the List of Tables is now hand-maintained.
+4. The `GEN-BEGIN lot` markers are gone - no generator script exists anywhere in the repo (verified); the List of Tables is now hand-maintained.
 
 ## Ground rules for every worker
 
-1. **Before editing**: read this file top to bottom. Locate targets by **anchor string**, not line number — line numbers drift with every edit.
+1. **Before editing**: read this file top to bottom. Locate targets by **anchor string**, not line number - line numbers drift with every edit.
 2. **Claim your item**: set its Status to `in-progress` and put your session/name in Owner *before* editing.
-3. **After editing**: run the compile gate — `typst compile --font-path fonts Project_Book.typ /tmp/verify.pdf` must exit 0 — then set Status to `done` and **append a Change Log entry** (template at bottom).
+3. **After editing**: run the compile gate - `typst compile --font-path fonts Project_Book.typ /tmp/verify.pdf` must exit 0 - then set Status to `done` and **append a Change Log entry** (template at bottom).
 4. **Sync obligations**: any reference added/removed → update `Reference_Guide.md` (count + entry) and check `Reading_Guide.md`. Any table renumbering → check every in-body "Table N" mention and the List of Tables.
 5. Git commits are done by the Lead Researcher only (per repo CLAUDE.md). Note in your log entry whether your change is staged.
 
@@ -24,7 +24,7 @@ Applied 2026-08-23 — these change names/numbers you may be quoting (relevant t
 
 - XBM additions (refs [34]/[35]) committed and pushed 2026-08-22. Current reference count: **35**.
 - Tier 1 + Tier 2 committed as `aa43746`; presentation files (parallel session) committed as `0227ea4`.
-- Reconciliation batch (T1-8, T1-9, tracker merge, deck/outline stale-note fixes) is complete and compile-verified — see last change-log entry for commit status.
+- Reconciliation batch (T1-8, T1-9, tracker merge, deck/outline stale-note fixes) is complete and compile-verified - see last change-log entry for commit status.
 - `Presentation_Fixes_Tracker.md` (parallel session's tracker) is reconciled into this file; THIS file is the single source of truth for book-fix status.
 
 ---
@@ -33,7 +33,7 @@ Applied 2026-08-23 — these change names/numbers you may be quoting (relevant t
 
 Status values: `todo` / `in-progress` / `done` / `blocked` / `wont-do` / `prep-done`
 
-### Tier 1 — mechanical, low-risk
+### Tier 1 - mechanical, low-risk
 
 | ID | Item | Status | Owner |
 |----|------|--------|-------|
@@ -44,10 +44,10 @@ Status values: `todo` / `in-progress` / `done` / `blocked` / `wont-do` / `prep-d
 | T1-5 | Abstract closing claim retreats to compute-bound with disclosed 1.9-2.1x streaming penalty | done | Claude f2ad0d1b |
 | T1-6 | Endurance hot-spot bound added at end of §3.1.4 (2x hot-spot factor halves Table 5 figures: 128 GB SLC still clears target at 8.7 / 12.4 yr; 64 GB drops to 4.3-6.2 yr, the target's lower edge) | done | Claude f2ad0d1b |
 | T1-7 | `Reading_Guide.md`: reference count fixed 32→35; table-verification note updated for the 6/7 renumbering | done | Claude f2ad0d1b |
-| T1-8 | Gating-parity claim reworded as "projection contingent on unmodeled gating" in all four sites (Abstract, §3.3, Table 7 role cell, Conclusion) to match the talk's framing — Lead-approved 2026-08-23; originated in `Presentation_Fixes_Tracker.md` | done | Claude f2ad0d1b |
-| T1-9 | Dropped "intrinsically" from "3.3x less dense" in §3.3 (sat awkwardly against its own planar-assumption hedge) — originated in `Presentation_Fixes_Tracker.md` | done | Claude f2ad0d1b |
+| T1-8 | Gating-parity claim reworded as "projection contingent on unmodeled gating" in all four sites (Abstract, §3.3, Table 7 role cell, Conclusion) to match the talk's framing - Lead-approved 2026-08-23; originated in `Presentation_Fixes_Tracker.md` | done | Claude f2ad0d1b |
+| T1-9 | Dropped "intrinsically" from "3.3x less dense" in §3.3 (sat awkwardly against its own planar-assumption hedge) - originated in `Presentation_Fixes_Tracker.md` | done | Claude f2ad0d1b |
 
-### Tier 2 — bounded additions
+### Tier 2 - bounded additions
 
 | ID | Item | Status | Owner |
 |----|------|--------|-------|
@@ -57,25 +57,34 @@ Status values: `todo` / `in-progress` / `done` / `blocked` / `wont-do` / `prep-d
 | T2-4 | 20F² argument consolidated: Appendix A canonical; §1.2, §3.3, §4.2 trimmed to one-line statements + Appendix A cross-references | done | Claude f2ad0d1b |
 | T2-5 | Spec-vs-typical DDR5 sentence added in §3.1.2 after the 65-78x comparison: both band ends are vendor spec currents; 11%-of-parity is the most favorable end of a disclosed range | done | Claude f2ad0d1b |
 
-### Tier 3 — structural (proposals drafted, NO book edits made; see `Tier3_Prep_Proposals.md`)
+### Tier 3 - structural (proposals drafted, NO book edits made; see `Tier3_Prep_Proposals.md`)
 
 | ID | Item | Status | Owner |
 |----|------|--------|-------|
-| T3-1 | Related Work: new §1.3 added with all sources web-verified (titles/venues/pages/DOIs). New refs [36]-[40] (ISCA'09 PCM trio, Xu HPCA'15, Kültürsay ISPASS'13); Izraelevitz was ALREADY ref [32] and Optane-exit [23] — reused, no duplicates. Reference count now **40**; `Reference_Guide.md` + `Reading_Guide.md` synced | done | Claude f2ad0d1b |
+| T3-1 | Related Work: new §1.3 added with all sources web-verified (titles/venues/pages/DOIs). New refs [36]-[40] (ISCA'09 PCM trio, Xu HPCA'15, Kültürsay ISPASS'13); Izraelevitz was ALREADY ref [32] and Optane-exit [23] - reused, no duplicates. Reference count now **40**; `Reference_Guide.md` + `Reading_Guide.md` synced | done | Claude f2ad0d1b |
 | T3-2 | §3.1.6 placement: audit-summary paragraph added at top of §3.1 ("fourteen found, twelve repaired, two permanent"); section itself NOT moved (35 in-body cross-references preserved) | done | Claude f2ad0d1b |
 | T3-3 | Conclusion rewrite APPLIED: six recap paragraphs replaced with verdicts paragraph + consolidated honest-scope paragraph, plus the Lead's two citation additions (§3.3 cell-area passage, §3.1.4 hot-spot bound). Approved via `Lead_Decisions_and_Handoff.md` 2026-08-23 | done | Claude f2ad0d1b |
 
-### Tier 4 — post-review additions (originated outside the critique pass)
+### Tier 4 - post-review additions (originated outside the critique pass)
 
 | ID | Item | Status | Owner |
 |----|------|--------|-------|
-| T4-1 | New §4.1 bullet "Standalone Device-to-System Simulator Wrapper" — generalizing "The Bridge" ETL pipeline into a reusable, project-independent tool. Idea originated in the author's HW/SW co-design coursework, not from the critique pass; Lead-approved directly. See `Future_Work_Addition_Handoff.md` for the original proposal. | done | Claude (meeting-prep session) |
+| T4-1 | New §4.1 bullet "Standalone Device-to-System Simulator Wrapper" - generalizing "The Bridge" ETL pipeline into a reusable, project-independent tool. Idea originated in the author's HW/SW co-design coursework, not from the critique pass; Lead-approved directly. See `Future_Work_Addition_Handoff.md` for the original proposal. | done | Claude (meeting-prep session) |
+| T4-2 | New §4.1 bullet "FPGA-Based Hardware-in-the-Loop Validation of Power-Down Policy" - proposes FPGA emulation of just the idle-gating/power-down state machine to validate controller timing behavior against a real clock, addressing the internal-only validation limitation (§2.2). Idea originated in meeting-prep grilling (Round 4, "what's next"), captured first in the author's personal in-memory-compute research workspace, then Lead-approved for inclusion as a book future-work option. | done | Claude (meeting-prep session) |
+| T4-3 | §2.1 "Simulation Pipeline" bullet expanded (NVSim characterizes one 1 Gb chip; NVMain replicates it 1/8/16/64x, adds its own controller/decoder/interconnect) + new pipeline-architecture diagram (`media/media/pipeline_architecture.svg`) embedded directly after it - deliberately NOT added to the numbered Figure/List of Figures sequence (it's a pipeline-architecture illustration, not a simulation-result figure). Companion deck slides (script-level pipeline + a numbers-at-a-glance "One Chip → a Full DIMM" stat slide) added to `presentation_deck.html`, with `Presentation_Outline.md` fully renumbered (Slide 10 inserted, Slides 10-34→11-35). | done | Claude (meeting-prep session) |
+| T4-4 | Three Lead-reported defects fixed: (1) Table 1 and Table 6 both overflowed past the left page margin (their shared "Configuration" header is a single unbreakable word too wide for its auto-sized column) - shortened to "Config." in both; Table 7 overflowed past the right margin the same way ("Architectural role" header) - shortened to "Role". (2) Table 6's two "not applicable" cells used a literal em-dash placeholder - changed to "N/A". (3) Seven section headings (§2.4.1, §3.1, §3.1.4, §3.1.5, §3.1.6, §3.2, §3.3) wrapped part of their title in `#strong[...]`, which leaked into the auto-generated Table of Contents as inconsistent bolding against every sibling entry - `#strong[]` removed from all seven (heading styling already bolds them; no visual loss). Also fixed em-dash usage in the newly-added `pipeline_architecture.svg` per the Lead's "avoid em-dash entirely" instruction (real book prose already used " - " as its house style, confirmed clean). | done | Claude (meeting-prep session) |
+| T4-5 | Tables 2/3/4/7's bare `columns: 7` (fully auto-sized) overflowed under font substitution (verified by compiling without `--font-path fonts`, which falls back to system DejaVu Serif) - "Workload"/"Technology"/"DDR5-4800" are unbreakable words too wide for their auto column under the wider fallback font, though the correct bundled-font build never showed it. Replaced with explicit fractional column widths in all four tables; verified overflow-free under both font conditions. Also regenerated `Project_Book.pdf` (discovered stale since 2026-08-26 - every edit this session had only compiled to `/tmp` for the gate-check). | done | Claude (meeting-prep session) |
+| T4-6 | Deck content additions, all Lead-requested live: explicit on-slide controller/decoder/interconnect bullet (Slide 10); new Methodology slide 11 "The Bridge, in Parameters" (NVSim output fields vs NVMain input keys); DDR5 whole-module standby floor (~358 mW) added next to "The 47x Fact" with a not-like-for-like label, plus a speaker note giving the number's actual pre-simulation provenance ([3] access-device model, [7] sensitivity sweep ruling out HRS/LRS as the driver); EMBER citations ([6]/[31]) added to the SLC vs MLC slide; backup literature slide renamed "References Used on the Slides" and expanded to resolve every bracket number now on main slides. `Presentation_Outline.md` renumbered to match (new total ~38 slides). | done | Claude (meeting-prep session) |
+| T4-7 | PCM citation gap: §2.3's PCM baseline cited only Lee et al. [11], but PCM was never run through this project's own NVSim pipeline (verified: `results/hardware/` has ReRAM-only output) - its numbers are inherited from NVMain's bundled `pcm_microsoft_2009.config`, whose header attributes them to a different paper. Identified via web search: Y. Choi et al., ISSCC 2012 PRAM paper, added as new ref [41]. §2.3 rewritten to distinguish [11] (why-PCM architectural framing) from [41] (where-these-numbers-came-from); `Reference_Guide.md` (40→41) and `Reading_Guide.md` synced; deck's Baselines slide + backup references updated to match. | done | Claude (meeting-prep session) |
+| T4-8 | New §4.2 future-work bullet "Interface Parity: Dual-Channel and Faster-PHY ReRAM" - proactively scopes, before the meeting, two interface-conservatism choices already disclosed elsewhere (single-channel 800 MHz ReRAM interface, part of the 4.6x AI-inference gap) as explicit future work rather than leaving them as unaddressed gaps a reviewer could raise unprompted. Cross-linked to the FPGA hardware-in-the-loop platform (T4-2) as a natural extension point, per the Lead's own suggestion. Synced to deck's "Other Fronts" slide and the outline (one more bullet, no renumbering needed). | done | Claude (meeting-prep session) |
+| T4-9 | IEEE reference-format gaps, found during a Lead-requested spot-check, explicitly deferred: [21] (Malladi et al.) and [22] (Gholami et al.) are missing page numbers that every comparable conference/journal entry has; [30] (SK hynix datasheet) has no year unlike [29] (Micron); a few web sources ([16], [19], [24]) mix Accessed-only vs. Accessed+publish-date inconsistently. Not a numbering-integrity issue (separately verified: all 41 refs defined exactly once, all 41 actually cited in body, nothing cited-but-undefined) - purely a formatting-polish cleanup for whoever does a citation-style pass later. | todo | (unassigned) |
+| T4-10 | DDR5 self-refresh (sleep) power is unsourced, found during a Lead Q&A session, explicitly deferred: `DDR5_4800_DRAM_micron.config`'s `EIDD6` (JEDEC self-refresh current spec) = 12 mA, but the file's own comment says it (along with EIDD1/EIDD2NT) is "confirmed dead (never read by any NVMain energy formula)... left at the same stock placeholders as the hynix-floor config for consistency" - i.e. never traced to the actual Micron/SK hynix datasheet, unlike every actively-used EIDD parameter. The book's existing "DRAM also possesses power-down states that this comparison does not exercise" disclosure (§3.1.6 item 5) is accurate but understates this: it's not just unexercised, it's unsourced. Malladi et al. [21] (Bing/Cosmos) is NOT a substitute source - it measures idle-*time* fraction (a workload/utilization statistic, already used for ReRAM's own gating arithmetic), not DDR5's self-refresh *power level* (a circuit property specific to DDR5-4800 hardware that only a real datasheet IDD6 spec can supply). To close this: (1) source the real Micron/SK hynix DDR5-4800 IDD6 spec from the actual datasheet, (2) apply the same Bing/Cosmos idle-fraction arithmetic symmetrically to DDR5's own floor (not just to ReRAM's projected gated power) once a real number exists - DDR5's active-idle standby currents (EIDD2N/EIDD3N) are well above what self-refresh is engineered to achieve, so this would very likely lower DDR5's own 0.651 W floor too, not just narrow the gap by improving ReRAM's side. | todo | (unassigned) |
 
 ### Explicitly NOT doing (critique findings triaged as overstated)
 
-- Abstract gating caveat "doesn't travel" — it does; the Abstract discloses "unexercised / disabled in source" inline twice. Only the summary table's cell needed the hedge (T1-3).
-- "Two worst-case assumptions stacked in ReRAM's favor" — the two assumptions cut in opposite directions, and the floor/ceiling band is disclosed at all four "11%" sites. Residue handled by T2-5.
-- "Trace fidelity surfaces too late" — disclosed in §2.1 and §2.4.1, *before* results. Residue handled by T1-4.
+- Abstract gating caveat "doesn't travel" - it does; the Abstract discloses "unexercised / disabled in source" inline twice. Only the summary table's cell needed the hedge (T1-3).
+- "Two worst-case assumptions stacked in ReRAM's favor" - the two assumptions cut in opposite directions, and the floor/ceiling band is disclosed at all four "11%" sites. Residue handled by T2-5.
+- "Trace fidelity surfaces too late" - disclosed in §2.1 and §2.4.1, *before* results. Residue handled by T1-4.
 
 ---
 
@@ -84,81 +93,237 @@ Status values: `todo` / `in-progress` / `done` / `blocked` / `wont-do` / `prep-d
 Append entries newest-last. Template:
 
 ```
-### YYYY-MM-DD — <item ID> — <owner>
+### YYYY-MM-DD - <item ID> - <owner>
 - File(s): <paths>
 - What changed: <1-3 sentences, with anchor strings for moved/edited text>
 - Compile gate: pass/fail
 - Staged: yes/no
 ```
 
-### 2026-08-22 — (pre-tracker baseline) — Claude session f2ad0d1b
+### 2026-08-22 - (pre-tracker baseline) - Claude session f2ad0d1b
 - File(s): `Project_Book.typ`, `Reference_Guide.md`
 - What changed: Added refs [34] (Intel XBM patent US 2026/0191095 A1) and [35] (TrendForce corroboration); Section 3.3 DRAM-roadmap paragraph expanded to "three fronts". Reference_Guide.md count bumped 33→35.
 - Compile gate: pass
 - Staged: committed & pushed 2026-08-22
 
-### 2026-08-23 — T1-1..T1-7, T2-1..T2-5 — Claude session f2ad0d1b
+### 2026-08-23 - T1-1..T1-7, T2-1..T2-5 - Claude session f2ad0d1b
 - File(s): `Project_Book.typ`, `Reading_Guide.md`
 - What changed: All Tier 1 + Tier 2 items as described in the tables above. Highest-impact for other workers: Table 6/7 number swap, "Power Flatline"→"Standby Convergence" rename, Abstract streaming/4.6x qualifiers (see NOTICES at top). New anchors: primer starts `Before the engineering choices, the device itself`; validation bullet starts `#strong[Validation Scope]`; sensitivity passage starts `Every ratio in the table is also linear in the assumed cell area`; endurance bound starts `That proportionality also bounds the exposure`; spec-vs-typical sentence starts `One honest bound on that comparison`.
 - Compile gate: pass (verified after final .typ edit)
 - Staged: no (pending Lead Researcher review)
 
-### 2026-08-30 — T4-1 — Claude (meeting-prep session)
+### 2026-08-30 - T4-1 - Claude (meeting-prep session)
 - File(s): `Project_Book.typ`
 - What changed: Added new §4.1 bullet "Standalone Device-to-System Simulator Wrapper" after the "Native MLC Logic" item. No citation added, so `Reference_Guide.md` count is unaffected; `Reading_Guide.md` §4 coverage not checked for a corresponding mention (worth a quick look if it enumerates §4.1 items individually).
 - Compile gate: pass
 - Staged: no (Lead Researcher to commit)
 
-### 2026-08-23 — T3-1/T3-2/T3-3 prep — Claude session f2ad0d1b
+### 2026-08-23 - T3-1/T3-2/T3-3 prep - Claude session f2ad0d1b
 - File(s): `Tier3_Prep_Proposals.md` (new)
 - What changed: Proposals + sign-off checklist for the three structural items. No book edits.
 - Compile gate: n/a
 - Staged: committed (`aa43746`)
 
-### 2026-08-23 — T1-8, T1-9 + parallel-session reconciliation — Claude session f2ad0d1b
+### 2026-08-23 - T1-8, T1-9 + parallel-session reconciliation - Claude session f2ad0d1b
 - File(s): `Project_Book.typ`, `Project_Book.pdf`, `Presentation_Fixes_Tracker.md`, `Presentation_Outline.md`, `presentation_deck.html`
-- What changed: Gating-parity claim reworded as projection-contingent at all four sites (new anchors: Abstract `Power parity is therefore`, §3.3 `Power parity for 1S1R SLC is therefore a projection`, Table 7 cell `flagship; power parity contingent on future gating work`, Conclusion `credible, bounded projection to DDR5 power parity`); "intrinsically" dropped in §3.3. Parallel session's tracker reconciled: statuses flipped to done/in-progress with pointers here, renumbering + Standby Convergence notices added at top. Deck slide-16 speaker note and outline updated — they claimed the book still said "competitive for streaming"; it no longer does.
+- What changed: Gating-parity claim reworded as projection-contingent at all four sites (new anchors: Abstract `Power parity is therefore`, §3.3 `Power parity for 1S1R SLC is therefore a projection`, Table 7 cell `flagship; power parity contingent on future gating work`, Conclusion `credible, bounded projection to DDR5 power parity`); "intrinsically" dropped in §3.3. Parallel session's tracker reconciled: statuses flipped to done/in-progress with pointers here, renumbering + Standby Convergence notices added at top. Deck slide-16 speaker note and outline updated - they claimed the book still said "competitive for streaming"; it no longer does.
 - Compile gate: pass
 - Staged: committed (`3331683`)
 
-### 2026-08-23 — T3-1, T3-2 executed; T3-3 drafted — Claude session f2ad0d1b
+### 2026-08-23 - T3-1, T3-2 executed; T3-3 drafted - Claude session f2ad0d1b
 - File(s): `Project_Book.typ`, `Project_Book.pdf`, `Reference_Guide.md`, `Reading_Guide.md`, `Conclusion_Rewrite_Draft.md` (new)
-- What changed: New §1.3 Related Work (anchor: `== 1.3. Related Work`) citing new refs [36]-[40] plus existing [23]/[32]; five verified bibliography entries inserted after [35]; reference count 35→40. Audit-summary paragraph added at top of §3.1 (anchor: `One framing note before the numbers`). Conclusion replacement text drafted only — NOT applied. ToC updates automatically (typst `#outline()`).
+- What changed: New §1.3 Related Work (anchor: `== 1.3. Related Work`) citing new refs [36]-[40] plus existing [23]/[32]; five verified bibliography entries inserted after [35]; reference count 35→40. Audit-summary paragraph added at top of §3.1 (anchor: `One framing note before the numbers`). Conclusion replacement text drafted only - NOT applied. ToC updates automatically (typst `#outline()`).
 - Compile gate: pass
 - Staged: yes (uncommitted)
 
-### 2026-08-23 — T3-3 applied — Claude session f2ad0d1b
+### 2026-08-23 - T3-3 applied - Claude session f2ad0d1b
 - File(s): `Project_Book.typ`, `Project_Book.pdf`, `Conclusion_Rewrite_Draft.md`, this file
-- What changed: §4's six per-section recap paragraphs (old anchors: `Latency analysis (3.1.1) revealed` through `convert added ranks into latency gains.`) replaced by two paragraphs (new anchors: `Each results axis resolves to a one-line verdict.` and `The scope of these claims is bounded by four disclosed limitations`), per `Conclusion_Rewrite_Draft.md` with the Lead's two citation additions from `Lead_Decisions_and_Handoff.md`. Opening synthesis paragraph and §4.1-4.3 untouched. Note for the handoff file: its T3-1 spec assumed refs [36]-[41]; actual is [36]-[40] because Izraelevitz was already ref [32] (and Optane-exit [23]) — no duplicates were added. Its T3-2 question (options A-D) is still open with the Lead; Option A is what's currently implemented.
+- What changed: §4's six per-section recap paragraphs (old anchors: `Latency analysis (3.1.1) revealed` through `convert added ranks into latency gains.`) replaced by two paragraphs (new anchors: `Each results axis resolves to a one-line verdict.` and `The scope of these claims is bounded by four disclosed limitations`), per `Conclusion_Rewrite_Draft.md` with the Lead's two citation additions from `Lead_Decisions_and_Handoff.md`. Opening synthesis paragraph and §4.1-4.3 untouched. Note for the handoff file: its T3-1 spec assumed refs [36]-[41]; actual is [36]-[40] because Izraelevitz was already ref [32] (and Optane-exit [23]) - no duplicates were added. Its T3-2 question (options A-D) is still open with the Lead; Option A is what's currently implemented.
 - Compile gate: pass
 - Staged: yes (uncommitted)
 
-### 2026-08-23 — pre-review leftover sweep — Claude session f2ad0d1b
+### 2026-08-23 - pre-review leftover sweep - Claude session f2ad0d1b
 - File(s): `Project_Book.typ`, `Project_Book.pdf`, `Presentation_Fixes_Tracker.md`
-- What changed: Appendix C repo link target fixed — was a Google-search redirect carrying a leaked `authuser=3` parameter; now links `https://github.com/uvKogan/MBMM` directly (display text unchanged; anchor: `#link("https://github.com/uvKogan/MBMM")`). This closes the last deferred `[-]` item. `Presentation_Fixes_Tracker.md`'s three stale `[~]` entries (related work, §3.1.6, Conclusion) flipped to `[x]` with final outcomes — all book-fix work is now complete in both trackers.
+- What changed: Appendix C repo link target fixed - was a Google-search redirect carrying a leaked `authuser=3` parameter; now links `https://github.com/uvKogan/MBMM` directly (display text unchanged; anchor: `#link("https://github.com/uvKogan/MBMM")`). This closes the last deferred `[-]` item. `Presentation_Fixes_Tracker.md`'s three stale `[~]` entries (related work, §3.1.6, Conclusion) flipped to `[x]` with final outcomes - all book-fix work is now complete in both trackers.
 - Compile gate: pass
 - Staged: yes (uncommitted)
 
-### 2026-08-23 — review-process docs archived — Claude session f2ad0d1b
+### 2026-08-23 - review-process docs archived - Claude session f2ad0d1b
 - File(s): `README.md` (this folder), `archive/documents/book_review_pass_2026-08/` (new)
-- What changed: With every item closed, the finished process docs were `git mv`'d out of the book folder: `Tier3_Prep_Proposals.md`, `Conclusion_Rewrite_Draft.md`, `Lead_Decisions_and_Handoff.md`, `TYPST_QA_REPORT.md`, `qa_screenshots/` → `archive/documents/book_review_pass_2026-08/`. Any mention of those filenames in earlier log entries above now resolves to that archive path. Both trackers stay in place until the talk is delivered (they are the parallel-session coordination surface). The folder `README.md` was rewritten — it still claimed docx parity and refs [1]-[30], both false since this fix pass began.
+- What changed: With every item closed, the finished process docs were `git mv`'d out of the book folder: `Tier3_Prep_Proposals.md`, `Conclusion_Rewrite_Draft.md`, `Lead_Decisions_and_Handoff.md`, `TYPST_QA_REPORT.md`, `qa_screenshots/` → `archive/documents/book_review_pass_2026-08/`. Any mention of those filenames in earlier log entries above now resolves to that archive path. Both trackers stay in place until the talk is delivered (they are the parallel-session coordination surface). The folder `README.md` was rewritten - it still claimed docx parity and refs [1]-[30], both false since this fix pass began.
 - Compile gate: n/a (no book edit)
 - Staged: yes (uncommitted)
 
-### 2026-08-26 — review finding: "six benchmarks" → "six workloads" — Claude session f2ad0d1b
+### 2026-08-26 - review finding: "six benchmarks" → "six workloads" - Claude session f2ad0d1b
 - File(s): `Project_Book.typ`, `Project_Book.pdf`
 - What changed: The evaluated set is five benchmark programs (GCC, LBM, STREAM, GPT-2, AlexNet) yielding six workload traces (AlexNet split into IFMAP/OFMAP), and the book already said "workloads" at its other count sites (§3.1.1, §2.4, §3.1.3). Fixed the three inconsistent "benchmarks" sites: Abstract now reads "across six workloads - drawn from five benchmarks, with AlexNet split into read-dominant and write-dominant phases"; Conclusion and Appendix C now say "6 workloads". Found by the Lead during the review read.
 - Compile gate: pass
 - Staged: yes (uncommitted)
 
-### 2026-08-26 — review finding: MLP acronym used before its expansion — Claude session f2ad0d1b
+### 2026-08-26 - review finding: MLP acronym used before its expansion - Claude session f2ad0d1b
 - File(s): `Project_Book.typ`, `Project_Book.pdf`
 - What changed: Abstract used "high-MLP workloads" three lines before defining the acronym. Expansion moved to first use: "workloads with high memory-level parallelism (MLP - many independent memory requests in flight at once)"; the later sentence now says just "insufficient MLP". Found by the Lead during the review read.
 - Compile gate: pass
 - Staged: yes (uncommitted)
 
-### 2026-08-26 — stray-bullet fix (Typst line-initial dash) — Claude session f2ad0d1b
+### 2026-08-26 - stray-bullet fix (Typst line-initial dash) - Claude session f2ad0d1b
 - File(s): `Project_Book.typ`, `Project_Book.pdf`
 - What changed: A line-wrapped " - " landing at line start renders as a list bullet in Typst. Two instances fixed, both in the Abstract: (1) the just-added MLP definition (introduced by the previous entry's edit, caught by the Lead in the rendered PDF); (2) a pre-existing one in the audit sentence ("- of which this work repaired twelve"), found by sweeping every line-initial dash in the file. The only other line-initial dashes are genuine list items (verified). Editing rule for all workers: never let a wrap put "- " at the start of a line in prose.
 - Compile gate: pass
 - Staged: yes (uncommitted)
+
+### 2026-08-31 - T4-2 - Claude (meeting-prep session)
+- File(s): `Project_Book.typ`, `Presentation_Outline.md`, `presentation_deck.html`
+- What changed: Added new §4.1 bullet "FPGA-Based Hardware-in-the-Loop Validation of Power-Down Policy" after "Standalone Device-to-System Simulator Wrapper" - proposes FPGA emulation of just the idle-gating/power-down state machine (not the full memory system) to validate controller timing against a real clock, addressing the internal-only validation limitation disclosed in §2.2. Idea originated in meeting-prep grilling (Round 4), first captured in the author's personal in-memory-compute research workspace outside this repo, then Lead-approved for inclusion here. Synced: `Presentation_Outline.md` Slide 33 and `presentation_deck.html`'s "Other Fronts" slide both got a matching bullet. No citation added; `Reference_Guide.md` unaffected; `Reading_Guide.md` has no §4 tracking to sync.
+- Compile gate: pass
+- Staged: no (Lead Researcher to commit)
+
+### 2026-08-31 - T4-3 - Claude (meeting-prep session)
+- File(s): `Project_Book.typ`, `media/media/pipeline_architecture.svg` (new), `presentation_deck.html`, `Presentation_Outline.md`
+- What changed: Expanded the §2.1 "Simulation Pipeline" bullet (new anchor: `NVSim characterizes exactly`) to state plainly that NVSim characterizes one 1 Gb chip and NVMain replicates it 1/8/16/64x while adding its own controller/decoder/interconnect - prompted by a live discussion of how the ETL pipeline actually builds a system from a single device characterization. Added a new pipeline-architecture SVG diagram immediately after, rendered and visually verified (no overlap) before committing to the real book; deliberately excluded from the numbered Figure/List of Figures sequence to avoid renumbering all 27 existing figures - it illustrates pipeline architecture, not a simulation result. Deck: "The Pipeline" slide upgraded from abstract 4-box diagram to real script names (`1_run_nvsim_hardware.py` through `4_execute_simulation.py`); new slide "One Chip → a Full DIMM" added with stat callouts for the key architecture numbers (1 Gb chip, 1-64 chip replication, 800 MHz ReRAM clock, 64-bit bus, 8/16 GB full-DIMM capacity, 3 GHz matched-host CPUFreq). `Presentation_Outline.md` fully renumbered (new Slide 10 inserted; every subsequent Slide N through the old Slide 34 shifted to N+1); Methodology section slide count updated 6→7; stale "Open items" section (referencing not-yet-applied `Presentation_Fixes_Tracker.md` edits and text-placeholder diagrams, both since resolved) rewritten as a closed record. No citation added; `Reference_Guide.md`/`Reading_Guide.md` unaffected.
+- Compile gate: pass (verified twice - isolated SVG-only test file, then the full `Project_Book.typ`)
+- Staged: no (Lead Researcher to commit)
+
+### 2026-08-31 - T4-4 - Claude (meeting-prep session)
+- File(s): `Project_Book.typ`, `media/media/pipeline_architecture.svg`
+- What changed: Table 1 and Table 6 header "Configuration" -> "Config." (fixes left-margin overflow, an unbreakable header word too wide for its auto column); Table 7 header "Architectural role" -> "Role" (fixes matching right-margin overflow). Table 6's two em-dash "not applicable" placeholders -> "N/A". Removed `#strong[...]` wrapping from seven heading titles (new anchors: `2.4.1. Diagnostic Trace Dictionary`, `3.1. Granular Workload Diagnostics`, `3.1.4 Endurance Viability Analysis`, `3.1.5 Design Robustness: ReadVoltage Sensitivity`, `3.1.6 Simulation-Fidelity Audit`, `3.2. Architectural Scaling & Memory Level Parallelism`, `3.3. Global Viability`) that was leaking into the ToC as inconsistent bolding. Fixed 4 stray em-dashes in `pipeline_architecture.svg` (replaced with colons/commas/parens) per the Lead's instruction to avoid em-dash entirely; verified the book's own prose already uses " - " exclusively (only literal em-dash was a source-file comment on line 1, not rendered).
+- Compile gate: pass (also visually re-rendered pages 11/45/50 at 150ppi and the ToC pages to confirm no residual overflow/bolding)
+- Staged: no (Lead Researcher to commit)
+
+### 2026-08-31 - em-dash sweep (Lead-requested, all meeting-prep files) - Claude (meeting-prep session)
+- File(s): `Presentation_Outline.md`, `Review_Fixes_Tracker.md` (this file), `Meeting_Prep_Cheat_Sheet.md`, `presentation_deck.html`
+- What changed: Per the Lead's "avoid em-dash entirely" instruction, swept every em-dash (85/67/41/66 instances respectively) out of the four files above, replacing with " - " (matching the book's own house style) except two deck table cells using it as a bare "not applicable" placeholder, changed to "N/A" for consistency with the same fix already applied to the book's Table 6 (T4-4). Caught and fixed one numbering regression introduced during the earlier T4-3 edit in the process: `Presentation_Outline.md`'s "Real workloads" slide had been double-shifted to "Slide 12" (colliding with "Baselines," also Slide 12) instead of the correct "Slide 11" - corrected; re-verified the full Slide 1-35 sequence has no remaining duplicates. `Project_Book.typ` was NOT touched here - it was already confirmed em-dash-clean (see T4-4).
+- Compile gate: n/a for the three `.md`/`.html` files (no Typst involved); `presentation_deck.html` structural balance re-checked (section/div open-close tag counts, both balanced) after the bulk text replacement.
+- Staged: no (Lead Researcher to commit)
+
+### 2026-08-31 - stale Project_Book.pdf regenerated - Claude (meeting-prep session)
+- File(s): `Project_Book.pdf`
+- What changed: The Lead reported "DDR5-4800 still overflows its cell in Table 2" after T4-4 claimed to fix exactly this class of bug. Root cause: `Project_Book.pdf` (the tracked, viewable artifact) was last built 2026-08-26 - every edit this session (T4-1 through T4-4, the em-dash sweep) only ever compiled to `/tmp/verify*.pdf` for the gate-check and never regenerated the real `Project_Book.pdf`, so none of today's fixes were visible in the file the Lead actually opens. Regenerated `Project_Book.pdf` from the current `.typ` source; Table 2's "DDR5-4800" header (same fix already applied everywhere else as part of T4-4's "Config."/"Role" header-overflow fix - Table 2 itself never had an overflow bug, it just wasn't in the file being viewed) now renders correctly, confirmed at 300ppi.
+- Compile gate: pass
+- Staged: no (Lead Researcher to commit) - **process note for every future worker: `typst compile` your final edit straight to `Project_Book.pdf` (not just a /tmp gate-check target), or the tracked PDF silently goes stale like it did here.**
+
+### 2026-08-31 - T4-5 - font-substitution overflow hardening (Tables 2/3/4/7) - Claude (meeting-prep session)
+- File(s): `Project_Book.typ`, `Project_Book.pdf`
+- What changed: The Lead kept seeing "DDR5-4800" overflow its cell in Table 2 (anchor `[#strong[DDR5-4800]],` at what was line 832) after T4-4 supposedly fixed this class of bug. Root cause, isolated by compiling twice - once with `--font-path fonts` (Liberation Serif, the correct/tracked build) and once without (falls back to system DejaVu Serif, a wider font): under DejaVu, Tables 2/3/4's bare `columns: 7` auto-sizing let the single-line unbreakable header word "Workload" itself overflow into the DDR5-4800 column (border rendered through overlapping text); Table 7 showed the same failure on "Technology" and, worse, on the "DDR5-4800" body cell. Under the correct bundled font neither ever overflowed - this is a font-availability fragility in whatever renders it outside the tracked build, not a visible bug in `Project_Book.pdf` itself, but it's cheap to make robust regardless. Fix: replaced `columns: 7` with explicit fractional widths in all four tables - Tables 2/3/4 (identical header row): `columns: (1.5fr, 1.4fr, 1fr, 1.15fr, 1.15fr, 1.15fr, 1.15fr)`; Table 7 (different, more varied column content, "Role" needing the most room): `columns: (2fr, 1fr, 1.2fr, 1fr, 0.9fr, 1.1fr, 1.7fr)`. Verified by compiling under BOTH font conditions after the fix - no overflow in either, and the correct-font rendering is visually unchanged/clean (if anything, Table 7 reads slightly better with less awkward column-width variance). Also caught in the process that `Project_Book.pdf` (the tracked, viewable artifact) had gone stale for this entire session (last built 2026-08-26) since every edit only ever compiled to `/tmp/verify*.pdf` for the gate-check - regenerated it here and going forward every edit in this session now targets `Project_Book.pdf` directly.
+- Compile gate: pass, both with and without `--font-path fonts` (the latter is not the normal gate requirement, done here specifically to reproduce and verify the font-fallback failure mode)
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-01 - T4-6 - deck content additions (citations, parameters, DDR5 context) - Claude (meeting-prep session)
+- File(s): `presentation_deck.html`, `Presentation_Outline.md`
+- What changed, all Lead-requested during a live content-teaching session (not from the critique pass):
+  1. "One Chip -> a Full DIMM" slide (10): added an explicit on-slide bullet stating NVMain adds an FRFCFS controller, address decoder, and interconnect - previously only in the speaker note, easy to miss.
+  2. New Methodology slide 11, "The Bridge, in Parameters": two-column list of NVSim's actual output fields (Table 1 - latency/energy/leakage/area) versus NVMain's actual input keys (Appendix B - tCAS/tRCD/tRP, Erd/Ewr, Eactstdby/Eprestdby, ROWS/COLS/RANKS/BANKS), framed as "conversion, not new physics." Methodology section 7->8 slides (~11->~12 min); `Presentation_Outline.md` renumbered (Slide 11 inserted, everything after shifted +1, new total ~38 slides).
+  3. "The 47x Fact" slide: added DDR5's whole-module standby floor (~358 mW, from the §3.1.2 GCC power breakdown: 55% of 0.651 W) as a scale reference, explicitly labeled not-like-for-like (module vs per-chip, vendor-spec vs NVSim-simulated) to avoid a methodology-conflation error. Added a speaker note giving the actual provenance the Lead asked for: NVSim's own transistor-vs-selector access-device model (Dong et al., TCAD 2012 [3]) at 22nm FinFET LOP, with the Appendix A sensitivity sweep confirming the HRS/LRS targets (Matsui et al. [7]) do NOT drive the 47x figure - it's the access-device model. Stated plainly that the direction is field consensus but the magnitude is this project's own simulation, not externally confirmed (matches existing Meeting_Prep_Cheat_Sheet.md Round 2 framing).
+  4. SLC vs MLC slide: added the two EMBER citations by name (Upton et al., ESSCIRC 2023 [6]; Levy et al., IEEE JSSC 2024 [31]) that were previously only in the book, not the deck.
+  5. Backup slide "Where This Sits in the Device Literature" renamed "References Used on the Slides" and expanded to resolve every bracket number now appearing on main slides ([3], [4], [6], [7], [31], [33]) - previously named only 2 of these papers and used no bracket numbers at all, so a viewer had no way to resolve the new on-slide citations.
+- Compile gate: n/a (HTML/Markdown only); re-verified `<section>`/`<div>` tag-count balance after edits (48/48, 237/237) and re-swept for em-dash (0 remaining in both files).
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-01 - T4-7 - PCM citation gap closed (Lead-requested) - Claude (meeting-prep session)
+- File(s): `Project_Book.typ`, `Project_Book.pdf`, `Reference_Guide.md`, `Reading_Guide.md`, `presentation_deck.html`
+- What changed: While teaching the PCM-integration content live, found (and the Lead asked to fix before continuing) a real citation gap: §2.3's PCM baseline text cited only Lee et al. [11] (ISCA 2009), but PCM was never run through this project's own NVSim pipeline (verified: `results/hardware/` has only ReRAM output files) - its actual timing/energy numbers are inherited unmodified from NVMain's bundled `pcm_microsoft_2009.config`, whose own header comment attributes those specific numbers to a different paper entirely. Identified that paper via web search (Y. Choi et al., "A 20nm 1.8V 8Gb PRAM with 40MB/s Program Bandwidth," ISSCC 2012, pp. 46-48 - confirmed via IEEE Xplore/J-GLOBAL/ResearchGate listings) and added it as new reference [41]. §2.3 rewritten to distinguish the two citations cleanly: [11] is why-PCM-as-a-DRAM-alternative (architectural framing), [41] is where-these-specific-numbers-came-from (the inherited config's actual source) - explicitly noting neither was independently re-derived or verified by this project. `Reference_Guide.md` (40->41 sources, new [41] entry) and `Reading_Guide.md` (reference count line) synced. Deck: "Baselines" slide and its speaker note now disclose the different-methodology point (PCM taken as-is, not NVSim-characterized like ReRAM); "References Used on the Slides" backup slide expanded with [10], [11], [41].
+- Compile gate: pass (book compiled to the real `Project_Book.pdf`, not just `/tmp`); deck re-verified section/div tag balance (48/48, 237/237) and em-dash-clean.
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-01 - T4-8 - new §4.2 future-work item: dual-channel/faster-PHY ReRAM (Lead-requested) - Claude (meeting-prep session)
+- File(s): `Project_Book.typ`, `Project_Book.pdf`, `presentation_deck.html`, `Presentation_Outline.md`
+- What changed: Added new §4.2 bullet "Interface Parity: Dual-Channel and Faster-PHY ReRAM" - proactively scoping, before Shahar can ask about it live, the two interface-conservatism choices already disclosed elsewhere in the book (single-channel 800 MHz ReRAM interface, part of the 4.6x AI-inference gap) as explicit future work rather than leaving them as unaddressed gaps. Cross-links to the FPGA hardware-in-the-loop platform (T4-2/§4.1) as a natural extension point for exploring dual-channel scheduling under real hardware timing, per the Lead's suggestion. Synced to the deck's "Other Fronts" slide and `Presentation_Outline.md` (same slide, one more bullet - no renumbering needed).
+- Compile gate: pass
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-01 - urgent fix: title slide still said "Advisor: TBD" - Claude (meeting-prep session)
+- File(s): `presentation_deck.html`
+- What changed: The Lead caught that the title slide's byline still read "Yuval Kogan · Advisor: TBD · August 2026" - a placeholder never filled in across this whole meeting-prep session. Fixed to "Yuval Kogan · Advisor: Prof. Shahar Kvatinsky · September 2026" (also corrected the stale month while in there - meeting is happening in September, not August). Verified no other "TBD" text remains anywhere in the deck (the only other 2 matches were false-positive substring hits inside base64-encoded chart images, confirmed by filtering to non-image lines).
+- Compile gate: n/a (HTML); re-verified section/div tag balance (48/48, 237/237) and em-dash-clean.
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-01 - deck/outline: disclose 64/128 GB endurance figures as projections (Lead-requested) - Claude (meeting-prep session)
+- File(s): `presentation_deck.html`, `Presentation_Outline.md`
+- What changed: The Lead caught that the deck's "Endurance" slide and "The Whole Evaluation, One Slide" summary table stated 64 GB (~9 yr) and 128 GB lifetime figures flatly alongside the actually-simulated 8 GB (1.1 yr) number, with no indication that only 8 GB (SLC) / 16 GB (MLC) was ever physically simulated (the architecture factory's ceiling at 64 chips) - 64/128 GB are analytical projections via NVMain's per-location wear model, which scales linearly with capacity by construction (disclosed in the book at §3.1.4, Table 5's own title is "Projected..."), never separately built or run. The book already discloses this correctly; the deck and this session's own live teaching both stated it ambiguously. Fixed: Endurance slide's 64 GB bullet now flags it as a projection, not a separate simulation, plus a new speaker note stating the 8/16 GB physical ceiling plainly. Summary table's "Lifetime@128GB" header gets a footnote asterisk with the same disclosure. `Presentation_Outline.md` synced at both slides (28 and 31).
+- Compile gate: n/a (HTML/Markdown); re-verified section/div balance (48/48, 238/238) and em-dash-clean in both files.
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-02 - T4-10 closed: symmetric DDR5 self-refresh note added to Power-Down Restoration - Claude (meeting-prep session)
+- File(s): `Project_Book.typ`, `Project_Book.pdf`, `presentation_deck.html`, `Presentation_Outline.md`
+- What changed: Per the Lead's judgment call (worth a mention, but as a refinement to the existing top-priority item, not a new standalone future-work bullet), appended a sentence to §4.1's "Power-Down Restoration" item: idle-gating simulation, once undertaken, should model both sides symmetrically, since DDR5's own self-refresh current (JEDEC IDD6) is an unsourced, confirmed-dead placeholder in this project's DDR5 config - meaning the DDR5 floor used throughout the book is its ungated standby behavior, not its own best-case sleep state, and today's "path to parity" arithmetic is gated-projection-for-ReRAM versus ungated-actual-for-DDR5, not a symmetric gated-to-gated comparison. Synced to the deck's "Top Priority" slide (added on-slide sentence + new speaker note) and `Presentation_Outline.md`. T4-10 (logged 2026-09-01) is now closed by this addition - the underlying gap (no real IDD6 source) remains open and unassigned, but is now disclosed as future work rather than a silent limitation.
+- Compile gate: pass (book); deck/outline re-verified section/div balance (48/48, 239/239) and em-dash-clean (book's only remaining em-dash is the pre-existing, non-rendered source-comment on line 1).
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-02 - new backup section: "Progress Since Last Presented" (Lead-requested) - Claude (meeting-prep session)
+- File(s): `presentation_deck.html`, `Presentation_Outline.md`
+- What changed: The Lead asked for 2 new slides at the end of the deck answering "what changed since I last presented this to Shahar" and "what changed since the SysTOR poster." Extracted text from `resources/MBMM Project Book UPDATED.docx` (confirmed via README as the actual pre-2026-08-review-pass baseline `Project_Book.typ` diverged from) and from the SysTOR poster PDF, then verified every candidate fact directly against the current `Project_Book.typ` before writing anything (a background research agent's first pass mislabeled one claim as being on the poster when it wasn't there - caught by re-reading the poster text directly and excluded). Added a new "Section B" divider + 2 backup-styled slides: (1) since the UPDATED docx - fidelity audit deepened from 11 found/9 repaired to 14 found/12 repaired (new items: unsourced DDR5 CAS-RCD-RP timing 34-34-34 corrected to real 40-39-39, ReRAM MLC penalty multipliers re-sourced and twice-corrected to Upton et al. [6]/Levy et al. [31]), new Section 1.3 Related Work, references 30->41, 128GB 1T1R SLC lifetime 24.4->17.3yr from the DDR5 timing fix's re-run, headline verdict (1.5x latency, 1.12W vs 0.651W, 47x leakage) unchanged; (2) since the SysTOR poster - the poster's own numbers (2.3x compute-bound latency, ~25yr@128GB) hold up against current results, what's new is the explicit measured-vs-projected disclosure (only 8/16GB was ever physically simulated) and the audit narrative growing from the poster's implicit lineage to a documented 14/12. Both slides include speaker notes. Synced `Presentation_Outline.md`'s Backup section listing. While in the tracker, also swept 13 pre-existing em-dashes out of this file's own changelog headers (missed by the original 2026-08-31 sweep, which only covered the book/deck/outline, not the tracker itself) - the Lead's "avoid em-dash entirely" instruction applies to everything Claude writes, not just presentation-facing files.
+- Compile gate: n/a (HTML/Markdown); re-verified deck section/div balance (51/51, 248/248) and em-dash-clean; outline and tracker re-verified em-dash-clean.
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-02 - deck: name the actual benchmark suite on "What This Project Built" (Lead-caught) - Claude (meeting-prep session)
+- File(s): `presentation_deck.html`, `Presentation_Outline.md`
+- What changed: The Lead asked "what are gem5, SCALE-Sim? why don't we say a word about cpu-2017?" on the deck's 6th slide (Motivation 4/4, "What This Project Built"). The bullet named only the trace-generation simulators (gem5, SCALE-Sim), never the actual benchmark suite run through them - per `Project_Book.typ` §2.4, gem5 traces SPEC CPU2017 (gcc, lbm), STREAM runs directly, and SCALE-Sim traces AlexNet/GPT-2. Fixed the bullet to `Driven by real workload traces - SPEC CPU2017 (gcc, lbm) via gem5, STREAM, AI inference via SCALE-Sim - not hand-waved averages` (also softened "not synthetic averages" to "not hand-waved averages" since the book's own §2.4 calls STREAM itself a "synthetic diagnostic" - avoids a pedantic contradiction if Shahar reads closely). Synced `Presentation_Outline.md`'s Slide 4 entry with the same wording plus a "Say" addition explaining what gem5/SCALE-Sim actually are (trace generators, not memory models) in case Shahar asks live.
+- Compile gate: n/a (HTML/Markdown); re-verified deck section/div balance (51/51, 248/248) and em-dash-clean; outline re-verified em-dash-clean.
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-02 - deck: trimmed "not hand-waved averages" from the trace-sources bullet (Lead-caught) - Claude (meeting-prep session)
+- File(s): `presentation_deck.html`
+- What changed: The Lead flagged the previous fix's trailing clause ("- not hand-waved averages") as too wordy for a slide bullet. Cut it: `Driven by real workload traces - SPEC CPU2017 (gcc, lbm) via gem5, STREAM, AI inference via SCALE-Sim`. `Presentation_Outline.md`'s Slide 4 entry never carried that clause in the first place (only the deck did), so no outline change was needed here.
+- Compile gate: n/a (HTML); re-verified deck section/div balance (51/51, 248/248) and em-dash-clean.
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-02 - deck: slide 13 forward-teaser + slide 14 Gb/GB unit fix and 800 MHz rationale (Lead-caught) - Claude (meeting-prep session)
+- File(s): `presentation_deck.html`, `Presentation_Outline.md`
+- What changed: Three related Lead questions on the Methodology slides. (1) Slide 13 ("The Pipeline") never pointed forward to the field-level NVSim-output/NVMain-input mapping that already exists on slide 15 ("The Bridge, in Parameters") - added a one-line teaser so the audience knows detail is coming rather than assuming it's missing. (2) Slide 14 ("One Chip → a Full DIMM") never showed the arithmetic behind "1 Gb chip" - traced to NVSim's own `.cfg` files (`reram_22nm_1t1r_slc.cfg` and `_mlc.cfg` both specify `Capacity (MB): 128`, i.e. 128 MB × 8 = 1,073,741,824 bits = 1 Gb of physical cells) - added this to the stat label. (3) The Lead separately caught that "64×1 Gb chips" next to "8/16 GB" reads like 64×1 should equal 8 or 16 directly, since the slide conflated Gb (gigabit) and GB (gigabyte) with no bits-to-bytes conversion shown, and never explained why MLC gets double the SLC figure. Root cause confirmed in `Project_Book.typ` (MLC = 2 bits/cell on the same physical cell array, §2.2/Appendix A EMBER citations): fixed with explicit "gigabit, not gigabyte" labeling and a new on-slide arithmetic line (64 × 1 Gb ÷ 8 = 8 GB SLC; MLC's 2 bits/cell doubles the chip to 2 Gb, so 64 × 2 Gb ÷ 8 = 16 GB). Also added the previously-undocumented-in-the-deck 800 MHz rationale to the speaker note (Project_Book.typ lines 456-465): a deliberate interface choice positioned between twice NVMain's own PCM config's 400 MHz basis [11] and below Intel's shipped Optane DIMM interface [32], costing ReRAM ground in the bandwidth-bound AI regime (part of the 4.6x gap) - already scoped as future work via dual-channel/faster-PHY ReRAM. `Presentation_Outline.md` Slides 9 and 10 synced with all of the above.
+- Compile gate: n/a (HTML/Markdown); re-verified deck section/div balance (51/51, 248/248) and em-dash-clean; outline re-verified em-dash-clean.
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-02 - deck: stale "PCM 2 GHz" clock figure corrected to 400 MHz on Slide 10 (Lead-caught) - Claude (meeting-prep session)
+- File(s): `presentation_deck.html`, `Presentation_Outline.md`
+- What changed: The Lead asked "did I see PCM at 2 GHz somewhere, now I read 400 MHz - make sure" after the previous edit's speaker note cited PCM's cited 400 MHz basis. Root cause confirmed against the live NVMain config files (ground truth): `pcm_microsoft_2009.config` has `CLK 400` (device clock, matches Lee et al.'s cited basis, restored by §3.1.6 item 9's fix) and `CPUFreq 3000` (host issue rate, unified to 3 GHz across all technologies by item 11's fix); `DDR5_4800_DRAM_micron.config` has `CLK 2400` and `CPUFreq 3000`. The Slide 10 stat card's "(PCM 2 GHz, DDR5 3 GHz)" parenthetical, next to a stat explicitly labeled "ReRAM device clock," was comparing ReRAM's device CLK against PCM/DDR5's OLD, pre-fix, heterogeneous CPUFreq values (2 GHz/3 GHz, the exact bug item 11 describes and repairs) rather than their own device CLKs - an apples-to-oranges leftover that also silently contradicted the deck's own other stat card on the same slide ("3 GHz matched-host issue rate, fixed across every technology"). The book's own §3.1.1 already states the correct device-clock domains (line 891: "ReRAM 800 MHz, PCM 400 MHz, DDR5 2400 MHz"). Fixed the stat label to "(PCM 400 MHz, DDR5 2400 MHz)"; `Presentation_Outline.md` Slide 10 synced with the same figure.
+- Compile gate: n/a (HTML/Markdown); re-verified deck section/div balance (51/51, 248/248) and em-dash-clean; outline re-verified em-dash-clean.
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-02 - deck: Slide 10 overcrowded/overlapping text fixed (Lead-caught) - Claude (meeting-prep session)
+- File(s): `presentation_deck.html`, `Presentation_Outline.md`
+- What changed: The Lead reported Slide 10 ("One Chip -> a Full DIMM") had overlapping text - "technology" collided with neighboring content, and the arithmetic line sat on top of the speaker note. Root cause: across the two prior fixes today (Gb/GB unit disambiguation + arithmetic line, then the PCM clock correction), the slide accumulated two stat-rows, two separate `<p class="lede">` paragraphs, and a 4-sentence speaker note with two citations - all fighting for the same fixed, non-scrolling `.slide { height:100% }` box. Confirmed `.speaker-note` is NOT a hidden presenter-only layer in this deck (no toggle in CSS/JS) - it always renders inline at the bottom of the slide, so every word added to it consumes the same visible vertical budget as on-slide content. Fixed by trimming all three stat labels back to their essential form (dropped editorializing clauses like "a deliberate interface choice, not a device limit" and "same 64 chips" from the visible labels), merging the two lede paragraphs into one two-sentence line, and cutting the speaker note to only the load-bearing facts (dropped the [11]/[32] citation-heavy 800 MHz precedent explanation - the short version is enough for a live answer). Verified the fix visually, not just structurally: launched headless Chrome (`chrome.exe --headless --screenshot`) against the live deck file at `#14`, confirmed no overlap in the resulting screenshot. `Presentation_Outline.md` Slide 10 rewritten to match the trimmed content.
+- Compile gate: n/a (HTML/Markdown); re-verified deck section/div balance (51/51, 248/248), em-dash-clean, and (new this entry) visually overlap-free via headless-Chrome screenshot; outline re-verified em-dash-clean.
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-02 - deck: Slides 50/51 overflow fixed; note on visual-verification method (Lead-caught) - Claude (meeting-prep session)
+- File(s): `presentation_deck.html`, `Presentation_Outline.md`
+- What changed: Following the Slide 10 overcrowding fix, re-checked every slide touched today via headless-Chrome screenshots rather than trusting the section/div balance check alone (that check only catches malformed HTML, not visual overflow). Found the two new "Progress Since Last Presented" backup slides (Slide 50 "Since the Last Book Version", Slide 51 "Since the SysTOR Poster") genuinely overflowed the fixed, non-scrolling slide height: each had an intro/closing lede, 5 long multi-clause bullets, and a 3-4 sentence speaker note - title clipped at the top, closing lede and speaker note rendered on top of each other at the bottom. Fixed by trimming every bullet to one compact line, dropping the intro lede and the speaker note on both slides entirely (matching the "bullets + one short lede, no speaker note" shape already used by this deck's other backup slides, e.g. "The Full Fidelity Audit"), keeping one short closing lede each. All facts preserved - only compressed, nothing removed. Also corrected a self-caught navigation error during diagnosis: initially screenshotted "#50" expecting the new divider slide, but the divider actually landed at Slide 49 (0-indexed math error) - the real divider (Slide 49) was clean throughout; the overflow was on Slides 50/51 themselves, confirmed once the numbering was corrected.
+- Compile gate: n/a (HTML/Markdown); re-verified deck section/div balance (51/51, 246/246) and em-dash-clean; both slides re-screenshotted overlap-free after the fix (`chrome.exe --headless --force-prefers-reduced-motion --screenshot`). Note for future workers: prefer `--force-prefers-reduced-motion` (which this deck's own CSS already uses to disable its `#track` transition) over `--virtual-time-budget` or `--run-all-compositor-stages-before-draw` when screenshotting a specific slide by hash - the latter two do not reliably suppress the 480ms transition and can produce non-deterministic partial-transition captures that look like false overlap bugs.
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-02 - deck: 3 GHz clock ambiguity, Isolates-column jargon, and single-author voice on Slides 10/12/14 (Lead-caught) - Claude (meeting-prep session)
+- File(s): `presentation_deck.html`, `Presentation_Outline.md`
+- What changed: Three separate Lead questions in one pass. (1) Slide 10: "3 GHz - is this DDR5's frequency, why is it here?" - it's CPUFreq (the simulated host's request-issue rate), a different axis from the 800/400/2400 MHz device clocks on the same slide, deliberately unified to 3 GHz across ReRAM/PCM/DDR5 by §3.1.6 item 11 so the comparison is matched-host. Fixed the label to say so explicitly: "host CPU issue rate (CPUFreq) - same for ReRAM, PCM, and DDR5; not a device clock". (2) Slide 12 ("Real Workloads, Not Synthetic Averages"): the Isolates column used unexplained acronyms (MLC, MLP) and a vague phrase ("Clean streaming comparison") with no on-slide definition; also the AlexNet IFMAP/OFMAP row was merged into one, giving the table only 5 rows while its own speaker note says "Six traces" - split into two rows and spelled out both acronyms inline (also caught and fixed a typo, "massed" -> "massive", introduced during this edit). (3) Slide 14 ("We Audited Our Own Toolchain"): plural voice on a single-author work - confirmed via grep that `Project_Book.typ` is 100% first-person "I" throughout (23 instances, 0 genuine "we"), this deck title was the one outlier; fixed to "I Audited My Own Toolchain". Also expanded on the Lead's request for substance: the old 3 bullets were bare labels with no issue/fix framing, and one (disabled power-down model) was presented alongside "12 repaired" language as if it were a repaired example when it's actually one of the 2 still-open findings (§3.1.6 item 5) - rewrote all 4 bullets as explicit issue -> fix pairs and explicitly flagged the power-down item as still-open, tying it to the top-priority future-work item. `Presentation_Outline.md` Slides 10, 12, and 14 synced with all three fixes.
+- Compile gate: n/a (HTML/Markdown); re-verified deck section/div balance (51/51, 246/246) and em-dash-clean; visually re-verified overlap-free via headless-Chrome screenshots of Slides 14, 16 (deck numbering), and 18 (deck numbering) after editing - Slide 18 is noticeably denser than before (by design, per the Lead's request for more substance) but fits without clipping or overlap.
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-02 - deck: Slide 14 overflow fixed by widening bullets, not shortening them (Lead-diagnosed) - Claude (meeting-prep session)
+- File(s): `presentation_deck.html`, `Presentation_Outline.md`
+- What changed: The previous round's richer issue-to-fix bullets overflowed the slide again, but the Lead correctly diagnosed the real cause rather than asking for another content cut: `ul.points` carries a shared `max-width: 66ch` in the deck's global CSS, so every bullet was wrapping into 3-4 lines while using only the left half of the slide's actual width - the slide didn't have too much text, it had too little width. Fixed by adding an inline `max-width:min(96ch, 88vw)` override on just this slide's `<ul class="points">` (left the shared CSS rule untouched, so no other slide's bullet width changed). Same words, one fewer wrapped line per bullet on average, comfortable margin restored below the last bullet and before the speaker note.
+- Compile gate: n/a (HTML/Markdown); re-verified deck section/div balance (51/51, 246/246) and em-dash-clean; re-screenshotted Slide 18 (deck numbering) overlap-free with visibly more breathing room than the prior fix.
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-02 - deck: Slide 18 (Streaming) now states the matched-host window size (Lead-requested) - Claude (meeting-prep session)
+- File(s): `presentation_deck.html`, `Presentation_Outline.md`
+- What changed: The Lead asked what "the same window" referred to on the Streaming slide - it was never defined on-slide (the 83.33 ms matched-host window from §3.1.6 item 11, already established elsewhere in the book/deck, but not stated here). Added the value inline: "...completes 40% of what DDR5 completes in the same **83.33 ms matched-host window**...". Also confirmed for the Lead, per the book's own line 981-987, that the "datasheet spec-limit maxima" DDR5 power figures used throughout are vendor worst-case ceiling currents, not typicals - so any figure described as reaching parity/break-even against DDR5 in this book is only matching DDR5's worst case; a real DDR5 module running at typical current would draw less power than that, meaning the true gap to a real-world DDR5 system is likely wider than disclosed, not closed (no book/deck change needed here, it was already correctly disclosed - this was a verification-only question).
+- Compile gate: n/a (HTML/Markdown); re-verified deck section/div balance (51/51, 246/246) and em-dash-clean; re-screenshotted Slide 23 (deck numbering) overlap-free.
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-02 - T4-11 opened and partially closed: Flatline Paradox / Breaking the Flatline are backwards vs. raw data (Lead-caught, MAJOR finding) - Claude (meeting-prep session)
+- File(s): `presentation_deck.html`, `Presentation_Outline.md`
+- What changed: The Lead, looking at the live deck, observed Slide 24 ("The Flatline Paradox," GCC, claimed "zero latency benefit" from scaling) visually shows latency DECREASING as chip count increases, and Slide 25 ("Breaking the Flatline," AI-inference, claimed "drastically slashing latency") shows latency barely moving at all - the opposite of what each slide's text claims. Verified independently against two sources: (1) the book's own source figures `media/media/image18.png` (GCC) and `image20.png` (AlexNet IFMAP), and (2) the raw data in `results/system_v6/processed_pareto_metrics.csv`. Both confirm the Lead's observation exactly: GCC (1T1R SLC) improves 152.58ns (1-chip) -> 130.91ns (full DIMM), a real ~14% gain; GPT-2 IFMAP (1T1R SLC) is EXACTLY 458.41ns at every single chip count (1/8/16/64), zero movement; AlexNet IFMAP is nearly as flat (394.73 -> 397.41ns). This is the opposite of `Project_Book.typ` §3.2's own prose, which claims GCC (low-MLP) gets "almost zero latency benefit" and AI-inference (high-MLP) gets it "drastically slashed" via rank interleaving - the MLP theory as written does not match the pipeline's own generated data.
+- Disposition (per the Lead's explicit direction): patched the DECK ONLY with the verified, correct facts - Slide 24 retitled "Compute-Bound Scaling: A Real, Modest Gain," Slide 25 retitled "AI-Inference Is the Actual Flatline," both slides' bullets rewritten to state the true numbers, and a new speaker note on each explicitly flagging the discrepancy as an open question and next-step work for the book - NOT resolved or explained here, and `Project_Book.typ` §3.2's prose was deliberately NOT rewritten this session (out of scope - this is book-level analysis work, not a presentation-wording fix). T4-11 is opened as `todo`/unassigned for: (a) root-causing why the raw scaling data contradicts the MLP theory (open-loop trace replay artifact? controller queue-depth interaction? something else?), (b) rewriting `Project_Book.typ` §3.2's narrative to match verified data once the cause is understood, (c) regenerating `image18.png`/`image20.png` and the deck's two Pareto chart PNGs via `visualize_pareto.py`, since their own baked-in matplotlib titles ("no MLP, no benefit from scaling" / "high-MLP workloads reward scaling") still reflect the old, incorrect framing - flagged as a known limitation of this pass, not fixed.
+- Compile gate: n/a (HTML/Markdown, book untouched); re-verified deck section/div balance (51/51, 248/248) and em-dash-clean; re-screenshotted Slides 29-30 (deck numbering) overlap-free - chart PNG titles visibly still stale, as documented above.
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-02 - deck: slide 35 power-parity scope + endurance-vs-idle caveat; Endurance slide now shows 128GB on-slide (Lead-caught, both) - Claude (meeting-prep session)
+- File(s): `presentation_deck.html`, `Presentation_Outline.md`
+- What changed: (1) Slide 35 ("The Path to Parity"): the Lead asked whether "parity" meant power specifically and whether a latency-prioritizing customer should read it differently - retitled to "The Path to Power Parity" and added a lede making the scope explicit, plus a second lede noting the 90%-idle assumption here and the Endurance slide's worst-case (LBM, sustained-write) scenario are opposite ends of the workload spectrum, not the same deployment - a server idle enough for this power story would see far better real endurance than the Endurance slide's pessimistic 1.1yr figure (this connection was previously undisclosed anywhere in the book or deck). (2) Endurance slide: the Lead noticed the later summary slide's "Lifetime@128GB*" column header had no visible setup - this slide's on-slide bullets stopped at 64 GB (~9yr), with 128 GB mentioned only in the speaker note. Added "128 GB: ~17 yr" to the visible bullet (matching the summary table's 17.3yr for 1T1R SLC, both sourced from the book's "9-17 years" range at 64-128GB). Known limitation, not fixed: the Endurance chart PNG itself only plots 8GB and 64GB bars, no 128GB bar - same category of future chart-regeneration work as T4-11's Flatline charts.
+- Compile gate: n/a (HTML/Markdown); re-verified deck section/div balance (51/51, 248/248) and em-dash-clean; re-screenshotted both slides overlap-free.
+- Staged: no (Lead Researcher to commit)
+
+### 2026-09-02 - Endurance chart regenerated with real 128GB bars; two overcrowded backup slides fixed with 2-column grids (Lead-caught) - Claude (meeting-prep session)
+- File(s): `visualize_slides.py`, `results/slide_graphs/26_endurance.png`, `presentation_deck.html`, `Presentation_Outline.md`
+- What changed: (1) The Lead reported still seeing only 64 GB on the Endurance slide and 128 GB only on the summary slide after the prior text-only fix - correctly identified that the chart PNG itself (not just the on-slide text) needed the 128 GB bar. Modified `slide_endurance()` in `visualize_slides.py` to add a third bar series (128 GB, computed with the same `lifetime_years()` formula already used for 8/64 GB - LBM/1T1R SLC comes out to 17.34 yr, matching the summary table's 17.3 yr exactly), regenerated `26_endurance.png`, and re-embedded the new PNG's base64 into the deck's Endurance slide (Python script matched the section by its `<h1>` text and replaced only that image's base64 payload). Also fixed an em-dash baked into the chart's own footnote text while in there (`visualize_slides.py`'s `_save(...footnote=...)` call). (2) The Lead reported Slide 45 ("The Full Fidelity Audit," 10 items) and Slide 48 ("References Used on the Slides," 9 items - grown over the session as references were added) overcrowded, with Slide 48 confirmed via screenshot to have its title pushed above the viewport and its last item clipped off the bottom. A single-column width fix (as used earlier on "I Audited My Own Toolchain") wasn't enough for lists this long - converted both `<ul class="points">` elements to a genuine 2-column CSS grid (`display:grid; grid-template-columns:1fr 1fr`, overriding the shared class's flex-column default via inline style only on these two lists), roughly halving the vertical height needed for the same content.
+- Compile gate: n/a (Python chart regen verified by direct visual inspection of the output PNG; HTML/Markdown otherwise); re-verified deck section/div balance (51/51, 248/248) and em-dash-clean across all three touched files; re-screenshotted the Endurance, Slide 45, and Slide 48 (deck numbering) overlap-free.
+- Staged: no (Lead Researcher to commit)

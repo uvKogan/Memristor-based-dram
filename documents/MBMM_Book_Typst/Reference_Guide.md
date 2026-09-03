@@ -1,6 +1,6 @@
 # Reference Guide — MBMM Project Book
 
-A quick-reference summary of all 40 sources cited in `Project_Book.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts.
+A quick-reference summary of all 41 sources cited in `Project_Book.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts.
 
 The book's MLC penalty multipliers are: **1.5x read latency, 3.263x write latency, 1.1x read energy, 3.0x write energy** (2 bits/cell vs. 1 bit/cell), all sourced from the EMBER macro's two publications, [6] and [31] below.
 
@@ -151,6 +151,9 @@ The closest prior work to this whole book: crossbar ReRAM as main memory, modeli
 The parallel evaluation for the competing NVM: unmodified STT-RAM main memory is not competitive with DRAM, but partial writes + row-buffer bypass make it performance-comparable at ~60% lower memory energy. Cited in §1.3. Verified: pp. 256-267, DOI 10.1109/ISPASS.2013.6557176.
 
 *(Note: §1.3 also cites the pre-existing [23] (Optane business exit) and [32] (Optane DC PMM measurements) — [32] now does double duty as the field's only real-hardware datapoint.)*
+
+**[41] Y. Choi et al., "A 20nm 1.8V 8Gb PRAM with 40MB/s Program Bandwidth," ISSCC 2012**
+Added 2026-09-01 to close a citation gap found during meeting prep: the book's PCM baseline (§2.3) is named for Lee et al. [11]'s architectural framing, but PCM was never run through this project's own NVSim pipeline — its actual timing/energy numbers are inherited unmodified from NVMain's bundled `pcm_microsoft_2009.config`, whose own header comment attributes those specific numbers to this Samsung ISSCC 2012 PRAM paper, not to Lee et al. [11] is the "why PCM as a DRAM alternative" citation; [41] is the "where these specific numbers came from" citation — different questions, both now answered. Verified via web search (IEEE Xplore, pp. 46-48); not independently re-derived or checked against the paper's own tables.
 
 ---
 

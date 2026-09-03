@@ -39,7 +39,7 @@ Skip on a first pass: the Introduction/Background (1.x) and Methodology (2.x) se
 - Each table states its power/gating assumption explicitly ("ReRAM worst-case ungated; DRAM/PCM standard idle"). This asymmetry is intentional and disclosed (it's audit item 5), but it means you should never directly compare a ReRAM power number to a DDR5 power number without remembering one is worst-case and the other is realistic-idle.
 
 ### References
-- All 40 references are cited somewhere in the body (verified) and numbered sequentially. The EMBER papers — **[6]** (conference, gives read-energy figures) and **[31]** (journal follow-up, gives read-latency + write-side figures) — are the most load-bearing pair in the whole bibliography; see `Reference_Guide.md` for a one-paragraph summary of each reference if you want the "what is this and why is it here" without reading the papers.
+- All 41 references are cited somewhere in the body (verified) and numbered sequentially. [41] (Choi et al., ISSCC 2012) was added 2026-09-01 - the actual source of the PCM baseline's inherited timing/energy numbers, distinct from [11] (Lee et al.), which is only the baseline's architectural-framing citation. The EMBER papers — **[6]** (conference, gives read-energy figures) and **[31]** (journal follow-up, gives read-latency + write-side figures) — are the most load-bearing pair in the whole bibliography; see `Reference_Guide.md` for a one-paragraph summary of each reference if you want the "what is this and why is it here" without reading the papers.
 - If you want a deeper, source-by-source walkthrough, `NotebookLM_Podcast_Prompt.md` in this same folder is a ready-to-paste prompt for generating an audio explainer from the references.
 
 ### Figures
