@@ -15,7 +15,7 @@ a parity target.
 - `fonts/`, `media/` — required to compile (Liberation Serif + all figures).
 - `Reading_Guide.md` — how to read/review the book efficiently; includes a
   15-minute self-check. **Start here if you're reviewing.**
-- `Reference_Guide.md` — one-paragraph summary of all 40 references.
+- `Reference_Guide.md` — one-paragraph summary of all 41 references.
 - `Review_Fixes_Tracker.md` — single source of truth for the 2026-08
   super-critique fix pass (all items closed) and the coordination ground
   rules for parallel workers.

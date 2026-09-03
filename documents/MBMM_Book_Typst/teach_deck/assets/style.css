@@ -1,0 +1,142 @@
+/* Shared stylesheet for the MBMM-deck teach workspace. Tufte-ish: serif body,
+   generous margin, minimal color, print-friendly. Reuse across every lesson. */
+
+:root {
+  --ink: #1a1a18;
+  --ink-dim: #55524a;
+  --paper: #fdfcf9;
+  --rule: #d8d4c8;
+  --accent: #8a4a2f;
+  --accent-soft: #f4e9e0;
+  --mono: "SF Mono", "Consolas", monospace;
+  --serif: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+}
+
+* { box-sizing: border-box; }
+
+body.lesson {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1.55;
+  max-width: 42em;
+  margin: 0 auto;
+  padding: 3em 1.5em 6em;
+}
+
+.lesson h1 {
+  font-size: 1.9em;
+  line-height: 1.2;
+  margin: 0 0 0.2em;
+}
+
+.lesson .kicker {
+  font-family: var(--mono);
+  font-size: 0.7em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.6em;
+}
+
+.lesson h2 {
+  font-size: 1.25em;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.2em;
+  margin-top: 2em;
+}
+
+.lesson p { margin: 0.9em 0; }
+
+.lesson .lede {
+  font-size: 1.05em;
+  color: var(--ink-dim);
+}
+
+.lesson blockquote {
+  border-left: 3px solid var(--accent);
+  margin: 1.2em 0;
+  padding: 0.2em 1em;
+  color: var(--ink-dim);
+  font-style: italic;
+}
+
+.lesson table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.95em;
+}
+
+.lesson th, .lesson td {
+  border: 1px solid var(--rule);
+  padding: 0.5em 0.7em;
+  text-align: left;
+}
+
+.lesson th { background: var(--accent-soft); }
+
+.lesson .say {
+  background: var(--accent-soft);
+  border-radius: 6px;
+  padding: 0.9em 1.1em;
+  margin: 1em 0;
+}
+
+.lesson .say .label {
+  font-family: var(--mono);
+  font-size: 0.7em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 0.3em;
+}
+
+.lesson .quiz {
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 1em 1.2em;
+  margin: 1.3em 0;
+}
+
+.lesson .quiz .q {
+  font-weight: bold;
+  margin-bottom: 0.6em;
+}
+
+.lesson .quiz .reveal-btn {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  border-radius: 4px;
+  padding: 0.4em 0.8em;
+  cursor: pointer;
+}
+
+.lesson .quiz .answer {
+  margin-top: 0.7em;
+  padding-top: 0.7em;
+  border-top: 1px dashed var(--rule);
+}
+
+.lesson .quiz .answer[hidden] { display: none; }
+
+.lesson .footer-nav {
+  margin-top: 3em;
+  padding-top: 1em;
+  border-top: 1px solid var(--rule);
+  font-size: 0.9em;
+  color: var(--ink-dim);
+}
+
+.lesson a { color: var(--accent); }
+
+.lesson .ask-agent {
+  font-size: 0.9em;
+  color: var(--ink-dim);
+  font-style: italic;
+}

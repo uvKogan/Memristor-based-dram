@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lesson 1: The Deck's Shape</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body class="lesson">
+
+<div class="kicker">MBMM deck &middot; Lesson 0001</div>
+<h1>The Deck's Shape</h1>
+<p class="lede">
+  One tangible win today: you can recite the deck's 7-section flow and timing budget
+  from memory, and you can deliver the two newest slides (9 &amp; 10) without reading
+  the speaker notes verbatim.
+</p>
+
+<blockquote>
+  This lesson assumes the <em>content</em> (numbers, mechanics, defenses) is already
+  solid via the grilling rounds - see
+  <a href="../Meeting_Prep_Cheat_Sheet.md">Meeting_Prep_Cheat_Sheet.md</a>. Here we're
+  learning the <strong>deck</strong>: what order things come in, how long each part
+  should take, and how to talk over the two slides that didn't exist until this
+  session.
+</blockquote>
+
+<h2>1. The shape</h2>
+<p>
+  Seven sections, ~60 minutes, 37 slides total (counting section dividers and the
+  two brand-new ones). Primary source:
+  <a href="../presentation_deck.html">presentation_deck.html</a> /
+  <a href="../Presentation_Outline.md">Presentation_Outline.md</a>.
+</p>
+
+<table>
+  <thead><tr><th>#</th><th>Section</th><th>Slides</th><th>Time</th></tr></thead>
+  <tbody>
+    <tr><td>0</td><td>Title</td><td>1</td><td>0.5 min</td></tr>
+    <tr><td>1</td><td>Motivation</td><td>4</td><td>~6 min</td></tr>
+    <tr><td>2</td><td>Background</td><td>4</td><td>~6 min</td></tr>
+    <tr><td>3</td><td>Methodology</td><td>7</td><td>~11 min</td></tr>
+    <tr><td>4</td><td>Results</td><td>15</td><td>~28 min</td></tr>
+    <tr><td>5</td><td>Contributions</td><td>2</td><td>~4 min</td></tr>
+    <tr><td>6</td><td>Future Work</td><td>3</td><td>~4 min</td></tr>
+    <tr><td>7</td><td>Close</td><td>1</td><td>~1 min</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Two things worth noticing about this shape before you memorize it:
+</p>
+<p>
+  <strong>Results is the whale.</strong> 15 of 37 slides, 28 of 60 minutes -
+  almost half the talk. If you're running long anywhere, Results is where the time
+  actually went, and it's the one section where cutting is genuinely costly (each
+  subsection - latency, power, scaling, density/endurance, the flagship-claim
+  reframe - earns its own verdict).
+</p>
+<p>
+  <strong>Methodology grew by one slide this session.</strong> It was 6 slides
+  (~10 min); it's now 7 (~11 min) because Slide 10 ("One Chip &rarr; a Full DIMM")
+  is new. That's the section most likely to feel unrehearsed - see &sect;2 below.
+</p>
+
+<div class="quiz">
+  <div class="q">Q1. Without scrolling up: how many slides are in Results, and roughly how many minutes?</div>
+  <button class="reveal-btn" onclick="this.nextElementSibling.hidden=false;this.hidden=true">Reveal</button>
+  <div class="answer" hidden>15 slides, ~28 minutes - the largest section by far.</div>
+</div>
+
+<div class="quiz">
+  <div class="q">Q2. Which section grew by one slide this session, and why?</div>
+  <button class="reveal-btn" onclick="this.nextElementSibling.hidden=false;this.hidden=true">Reveal</button>
+  <div class="answer" hidden>Methodology, 6&rarr;7 slides (~10&rarr;~11 min) - the new "One Chip &rarr; a Full DIMM" numbers slide (Slide 10) was inserted after the pipeline diagram.</div>
+</div>
+
+<div class="quiz">
+  <div class="q">Q3. If you're 20 minutes in, which section should you be entering or just finishing?</div>
+  <button class="reveal-btn" onclick="this.nextElementSibling.hidden=false;this.hidden=true">Reveal</button>
+  <div class="answer" hidden>0.5 + 6 + 6 + 11 = 23.5 min to clear Methodology. At the 20-minute mark you should be mid-Methodology - roughly around the toolchain-audit or validation-scope slides, not yet into Results.</div>
+</div>
+
+<h2>2. The two new slides, cold</h2>
+<p>
+  Slides 9 and 10 didn't exist before this session. They're the least rehearsed part
+  of the deck - the place you're most likely to reach for notes. Read the actual
+  speaker note once, then try saying it in your own words before you check yourself
+  against it.
+</p>
+
+<p><strong>Slide 9 - The Pipeline</strong> (script-level diagram: <code>1_run_nvsim_hardware.py &rarr; 2_extract_hardware_metrics.py &rarr; 3_gen_nvmain_config.py &rarr; 4_execute_simulation.py</code>, orchestrated by <code>mbmm_master.py</code>)</p>
+<div class="say">
+  <span class="label">Say (verbatim from the deck)</span>
+  "NVSim only ever characterizes ONE chip - that's what crosses the boundary at
+  step 1&rarr;2. Everything from step 3 onward is NVMain replicating that single chip
+  a small, fixed number of times and wrapping it in its own controller; NVSim never
+  sees a rank, a controller, or a workload. This bridge is itself a contribution -
+  most tools stop at one layer or the other."
+</div>
+
+<div class="quiz">
+  <div class="q">Q4. In one sentence, in your own words: why do you need <em>two</em> simulators here, not one?</div>
+  <button class="reveal-btn" onclick="this.nextElementSibling.hidden=false;this.hidden=true">Reveal (one good phrasing, not the only one)</button>
+  <div class="answer" hidden>NVSim knows device physics but nothing about systems (no controller, no workload); NVMain knows controllers and workloads but nothing about circuit physics - neither one alone can answer "how does this chip behave as a DIMM under a real trace."</div>
+</div>
+
+<p><strong>Slide 10 - One Chip &rarr; a Full DIMM</strong> (stat callouts: 1&nbsp;Gb chip &middot; 1&ndash;64 chip replication &middot; 800&nbsp;MHz ReRAM clock &middot; 64-bit bus &middot; 8/16&nbsp;GB full-DIMM capacity &middot; 3&nbsp;GHz matched-host CPUFreq)</p>
+<div class="say">
+  <span class="label">Say (verbatim from the deck)</span>
+  "These are the numbers to have cold if asked 'how big is this system, really.'
+  NVSim gives you one 1 Gb chip; NVMain's own controller and address-mapping logic
+  - not NVSim - is what turns up to 64 of them into an 8&ndash;16 GB DIMM."
+</div>
+
+<div class="quiz">
+  <div class="q">Q5. Someone asks "so is this a real DIMM you built, or a simulation of one?" - what's your one-line answer, using this slide?</div>
+  <button class="reveal-btn" onclick="this.nextElementSibling.hidden=false;this.hidden=true">Reveal (one good phrasing)</button>
+  <div class="answer" hidden>It's a simulated DIMM: one real, literature-characterized chip (NVSim) replicated up to 64x and driven by NVMain's own controller/address-mapping logic - the replication and system behavior are simulated, not fabricated.</div>
+</div>
+
+<h2>3. Where this leaves you</h2>
+<p>
+  You now have the map (&sect;1) and the two weakest slides rehearsed (&sect;2). What
+  this lesson deliberately does <em>not</em> cover: word-for-word delivery of every
+  slide in Results (too much for one sitting - that content is already solid via
+  the cheat sheet, and Results' speaker notes are the same style as Slides 9/10 above,
+  so the same "read once, say it back" drill applies if you want to run it yourself
+  section by section).
+</p>
+
+<p class="ask-agent">
+  Something here unclear, or want to drill a different section next (Results, or the
+  Future-Work slide with the FPGA pitch)? Ask - I'm your teacher for this, not
+  just the author of this file.
+</p>
+
+<div class="footer-nav">
+  Lesson 0001 of the MBMM-deck teach workspace &middot;
+  <a href="../MISSION.md">MISSION.md</a> &middot;
+  <a href="../RESOURCES.md">RESOURCES.md</a>
+</div>
+
+</body>
+</html>
