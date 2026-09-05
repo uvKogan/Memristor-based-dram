@@ -90,8 +90,20 @@ ReRAM replace DDR5 in a commodity DIMM?"
 **Slide 7 - The cast of characters**
 - On-slide: table - DDR5-4800 (baseline), PCM (legacy NVM baseline),
   1T1R SLC/MLC, 1S1R SLC/MLC - one row each, cell size + role
+- On-slide (2026-09-05, Shahar-notes overarching item): a lede below the
+  table states the three-axis framing - every technology is judged on
+  latency, density, endurance, power as a fourth - and notes that an
+  axis not evaluated for a technology (e.g. PCM's density row) is a
+  disclosed scope choice, not a missing fact.
+- On-slide (2026-09-05, Shahar-notes item 1): PCM's Cell Size cell
+  changed from bare "N/A" to "n/s*" with a footnote - PCM's baseline is
+  a black-box timing/energy model with no stated access-device
+  architecture (neither transistor- nor selector-gated); the real
+  shipped product (Intel Optane/3D XPoint) is a confirmed 1S1R
+  cross-point design (IEDM 2009 Intel/Numonyx paper, new ref [42], plus
+  a corroborating physical teardown), not modeled here at all.
 - Say: six configurations, this is what gets compared for the rest of
-  the talk.
+  the talk. Name the three-axis framing out loud here.
 
 **Slide 8 - Where this sits**
 - On-slide: device-level ReRAM literature = extensive · system-level,
@@ -134,9 +146,18 @@ ReRAM replace DDR5 in a commodity DIMM?"
 - Say: NVSim gives one 1 Gb (gigabit) chip - a cell count, not a byte
   count; NVMain's controller and address-mapping logic turns up to 64 of
   them into an 8-16 GB DIMM. The 800 MHz interface is a deliberate
-  choice, not a device limit - it costs ground in the bandwidth-bound AI
-  regime, which is why dual-channel/faster-PHY ReRAM is scoped as future
-  work.
+  choice, not a device limit, and has no independent ReRAM citation
+  backing it - it costs ground in the bandwidth-bound AI regime, which
+  is why dual-channel/faster-PHY ReRAM is scoped as future work.
+- 2026-09-05 (Shahar-notes item 2, research completed): a `/research`
+  dispatch confirmed no independent ReRAM interface-speed citation
+  exists for 800 MHz - EMBER's "100 MHz" is the macro's internal
+  sense/write clock, not an interface rate (confirmed from both EMBER
+  papers' own text); the only real ReRAM chip I/O clocks found (Fujitsu
+  SPI parts) run 5-10 MHz, 80-160x slower, actively contradicting rather
+  than merely failing to support 800 MHz. `Project_Book.typ`'s 800 MHz
+  passage (§1.3) now states this explicitly as a disclosed modeling
+  assumption; speaker note above updated to match.
 - 2026-09-02 (Lead-caught, two rounds): (1) the original "(64×1 Gb
   chips)" parenthetical read like 64×1 should equal 8 or 16 directly -
   it never showed the bits-to-bytes conversion or MLC's 2-bits/cell
@@ -384,17 +405,23 @@ was "Breaking the flatline")
   summary table's 17.3 yr for 1T1R SLC, both sourced from
   `Project_Book.typ`'s "9-17 years" range) to the visible bullet so the
   summary slide's column header doesn't introduce a new number with no
-  visible setup. Known limitation, not fixed: the chart PNG itself only
-  plots "8 GB (modeled)" vs "64 GB (server-class)" bars - it has no
-  128 GB bar at all, so the image still shows only half of what the
-  text now says. Regenerating it is the same category of future work as
-  the Flatline chart PNGs (T4-11).
+  visible setup. (Since fixed for real, same session: the chart PNG was
+  regenerated via `visualize_slides.py` to add a genuine third "128 GB
+  (server-class)" bar series, not just the on-slide text - see
+  `Review_Fixes_Tracker.md`'s 2026-09-02 entry. The note above about a
+  missing 128 GB bar is stale/outdated as of that fix.)
+- On-slide (2026-09-05, Shahar-notes item 8): added a lede showing the
+  actual endurance calculation worked out (134.2M cache-line locations ×
+  10⁷ rated cycles ≈ 1.34×10¹⁵ total writes ÷ LBM's ~39.2M writes/s
+  annualized ≈ 1.08 yr at 8 GB) instead of only stating the conclusion -
+  answers Shahar's "show calculations" request directly. First version
+  overflowed the slide (equation + full speaker note together); fixed by
+  trimming the speaker note, which was largely redundant once the math
+  is visible on-slide.
 - Say: only 8/16 GB was ever actually simulated - the architecture
   factory's physical ceiling at 64 chips. 64/128 GB figures elsewhere
-  are analytical projections from NVMain's own per-location wear
-  accounting (scales linearly with capacity by construction), never
-  separately built or run. Say that plainly if asked "did you simulate
-  a 128 GB DIMM."
+  are the same linear arithmetic shown on-slide, never separately built
+  or run.
 
 ### The flagship claim - reframed (3 slides, the most important section)
 **Slide 29 - Where this stands today** *(number callouts, no chart)*
@@ -538,6 +565,55 @@ callouts + badge, no chart)*
   compressed. Re-verified overlap-free via screenshot after the fix.
 
 ---
+
+## 2026-09-05 additions: Item 7 fully resolved (idle-gating restoration folded in)
+
+Following the mechanism restoration and full 36-run re-run (see `Review_Fixes_Tracker.md`),
+every slide touching DDR5's power/latency or ReRAM's PDP was updated with the real new numbers:
+**"Full-Module Power"** (retitled "Idle-Gating Restored," DDR5 0.651→0.623 W, chart regenerated),
+**"Power-Delay Product"** (geomean chart regenerated: DDR5 104→103, 1T1R 21,351→21,508, 1S1R
+737→738), **"Path to Power Parity"** (badge/break-even updated 43%→46%, ratios updated),
+**"Where This Stands Today"** (1.7×→1.8× gap stat), **"Compute-Bound: the Closest Gap"** (chart
+regenerated: 87/131/190 ns → 90/136/192 ns - caught via screenshot that the chart image itself
+was still showing the old numbers after the bullet text was updated), **"Streaming: the Honest
+Number"** (chart regenerated with new DDR5/ReRAM latencies), **"The Whole Evaluation, One Slide"**
+(DDR5 and all 4 ReRAM rows updated to match Table 7). Underlying chart regeneration used
+`visualize_slides.py` against the live re-run data (`results/processed_*.csv`), with 5 stale
+titles/footnotes ("ungated," "not yet simulated") corrected in the script itself. Re-verified
+deck section/div balance (51/51, 248/248) and re-screenshotted every touched slide overlap-free.
+
+## 2026-09-05 additions: T4-11 fully resolved (Flatline/Scaling contradiction)
+
+**"Compute-Bound Scaling: A Real, Modest Gain"** and **"AI-Inference Is the Actual Flatline"**
+(deck slides 29-30, no dedicated per-slide entry above - added post-renumbering in the
+2026-09-02 T4-11 deck-only patch): the deck-only patch from that session correctly stated the
+real numbers but left the ROOT CAUSE as an open question ("flagged as an open question, not yet
+explained"). Root-caused this session via fresh experiments (queue-depth x chip-count sweep,
+address-footprint analysis against real NVMain source) - it's a workload address-footprint /
+rank-mapping artifact, not MLP or a queueing effect. Updated both slides' bullets and speaker
+notes to state the resolved cause, and - the actual remaining gap - regenerated the two
+embedded chart images themselves via `visualize_slides.py` (`slide_pareto_gcc`/`slide_pareto_gpt2`,
+which had hardcoded stale titles "The Flatline Paradox: no MLP, no benefit from scaling" /
+"Breaking the flatline: high-MLP workloads reward scaling" baked into the matplotlib figure -
+missed in the original deck-only patch since these are base64-embedded images, not text). Book's
+`Project_Book.typ` §3.2 rewritten to match (see `Review_Fixes_Tracker.md`), plus a new Appendix A
+entry with the full root-cause methodology. Re-verified overlap-free via screenshot on both
+slides after the chart swap.
+
+## 2026-09-05 additions (Shahar-notes items 1, 2, 3&9, 8, overarching)
+
+- **"The Whole Evaluation, One Slide"** (summary table, no dedicated per-slide entry above):
+  PCM's `Lifetime@128GB` cell changed from bare `N/A` to `N/A†` with a footnote ("PCM endurance
+  not modeled in this study - scope was ReRAM lifetime projection") - same item 1 fix as Slide 7's
+  Cell Size cell, applied to this slide's own N/A instance.
+- **§1.3 Related Work / positioning** (no dedicated deck slide - this is a book-only fix, item
+  3&9): added real Optane DC PMM measured numbers (305 ns idle random-read latency vs. 81 ns
+  local DRAM; 6.6 GB/s read / 2.3 GB/s write single-DIMM bandwidth, both from Izraelevitz et al.
+  [32]) to `Project_Book.typ` alongside the existing qualitative Optane discussion - explicitly
+  marked as the field's one real-hardware anchor point, distinct from every simulated result.
+- Re-verified deck section/div balance (51/51, 248/248) and re-screenshotted every touched slide
+  (Slides 7/10 numbering, and the Whole Evaluation summary slide) overlap-free after all of the
+  above 2026-09-05 changes.
 
 ## Open items before this is fully locked
 

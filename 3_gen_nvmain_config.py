@@ -67,13 +67,17 @@ def generate_nvmain_config(base_name, hw_metrics, target_freq_mhz, output_dir, a
     # precharged" leakage, so the same derived value is used for both Eactstdby and
     # Eprestdby; this is a documented simplifying assumption, not a measured split.
     #
-    # Epda/Epdpf/Epdps (active/precharge powerdown energy) are deliberately left unset
-    # (NVMain default: 0.0). MemoryController::HandleLowPower() -- the only call site
-    # that would ever transition a rank into a powerdown state -- is commented out in
-    # this NVMain build (src/MemoryController.cpp:1650), confirmed dead by zero
-    # fastExitActiveCycles/fastExitPrechargeCycles/slowExitCycles across every stats file
-    # of every technology. No rank ever reaches PDA/PDPF/PDPS, so these constants have no
-    # effect regardless of value. Restoring that state machine is out of scope here.
+    # Epda/Epdpf/Epdps (active/precharge powerdown energy): MemoryController::HandleLowPower()
+    # is now restored (src/MemoryController.cpp:1650) -- power-down is live for every
+    # technology sharing this controller base, not ReRAM-specific. No NVSim datapoint
+    # decomposes ReRAM leakage into a gatable-periphery vs. ungatable-crossbar split, and
+    # no JEDEC-style power-down current spec exists for ReRAM the way it does for DDR5 --
+    # so rather than fabricate a number, these are set to an explicit, honest placeholder
+    # equal to the technology's own Eactstdby/Eprestdby: "assume power-gating saves
+    # nothing beyond existing precharge-standby, pending real characterization." This
+    # avoids crediting a physically-impossible free (zero-cost) power-down while still
+    # letting the mechanism run. See Project_Book.typ Appendix A for the full disclosure;
+    # upgrade this placeholder if a real ReRAM power-gating citation is found.
     chip_leakage_w = hw_metrics.get('leakage_mw', 10.0) / 1000.0
     rank_leakage_w = chip_leakage_w * devices_per_rank
     e_standby_nj = rank_leakage_w * cycle_time_ns
@@ -138,9 +142,10 @@ tCMD 1
 
 ; --- Energy and Power ---
 ; Eactstdby/Eprestdby: rank-level standby energy per cycle (nJ), derived from NVSim
-; per-chip leakage x devices_per_rank -- see comment above. Policy-a/ungated: no
-; power-down state is ever reached (HandleLowPower() is dead in this NVMain build),
-; so Epda/Epdpf/Epdps are intentionally left at their NVMain defaults (unset/0.0).
+; per-chip leakage x devices_per_rank -- see comment above.
+; Epda/Epdpf/Epdps: power-down is now live (HandleLowPower() restored). Set to an
+; explicit honest placeholder (= Eactstdby/Eprestdby) rather than a fabricated real
+; number -- see comment above and Project_Book.typ Appendix A.
 ;
 ; Cycle-7 finding #10: this template previously wrote "ReadEnergy"/"WriteEnergy",
 ; which NVMain never parses (no such Params field exists) -- every ReRAM run to
@@ -157,6 +162,9 @@ Erd {r_energy}
 Ewr {w_energy}
 Eactstdby {e_standby_nj}
 Eprestdby {e_standby_nj}
+Epda {e_standby_nj}
+Epdpf {e_standby_nj}
+Epdps {e_standby_nj}
 
 ; --- Geometry Scaling ---
 ROWS {system_rows}
