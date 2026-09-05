@@ -293,10 +293,11 @@ def slide_module_power(df, benchmark='gcc_spec2017'):
     ax.set_xticks(range(len(techs)))
     ax.set_xticklabels(_labels(techs), rotation=15, ha='right')
     ax.set_ylabel('Total Module Power (W), log scale')
-    ax.set_title('Full-module power (ungated)')
+    ax.set_title('Full-module power (idle-gating restored)')
     ax.grid(axis='y', which='both', alpha=0.3)
     _save(fig, "20_module_power.png",
-          footnote="ReRAM figures are worst-case ungated (idle-power gating not yet simulated).")
+          footnote="DDR5's idle-gating is now real (restored, JEDEC-backed). ReRAM's power-down mechanism "
+                   "is mechanically live too but uses a disclosed no-benefit placeholder, so its power is unchanged.")
 
 
 # ============================================================================
@@ -316,7 +317,8 @@ def slide_pdp_geomean(geomeans):
     ax.set_title('Overall efficiency: 1S1R closes most of the ReRAM gap')
     ax.grid(axis='y', which='both', alpha=0.3)
     _save(fig, "21_pdp_geomean.png",
-          footnote="ReRAM worst-case ungated; DDR5/PCM standard idle behavior.")
+          footnote="DDR5's idle-gating is now restored and real. ReRAM's power-down mechanism is "
+                   "mechanically live too but uses a disclosed no-benefit placeholder energy.")
 
 
 # ============================================================================
@@ -365,11 +367,19 @@ def _pareto_slide(pareto_df, benchmark, title, filename):
 
 
 def slide_pareto_gcc(pareto_df):
-    _pareto_slide(pareto_df, 'gcc_spec2017', 'The Flatline Paradox: no MLP, no benefit from scaling', "22_pareto_gcc.png")
+    # T4-11 (2026-09-05): corrected from "The Flatline Paradox: no MLP, no
+    # benefit from scaling" - GCC actually improves ~14% with chip count; the
+    # mechanism is address footprint (a ~51 MB trace spanning many ranks), not
+    # workload MLP. See Project_Book.typ Appendix A for the full root cause.
+    _pareto_slide(pareto_df, 'gcc_spec2017', 'Compute-bound scaling: a real, modest gain (not an MLP story)', "22_pareto_gcc.png")
 
 
 def slide_pareto_gpt2(pareto_df):
-    _pareto_slide(pareto_df, 'gpt2_ifmap', 'Breaking the flatline: high-MLP workloads reward scaling', "23_pareto_gpt2.png")
+    # T4-11 (2026-09-05): corrected from "Breaking the flatline: high-MLP
+    # workloads reward scaling" - GPT-2 IFMAP is actually bit-for-bit flat at
+    # every chip count. Its ~64 KB trace fits within a single rank's 64 KB
+    # addressable span; scaling chip count is architecturally inert for it.
+    _pareto_slide(pareto_df, 'gpt2_ifmap', 'AI-inference is the actual flatline (a footprint artifact, not MLP)', "23_pareto_gpt2.png")
 
 
 # ============================================================================

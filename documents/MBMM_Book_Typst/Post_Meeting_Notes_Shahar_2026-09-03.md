@@ -4,8 +4,14 @@ Status: **baseline for the next revision pass** on `Project_Book.typ`, `presenta
 and (where a config/simulation change is implied) the pipeline itself. Each item below is RAW
 (Shahar's note, cleaned up for readability but not reinterpreted) followed by IMPROVED
 (grounded in what the book/deck/configs actually say today, checked against the source files
-during this session, with concrete pointers for the fix). **Item 5 is now RESOLVED** (2026-09-04)
-- see its note below; everything else is still open, unacted-on baseline.
+during this session, with concrete pointers for the fix). **RESOLVED: overarching framing, items
+1, 2, 3&9, 5, 6, 7, 10** (2026-09-04/05) - see each item's note below. **Item 4/T4-10 partially
+resolved**: research confirmed no DDR5 "typical" IDD figure exists anywhere (vendors only publish
+worst-case max, by JEDEC design) - the book's existing disclosure was already correct; DDR5's
+dead EIDD6 placeholder was corrected to a real sourced value regardless, no simulated result
+moves. **Item 8** partially resolved: calculation now shown on-slide; the 10⁷-vs-10⁹
+Shahar-reconciliation still needs a live conversation, not a book fix (the only remaining item
+that genuinely can't be closed from a desk). Everything else from this baseline is now closed.
 
 ## Overarching conclusion
 
@@ -19,6 +25,9 @@ every technology on three axes: latency, density, endurance" framing early in bo
 (book: end of Introduction/§1; deck: right after "The Cast of Characters"), and use it as the
 checklist against which every technology's verdict gets stated (this also gives a natural home
 for admitting when one axis is *not* evaluated for a technology - see item 1, PCM's density row).
+
+**RESOLVED (2026-09-05):** framing statement added to `Project_Book.typ` §1.3 and the deck's
+"Cast of Characters" slide, exactly as recommended above.
 
 ---
 
@@ -47,7 +56,14 @@ baseline, with its cell architecture never characterized. So the deck's `N/A` is
 slip - it's an honest reflection of a real gap: **this project never disclosed what PCM's
 cell architecture is, or explicitly justified excluding it from the F² density comparison.**
 
-Action items for the next pass:
+**RESOLVED (2026-09-05):** `Project_Book.typ` §2.3 now states plainly that neither the PCM
+baseline's inherited config nor its cited source papers specify an access-device architecture -
+it's a black-box timing/energy model, not a characterization of any specific cell topology -
+distinct from the real shipped product (Optane/3D XPoint), confirmed 1S1R cross-point via a
+genuine primary source (Kau et al., IEDM 2009, new ref [42]). Deck's `N/A` cells (both "Cast of
+Characters" and the summary slide) replaced with footnoted `n/s`/`N/A†`.
+
+Action items for the next pass (superseded by RESOLVED above, kept for the record):
 - Book: add a sentence in §2.1/§1 explicitly stating the PCM baseline's device architecture
   (transistor-gated, per the microprocessor-era config it's inherited from) and, separately,
   that *real-world modern PCM* (Optane/3D XPoint) is selector-gated cross-point - already have
@@ -96,6 +112,12 @@ Action items:
 - This also feeds the already-known future-work item (dual-channel/faster-PHY ReRAM, logged in
   a prior session's tracker note) - worth cross-referencing there once §4 is revised.
 
+**RESOLVED (2026-09-05):** no independent ReRAM interface citation exists - confirmed via
+`/research` (`research_notes/item2_reram_interface_speed.md`). EMBER's "100 MHz" is an internal
+sense/write clock, not an interface rate. The only real ReRAM chip I/O clocks found (Fujitsu SPI
+parts, 5-10 MHz) actively contradict 800 MHz rather than support it. `Project_Book.typ` §1.3 now
+states this explicitly as a disclosed modeling assumption; deck speaker note updated to match.
+
 ---
 
 ## 3 & 9. Intel Optane (3D XPoint) - the real PCM product - is cited but never actually engaged with
@@ -113,7 +135,15 @@ deck. Given it's the only NVM main-memory module ever actually shipped (the book
 line ~290), that's a real gap - it's the single best piece of real-world ground truth available
 for the entire study, and it's sitting unused in the reference list.
 
-Action items:
+**RESOLVED (2026-09-05):** `/research` (`research_notes/item3_9_optane_real_numbers.md`) pulled
+real measured numbers (305 ns idle random-read latency vs. 81 ns local DRAM; 6.6/2.3 GB/s
+single-DIMM read/write bandwidth) and confirmed the 1S1R/OTS cross-point architecture via a
+genuine primary source (Kau et al., IEDM 2009, new ref [42]). Added to `Project_Book.typ` §1.3,
+explicitly marked as the field's one real-hardware anchor point. A die-area/cell-size figure was
+also found (via a professional teardown) but is a third-party estimate, not Intel-confirmed - not
+used for any precise density claim, per the research file's own caveat.
+
+Action items (superseded by RESOLVED above, kept for the record):
 - Pull real numbers from [32] (Izraelevitz et al. measured Optane DC PMM latency/bandwidth on
   real hardware) and add them as a labeled "real hardware" row/point on the relevant latency and
   power comparisons - explicitly marked as measured-on-real-silicon vs. this study's simulated
@@ -146,7 +176,23 @@ power-parity headline. Since all current DDR5 numbers are ceiling/floor spec lim
 measured typicals), the true gap between ReRAM and real-world DDR5 power is **likely wider than
 currently reported**, not narrower - worth stating as a takeaway, not just a caveat.
 
-Action items:
+**PARTIALLY RESOLVED (2026-09-05):** `/research` (`research_notes/item4_ddr5_typical_current.md`)
+checked every Micron and SK hynix DDR5 datasheet reachable and found **no typical/nominal IDD
+column exists anywhere** - every datasheet labels its sole IDD column "Current Limits"/"Maximum
+values...worst-case." A 2017 JEDEC JC42.3 ballot draft confirms this is by design: the standard's
+own template defines only a numeric "IDD Max" column, with typical reporting merely optional
+for IDD6E/IDD6A specifically (and not exercised by either vendor here). **So the book's existing
+"spec limits, not typicals" disclosure is confirmed accurate, and Shahar's "likely wider gap"
+takeaway stands as stated - there is no real typical figure to add**, because vendors don't
+publish one. The one concrete fix that WAS possible: `DDR5_4800_DRAM_micron.config`'s `EIDD6`
+(self-refresh) corrected from an unsourced 12mA placeholder to Micron's own real, already-cited
+[29] value (IDD6N=102mA) - a documentation-accuracy fix only, since EIDD6 is confirmed dead
+(never read by any energy formula) and no simulated number moves. No SK hynix IDD6 counterpart
+could be confirmed. The "Path to Power Parity" reframing action item below is superseded by
+Workstream C (idle-gating restoration) once that lands, since that section will be replaced by
+real simulated numbers rather than projected arithmetic - not addressed separately here.
+
+Action items (mostly superseded by RESOLVED above, kept for the record):
 - Source a real "typical operating current" figure - JEDEC IDD specs distinguish IDD (typical)
   from IDD-max; vendor datasheets (Micron, SK hynix - already cited as [29]/[30]) may separately
   publish typical/nominal current alongside the spec-limit table already used.
@@ -228,7 +274,16 @@ So Shahar's instinct is well-placed: **one side of the 47x ratio (selector) has 
 directly-relevant citation; the other side (transistor) currently rests entirely on trusting
 NVSim's built-in 22nm process model, uncited.** That asymmetry, not the ratio itself, is the gap.
 
-Action items:
+**RESOLVED (2026-09-05):** `/research` (`research_notes/item6_transistor_leakage.md`) found two
+convergent sources for the transistor side: ITRS 2011 PIDS chapter (22nm LOP logic subthreshold
+leakage target, 5 nA/µm) and Auth et al.'s (Intel) measured 22nm FinFET silicon (VLSI 2012,
+5-20 nA/µm) - the roadmap target sits inside Intel's independently measured band. Added as new
+refs [43]/[44] plus a new "Access-Device Leakage Model" bullet in Appendix A. Both sides of the
+47x ratio are now independently cited; the exact 47x figure itself remains this project's own
+NVSim simulation output, not a number published anywhere externally - that distinction is stated
+explicitly in both the book and the deck.
+
+Action items (superseded by RESOLVED above, kept for the record):
 - Find and add an explicit citation for the 22nm access-transistor off-state leakage current
   NVSim assumes (Predictive Technology Model / PTM papers, e.g. Zhao & Cao, or a foundry-published
   22nm leakage figure) so both halves of the 47x ratio are independently sourced, not just one.
@@ -261,7 +316,22 @@ reality only applies to the two ReRAM columns. DDR5 and PCM are not on the same 
 labeled: **it's an apples-to-oranges comparison, gated baselines vs. an intentionally ungated
 ReRAM worst case, presented under one blanket label that implies otherwise.**
 
-Action items:
+**RESOLVED (2026-09-05), with a correction to the original diagnosis:** idle-gating has now
+actually been restored and fully re-run (item 5/Workstream C above) - and the result complicates
+the original theory rather than simply confirming it. DDR5 *did* benefit for real (0.651 to
+0.623 W). **PCM did not** - its power-down counters are exactly zero in both the pre- and
+post-restoration runs, for every workload, most likely because its `FRFCFS-WQF`
+write-queue-flush controller keeps its request queue non-empty far more of the time than the
+plain `FRFCFS` controller ReRAM/DDR5 use, starving the power-down entry condition entirely
+(structural, not yet root-caused to full confidence). So PCM's 0.040 W was never actually
+resting on an idle-gating advantage over ReRAM the way the original diagnosis assumed - it
+reflects PCM's own inherited baseline leakage characterization, not power-down credit, and it
+still isn't gated now that the mechanism exists. The deck's "Full-Module Power" slide has been
+re-titled ("Idle-Gating Restored") and re-annotated to state this precisely: DDR5's number is
+real and gated, ReRAM's mechanism is mechanically live but placeholder-valued (no benefit
+claimed), and PCM shows no gating activity at all in either run.
+
+Action items (superseded by RESOLVED above, kept for the record):
 - Re-title or annotate the slide so it's explicit: "ReRAM: worst-case, no idle-gating modeled.
   DDR5/PCM: standard idle behavior included." This turns "PCM looks anomalously good" into "PCM
   looks good *because* it's being compared against a ReRAM number that hasn't been given the
@@ -311,7 +381,12 @@ assumption:
   and even then 128 GB SLC still clears the 5-10 year server-replacement target). A real
   wear-leveling controller is explicitly still future work (§4.2, "Endurance-Aware Scheduling").
 
-Action items:
+**PARTIALLY RESOLVED (2026-09-05):** the calculation is now shown as a visible worked equation in
+both `Project_Book.typ` §3.1.4 and the deck's Endurance slide (matching the numbers above exactly).
+Still open, and NOT fixable from the book alone: the 10⁷-vs-10⁹ reconciliation needs an actual
+conversation with Shahar to find out which figure/capacity he was recalling - flag this live.
+
+Action items (calculation part superseded by RESOLVED above; reconciliation still open):
 - Add the actual calculation (module line count × per-cell endurance rating ÷ write rate) as a
   visible worked example in both the book (currently it's stated in prose, not shown as an
   equation) and the deck's Endurance slide - this is exactly what Shahar asked for, and the
@@ -347,7 +422,15 @@ work) - if that gap were closed, 1T1R's density disadvantage relative to 1S1R wo
 disappear, which changes how "1S1R is the clear architectural winner" should be framed (it's the
 winner *given this study's transistor-geometry assumption*, not unconditionally).
 
-Action items:
+**RESOLVED (2026-09-05):** turned out mostly already satisfied - `Project_Book.typ`'s existing
+Table 7 ("Cross-technology summary, full-DIMM configurations") already places latency, power,
+PDP, density, and lifetime side by side for every technology including both 1T1R and 1S1R, and
+its footnote already states the endurance-is-mechanical-consequence point verbatim ("the slower
+writer wears correspondingly slower"). The only genuine gap was the recessed-channel 6F² density
+caveat not being cross-referenced next to the density comparison itself (only living in
+Appendix A) - added directly to Table 7's footnote now.
+
+Action items (first two superseded by RESOLVED above; third addressed):
 - Add one dedicated table/slide: 1T1R vs 1S1R, all four axes side by side (density, latency,
   power/leakage, endurance), each cell citing the section it's drawn from - make the "why 1S1R
   wins" argument in one place instead of requiring the reader to assemble it themselves.
