@@ -43,3 +43,8 @@ archive/final_graphs_v2/
 # above — bulky, regenerable, not source) — matches this and future
 # "results_pre_vN_YYYYMMDD" archival rounds
 archive/results_pre_v*/
+
+# autoresearch skill scratch (loop's own bookkeeping log + per-run output,
+# not source - see AUTORESEARCH.md)
+autoresearch_results.tsv
+run.log

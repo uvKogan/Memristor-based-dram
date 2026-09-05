@@ -11,9 +11,18 @@ def setup_args():
     parser = argparse.ArgumentParser(description="MBMM Step 3: Multi-Architecture Factory")
     parser.add_argument("--input", default="results/hardware_metrics.json", help="Input JSON file.")
     parser.add_argument("--freq", type=int, default=800, help="Target frequency in MHz.")
+    parser.add_argument("--queue-size", type=int, default=32,
+                        help="FRFCFS controller QueueSize (default: 32, matching NVMain's own "
+                             "hardcoded fallback - see FRFCFS.cpp). Kept as an explicit, "
+                             "documented generator parameter instead of an implicit simulator "
+                             "default; override for a write-queue-depth sensitivity sweep.")
+    parser.add_argument("--output-dir", default=None,
+                        help="Override the Config output directory (default: "
+                             "simulators/nvmain/Config/). Use a separate directory for a "
+                             "sensitivity sweep so it never touches the official configs.")
     return parser.parse_args()
 
-def generate_nvmain_config(base_name, hw_metrics, target_freq_mhz, output_dir, arch_type):
+def generate_nvmain_config(base_name, hw_metrics, target_freq_mhz, output_dir, arch_type, queue_size=32):
     # PROTECT DRAM: Do not generate NVMain configs for DRAM models!
     if "dram" in base_name.lower():
         return None
@@ -100,6 +109,15 @@ CPUFreq 3000
 ; --- Clock, Controller and Scaling ---
 CLK {target_freq_mhz}
 MEM_CTL FRFCFS
+; QueueSize: the plain FRFCFS controller (MemControl/FRFCFS/FRFCFS.cpp) reads a
+; single combined read+write QueueSize key (falls back to a hardcoded 32 if unset --
+; the ReadQueueSize/WriteQueueSize keys seen in some bundled example configs belong
+; to the different FRFCFS-WQF controller and are never read here). Previously left
+; unset everywhere in this project, silently relying on that hardcoded default; now
+; written explicitly so it's a documented, deliberate, sweepable parameter instead of
+; an implicit simulator behavior. See documents/MBMM_Book_Typst/Post_Meeting_Notes_Shahar_2026-09-03.md
+; item 5 and the write-queue-depth sensitivity study (Section 3.1.x) for why.
+QueueSize {queue_size}
 DEVICES_PER_RANK {devices_per_rank}
 
 ; --- Address Mapping ---
@@ -163,7 +181,7 @@ def main():
     args = setup_args()
     root_dir = get_project_root()
     input_path = root_dir / args.input
-    output_dir = root_dir / "simulators" / "nvmain" / "Config"
+    output_dir = Path(args.output_dir) if args.output_dir else root_dir / "simulators" / "nvmain" / "Config"
 
     if not input_path.exists():
         print(f"[!] Input metrics file not found: {input_path}")
@@ -183,7 +201,7 @@ def main():
     for model_name, metrics in all_metrics.items():
         print(f"\n>>> Base Hardware: {model_name}")
         for arch in architectures:
-            sys_name = generate_nvmain_config(model_name, metrics, args.freq, output_dir, arch)
+            sys_name = generate_nvmain_config(model_name, metrics, args.freq, output_dir, arch, args.queue_size)
             if sys_name:
                 print(f"    [OK] Generated System Model: {sys_name}")
                 generated_count += 1
