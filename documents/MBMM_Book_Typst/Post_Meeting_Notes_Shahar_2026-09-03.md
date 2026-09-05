@@ -1,11 +1,11 @@
 # Meeting Notes: Shahar Kvatinsky Review - 2026-09-03
 
 Status: **baseline for the next revision pass** on `Project_Book.typ`, `presentation_deck.html`,
-and (where a config/simulation change is implied) the pipeline itself. Nothing in this file has
-been acted on yet - no book/deck/code edits were made while writing it. Each item below is
-RAW (Shahar's note, cleaned up for readability but not reinterpreted) followed by IMPROVED
+and (where a config/simulation change is implied) the pipeline itself. Each item below is RAW
+(Shahar's note, cleaned up for readability but not reinterpreted) followed by IMPROVED
 (grounded in what the book/deck/configs actually say today, checked against the source files
-during this session, with concrete pointers for the fix).
+during this session, with concrete pointers for the fix). **Item 5 is now RESOLVED** (2026-09-04)
+- see its note below; everything else is still open, unacted-on baseline.
 
 ## Overarching conclusion
 
@@ -179,18 +179,24 @@ finding (T4-11, currently open). Shahar independently arriving at the same lever
 different angle (LBM non-completion) is a strong signal this should be promoted, not left as a
 someday item.
 
-Action items:
-- Run a `WriteQueueSize`/`ReadQueueSize` sensitivity sweep (e.g. 16/32/64/128) on the LBM
-  configuration for at least 1T1R SLC and 1S1R SLC, and check whether admitted-write completion
-  rate and/or latency improves - this is a cheap experiment (config-only change, no simulator
-  code touched).
-- If it helps, this becomes a real, book-worthy result: "the LBM non-completion is partly a
-  controller-queue artifact, not a device-physics limit, and is tunable." If it doesn't help,
-  that's also worth stating - it would point instead at the write-coalescing/L3 cache idea
-  (§4.2) as the real fix.
-- This is a good candidate for the `autoresearch`-style loop (edit config → run → measure
-  completion rate/latency → keep or revert) now available as a skill, if the team wants to
-  automate the sweep rather than hand-run it.
+**RESOLVED (2026-09-04):** the premise was refined then confirmed. `ReadQueueSize`/
+`WriteQueueSize` turned out to be dead keys for every ReRAM/DDR5 config - they belong to a
+different controller (`FRFCFS-WQF`) that only PCM's config uses; ReRAM/DDR5 use plain `FRFCFS`,
+which reads a single combined `QueueSize` (hardcoded default 32, previously never set
+explicitly anywhere in the pipeline). `3_gen_nvmain_config.py` and `mbmm_master.py` now expose
+`--queue-size` as an explicit, documented generator parameter (default unchanged at 32, so no
+headline result moved; verified via a scoped `mbmm_master.py` gatekeeper run reproducing the
+existing baseline byte-for-byte). A dedicated `sweep_queue_size.py` (reuses the real generator,
+isolated output dirs, no shared-results interference) found: at 1T1R SLC full-DIMM scale,
+raising `QueueSize` from 32 to 64 improves LBM completion from 40.0% to 40.7% of DDR5's
+reference admission, at a real cost (+83% average latency); the effect is much larger at
+single-chip scale (+4.16% completion at QueueSize 128, +258% latency) since less inherent
+parallelism leaves more of the workload queue-depth-limited. Both scales hit a wall-clock
+simulation-time ceiling well before any completion ceiling (full-DIMM dies between 64-80,
+single-chip between 128-256). Full write-up: `Project_Book.typ` Appendix A, new "Memory
+Controller Queue Depth" item, cross-referenced from §3.1.1. Conclusion for Shahar: yes, it's a
+real, tunable lever, and it's characterized now - but it doesn't dissolve the LBM gap, it narrows
+it modestly at real latency cost, so the headline 32-entry default stands.
 
 ---
 
@@ -378,9 +384,9 @@ Action items:
 
 1. Open new `Review_Fixes_Tracker.md` items for each of the 10 points above (not done yet - this
    file is the baseline they should be drawn from).
-2. Start with items 5 (write-queue sweep) and 8 (show the endurance calculation) - both are
-   cheap, config/presentation-only changes with no open research question, and both directly
-   defuse a "too good to be true" reaction with data that already exists.
+2. Item 5 (write-queue sweep) is now done (see its RESOLVED note above). Item 8 (show the
+   endurance calculation) is the next cheap, presentation-only change with no open research
+   question - it directly defuses a "too good to be true" reaction with data that already exists.
 3. Items 2, 6, and 10's transistor-leakage citation are literature-search tasks (no simulation
    changes) - good candidates to parallelize.
 4. Items 1, 3, 9 (PCM architecture disclosure + Optane real numbers) are the most book-narrative-
