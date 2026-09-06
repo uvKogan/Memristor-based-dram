@@ -2573,7 +2573,7 @@ data, has been made publicly available.
 #strong[\[27\]] J. D. McCalpin, \"Memory Bandwidth and Machine Balance in Current High Performance Computers,\" IEEE Computer Society Technical Committee on Computer Architecture (TCCA) Newsletter, pp. 19-25, Dec. 1995.
 #strong[\[28\]] Standard Performance Evaluation Corporation, \"SPEC CPU 2017 Benchmark Suite.\" \[Online\]. Available: https:\/\/www.spec.org/cpu2017/. \[Accessed: Jul. 13, 2026\].
 #strong[\[29\]] Micron Technology, Inc., \"16Gb DDR5 SDRAM Addendum: MT60B4G4, MT60B2G8, MT60B1G16, Die Revision A,\" Doc. No. CCM005-0005-1684161373-30, Rev. D, Feb. 2023. \[Online\]. Available: https:\/\/www.micron.com/products/memory/dram-components/ddr5-sdram/part-catalog
-#strong[\[30\]] SK hynix Inc., \"16Gb DDR5 SDRAM,\" datasheet. \[Online\]. Available (registration required): https:\/\/product.skhynix.com/support/downloads.go
+#strong[\[30\]] SK hynix Inc., \"16Gb DDR5 SDRAM,\" datasheet, n.d. \[Online\]. Available (registration required): https:\/\/product.skhynix.com/support/downloads.go
 
 #strong[\[31\]] A. Levy, L. R. Upton, M. D. Scott, D. Rich, W.-S. Khwa, Y.-D. Chih, M.-F. Chang, S. Mitra, B. Murmann, and P. Raina, \"EMBER: Efficient Multiple-Bits-Per-Cell Embedded RRAM Macro for High-Density Digital Storage,\" #emph[IEEE J. Solid-State Circuits], vol. 59, no. 7, pp. 2081-2092, July 2024. DOI: 10.1109/JSSC.2024.3387566
 
