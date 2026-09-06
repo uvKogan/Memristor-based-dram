@@ -65,7 +65,7 @@ on measured static power, not a simulated result - while DDR5 spends 33-45% of
 its module power on refresh it can never shed - a concrete opening for
 gating-capable memory controllers and selector-first DIMM designs. The
 contrast that proves the point: the transistor-gated 1T1R module leaks
-50.9 W (65-78x DDR5) - infeasible ungated at DIMM scale - so the
+50.9 W (67-82x DDR5) - infeasible even power-gated at DIMM scale - so the
 selector\'s 47x leakage discipline, not raw cell speed, decides
 architectural viability, and 1S1R SLC is the flagship configuration.
 These power results rest on a fidelity audit of the simulation flow
@@ -1035,13 +1035,13 @@ level (NVSim: 794.7 vs. 16.9 mW per chip) and - now measured with real
 leakage physics - at the system level as well. Under AI inference
 (GPT-2, Figure 8), the most parallel workload in the suite, accumulated
 dynamic read energy raises the 1S1R SLC module only from 1.12 W to 1.23
-W - roughly a 10% excursion - while DDR5 spans 0.65-0.78 W across the
+W - roughly a 10% excursion - while DDR5 spans 0.623-0.757 W across the
 entire suite, so the standby floor decides the cross-technology ranking
 under every workload. The architectural consequence is decisive: 1S1R
-lands within 1.7x of DDR5 at the conservative calibration floor (within
+lands within 1.8x of DDR5 at the restored, real floor (within
 11% of parity at the ceiling) with zero refresh cost and its gating
 headroom unexercised - a credible successor profile - while an always-on
-1T1R DIMM, at 65-78x DDR5\'s power, is infeasible without gating. One
+1T1R DIMM, at 67-82x DDR5\'s power, is infeasible even with gating. One
 honest bound on that comparison: both ends of the DDR5 band are vendor
 #emph[specification] currents (Section 2.3), not measured typicals - a
 typical-current module sits below the spec-limit ceiling - so the
@@ -2053,8 +2053,11 @@ peripheral leakage, and periphery is standard CMOS that shrinks with the
 process: to first order, static power per gigabyte falls by the same
 (22/F)^2 factor that density rises. Holding the 8 GB module and its
 measured 1.082 W static anchor fixed, a 16nm-class port lands at roughly
-0.61 W ungated - at parity with DDR5\'s 0.651 W calibration floor with
-no gating at all (the exact crossover sits at a 16.6nm feature size) -
+0.61 W ungated - at parity with DDR5\'s own historically ungated 0.651 W
+figure, deliberately used here rather than the 0.623 W restored, gated
+floor used elsewhere in this book, to keep this an apples-to-apples
+ungated-vs-ungated projection (the exact crossover sits at a
+16.6nm feature size) -
 and a 12nm-class port at roughly 0.36 W, 1.8x below the floor. Under
 this arithmetic the gating requirement of Section 3.1.2 is not a
 permanent architectural tax but a 22nm artifact: one full shrink buys
@@ -2131,8 +2134,9 @@ increase the hynix-floor figure carried; see Section 3.1.6, item 8), PCM
 165.3, 1S1R SLC
 737.1, 1S1R MLC 1,222.4, 1T1R SLC 21,350.6, and 1T1R MLC 32,567.1. The
 selector\'s 47x standby discipline
-cleanly partitions the ReRAM family: ungated 1T1R is not a viable DDR5
-successor at any cell density (50.9 W per module, 65-78x DDR5) - the
+cleanly partitions the ReRAM family: 1T1R is not a viable DDR5
+successor at any cell density, even power-gated (50.9 W per module,
+67-82x DDR5) - the
 contrast that elevates leakage discipline to the deciding architectural
 requirement. PCM, for its part, survives on its 0.04 W floor at latency
 costs relative to 1T1R SLC that range from \~4-6x under parallel AI to
@@ -2161,12 +2165,12 @@ This suite brackets that extreme deliberately: LBM and STREAM saturate
 the channel, and GPT-2 is precisely the decode-class workload Gholami et
 al. analyze. The arithmetic is honest about what this means - a
 channel-saturating deployment gates little (f approaches 0), leaving the
-ungated comparison to stand as measured, 1S1R at 1.72x the DDR5 floor
+ungated comparison to stand as measured, 1S1R at 1.8x the DDR5 floor
 and 1.11x the ceiling - while Section 3.1.1\'s latency verdict already
 assigns sustained high-parallelism serving to DDR5. The two verdicts are
 mutually consistent: the workload class where gating cannot rescue ReRAM
 power is the same class ReRAM already loses on latency, and even there
-the ungated penalty is bounded at 1.7x, not the 65-78x of the
+the ungated penalty is bounded at 1.8x, not the 67-82x of the
 transistor-gated alternative. The bounding arithmetic for the 1S1R SLC
 module follows directly from its measured composition (1.082 W static +
 \~0.036 W dynamic under GCC): gating the static component for an idle
@@ -2189,8 +2193,9 @@ exercise (the asymmetry caveat of Section 3.1.6, item 5, cuts both
 ways); but the floor asymmetry is physical - an idle DRAM module must
 keep refreshing to retain data, while a gated non-volatile module
 retains it at zero power. These are bounding calculations, not
-simulations; simulating the actual gating policy is the top future-work
-item (Section 4.1).
+a real characterization; sourcing a real ReRAM power-gating energy
+characterization - what the arithmetic above still has to assume rather
+than measure - is the top future-work item (Section 4.1).
 
 #pagebreak()
 <section-1>
@@ -2232,21 +2237,21 @@ summary of the entire evaluation.
   [21,508.4],
   [0.22],
   [17.3 yr],
-  [latency-optimized niche; infeasible ungated],
+  [latency-optimized niche; infeasible even power-gated],
   [#strong[1S1R SLC]],
   [192.3],
   [1.118],
   [738.1],
   [1.92],
   [24.8 yr],
-  [flagship; power parity contingent on future gating work],
+  [flagship; parity contingent on real ReRAM power-gating characterization],
   [#strong[1T1R MLC]],
   [185.1],
   [50.877],
   [32,632.8],
   [0.44],
   [3.1 yr],
-  [infeasible ungated],
+  [infeasible even power-gated],
   [#strong[1S1R MLC]],
   [286.5],
   [1.130],
@@ -2306,15 +2311,14 @@ mechanism, still spends 33-47% of its module power on refresh
 across every workload while ReRAM\'s refresh cost is identically zero
 (Figure 7); and under the repaired power model the technologies
 separate into leakage classes in which the selector-gated 1S1R module is
-the opportunity - 1.12 W, 1.8x DDR5\'s restored 0.623 W conservative
-calibration floor and within 11% of parity at the ceiling, with
+the opportunity - 1.12 W, 1.8x DDR5\'s restored, real 0.623 W floor
+and within 11% of parity at the ceiling, with
 ReRAM\'s own idle-gating mechanically active but placeholder-valued
 (no modeled benefit yet, Appendix A) - against 50.9 W for the transistor-gated 1T1R
-module (65-78x DDR5, infeasible at DIMM scale) and 0.040 W for PCM, so
+module (67-82x DDR5, infeasible even power-gated at DIMM scale) and 0.040 W for PCM, so
 the 47x selector leakage discipline that NVSim characterizes at the
 device level (794.7 vs. 16.9 mW per chip) becomes the deciding
-architectural fact of the evaluation (ReRAM figures are worst-case
-ungated; the DRAM and PCM baselines model standard idle behavior). A
+architectural fact of the evaluation. A
 critical and previously unquantified result is the endurance
 characterization: under real workload write rates with uniform wear
 leveling, lifetime scales linearly with module capacity - the modeled 8
@@ -2327,8 +2331,8 @@ and it inverts the intuitive choice: 1S1R SLC is the flagship
 configuration - scale-viable power, 1.9x DDR5\'s die-level density (3.8x
 as MLC), and a modest \~1.5x average-latency cost against 1T1R (1.3-1.7x
 across the suite) - while 1T1R SLC, despite the best raw latency in the
-ReRAM family, is infeasible ungated at DIMM scale and is relegated to a
-latency-optimized niche pending aggressive idle-gating; MLC density
+ReRAM family, is infeasible even power-gated at DIMM scale and is
+confined to a latency-optimized niche; MLC density
 remains restricted to read-dominant applications (static weight storage
 in AI inference pipelines) where the 3.263x write-latency penalty is
 rarely triggered. Together these findings define a concrete agenda for research
