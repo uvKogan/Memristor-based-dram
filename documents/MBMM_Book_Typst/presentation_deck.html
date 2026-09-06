@@ -819,23 +819,27 @@ table.data tr.hl { background: var(--accent-soft); }
 <section class="slide ">
 <div class="eyebrow"><span>Future Work</span><span class="dim">1 / 2</span></div>
 <div class="slide-body">
-  <h1 class="title">Top Priority: Restore Idle-Gating Simulation</h1>
-  <p class="lede">This is what converts the power-parity <em>projection</em> into a real, simulated result - the single highest-leverage next step.</p>
-  <p class="lede" style="font-size:0.85rem; margin-top:0.8em;">Should model both sides symmetrically: DDR5's own self-refresh current (JEDEC IDD6) is an unsourced, confirmed-dead placeholder in this project's DDR5 config - the DDR5 floor used throughout is its ungated standby behavior, not its own best-case sleep state.</p>
+  <h1 class="title">Top Priority, Next 3 Months</h1>
+  <p class="lede">Idle-gating is already restored and mechanically live (Section 3.1.6). The one thing still missing: a real ReRAM power-gating characterization - what fraction of its leakage is peripheral and gatable, and at what entry/exit energy cost. That's the single highest-leverage next step, and it's a literature/analysis task, not new simulation infrastructure.</p>
+  <p class="lede" style="font-size:0.85rem; margin-top:0.8em;">Alongside it in the same window: an Interface Parity evaluation (dual-channel / faster-PHY ReRAM) - closes part of the 4.6x AI-inference latency gap, an already-flagged available mitigation, not a hidden cost.</p>
 </div>
-<div class="speaker-note"><b>Say</b>If asked "does DDR5 also have a sleep mode you could credit" - yes, self-refresh (JEDEC IDD6), but this project never sourced a real value for it, so today's comparison is ReRAM-gated-projection versus DDR5-ungated-actual, not gated-to-gated. Fixing that is part of this same priority, not a separate task.</div>
+<div class="speaker-note"><b>Say</b>If asked why ReRAM's power number didn't move even after idle-gating was restored: the mechanism is live (86-89% of cycle-slots gated, confirmed), but no NVSim datapoint or literature source splits ReRAM leakage into gatable-vs-ungatable, so its power-down energy is an honest zero-savings placeholder pending real characterization - exactly this priority. PCM separately shows zero power-down activity in either run, plausibly its FRFCFS-WQF controller keeping the request queue non-empty; a second, smaller open item, not yet root-caused.</div>
 </section>
 <section class="slide ">
 <div class="eyebrow"><span>Future Work</span><span class="dim">2 / 2</span></div>
 <div class="slide-body">
-  <h1 class="title">Other Fronts</h1>
-  <ul class="points">
-    <li>Wear-leveling controller &amp; write-coalescing cache</li>
-    <li>Recessed-channel 1T1R density - could overturn the density verdict</li>
+  <h1 class="title">Beyond 3 Months, by Theme</h1>
+  <ul class="points" style="max-width:92vw; display:grid; grid-template-columns:1fr 1fr; column-gap:3vw; row-gap:0.9em;">
+    <li><strong>Architectural scaling &amp; density</strong> - recessed-channel 1T1R density: could overturn the density verdict</li>
     <li>Node scaling + 3D deck stacking, re-derived at scaled geometries</li>
-    <li>Standalone device-to-system simulator wrapper - generalizing "The Bridge" beyond this project</li>
+    <li>Macro-scale 1T1R array limits, beyond the 1024&times;1024 baseline-parity restriction</li>
+    <li>L3 cache / write-buffer mitigation for ReRAM writes</li>
+    <li>Endurance-aware wear-leveling at the controller level</li>
+    <li><strong>Model fidelity</strong> - Native MLC Logic: resolve NVSim's Mat.cpp floating-point exception</li>
+    <li>PCM's zero power-down activity (FRFCFS-WQF controller) - not yet root-caused</li>
+    <li>Parameter optimization: ReadVoltage/WritePulseWidth sensitivity sweep</li>
+    <li><strong>Validation</strong> - standalone device-to-system simulator wrapper, generalizing "The Bridge" beyond this project</li>
     <li>FPGA-based hardware-in-the-loop validation of the idle-gating policy - closes the internal-only validation gap without fabricated ReRAM silicon</li>
-    <li>Dual-channel / faster-PHY ReRAM interface - closes part of the 4.6x AI-inference gap, an available mitigation not a hidden cost; a natural extension of the same FPGA platform</li>
   </ul>
 </div>
 </section>
@@ -887,9 +891,9 @@ table.data tr.hl { background: var(--accent-soft); }
 <div class="slide-body">
   <h1 class="title">Worst-Case Stacking, Explained</h1>
   <ul class="points">
-    <li>DDR5 IDD figures: <strong>vendor spec-limit maxima</strong>, not typical</li>
-    <li>ReRAM figures: <strong>worst-case, ungated</strong></li>
-    <li>Both choices favor ReRAM in the comparison - direction and magnitude of a "typical DDR5" correction not yet estimated</li>
+    <li>DDR5 IDD figures: <strong>vendor spec-limit maxima</strong>, not typical - confirmed no typical figure exists in any datasheet checked</li>
+    <li>ReRAM figures: power-down mechanism now live, but an honest <strong>zero-savings placeholder</strong> pending a real gating characterization</li>
+    <li>DDR5 now gets a real, measured power-down credit ReRAM doesn't - the comparison no longer uniformly favors ReRAM</li>
   </ul>
   <p class="lede" style="font-size:0.85rem;">Most likely hard question in the room - have this ready.</p>
 </div>

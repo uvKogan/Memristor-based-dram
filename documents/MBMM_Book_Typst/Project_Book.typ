@@ -2457,11 +2457,6 @@ confidence.
   proven essential for legacy phase-change memory #strong[\[11\]],
   specifically for write-intensive AI workloads like AlexNet OFMAP.
 
-- #strong[Memory Controller Queue Analysis (The Flatline Paradox):]
-  Deep-diving into the NVMain memory controller interface, queue depths,
-  and bus saturation limits to definitively resolve the multi-rank
-  scaling flatline.
-
 - #strong[Endurance-Aware Scheduling:] Implementing wear-leveling
   algorithms at the controller level to protect the finite lifecycle of
   the 22nm cells.
