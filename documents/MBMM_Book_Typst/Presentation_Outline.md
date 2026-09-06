@@ -483,30 +483,46 @@ callouts + badge, no chart)*
 
 ## 6. Future Work (3 slides, ~4 min)
 
-**Slide 34 - Top priority: restore idle-gating simulation**
-- On-slide: this is what converts Slide 30's projection into a real
-  result - the single highest-leverage next step. Added: should model
-  both sides symmetrically - DDR5's own self-refresh current (JEDEC
-  IDD6) is an unsourced, confirmed-dead placeholder in this project's
-  DDR5 config, so today's floor is DDR5's ungated standby behavior,
-  not its own best-case sleep state.
-- Say: if asked "does DDR5 also have a sleep mode you could credit" -
-  yes (self-refresh), but never sourced a real value, so today's
-  comparison is gated-projection vs. ungated-actual, not gated-to-gated.
-  Fixing that is part of this same priority, not a separate task.
+**Slide 34 - Top priority, next 3 months**
+- On-slide: idle-gating itself is already restored and mechanically
+  live (Section 3.1.6) - the one thing still missing is a real ReRAM
+  power-gating characterization (what fraction of its leakage is
+  peripheral/gatable, at what entry/exit energy cost), now the single
+  highest-leverage next step and a literature/analysis task, not new
+  simulation infrastructure. Added: alongside it in the same 3-month
+  window, an Interface Parity evaluation (dual-channel/faster-PHY
+  ReRAM) - closes part of the 4.6x AI-inference latency gap, an
+  already-flagged available mitigation, not a hidden cost.
+- Say: if asked why ReRAM's power number didn't move even after
+  idle-gating was restored - the mechanism is live (86-89% of
+  cycle-slots gated, confirmed), but no NVSim datapoint or literature
+  source splits ReRAM leakage into gatable-vs-ungatable, so its
+  power-down energy is an honest zero-savings placeholder pending real
+  characterization - exactly this priority. PCM separately shows zero
+  power-down activity in either run, plausibly its FRFCFS-WQF
+  controller keeping the request queue non-empty; a second, smaller
+  open item, not yet root-caused.
 
-**Slide 35 - Other fronts**
-- On-slide: wear-leveling controller / write-coalescing cache ·
-  recessed-channel 1T1R density (could overturn the density verdict) ·
-  node scaling + 3D deck stacking · a standalone device-to-system
-  simulator wrapper - generalizing "The Bridge" (the NVSim→NVMain ETL
-  pipeline) into a reusable tool decoupled from this specific project
-  (idea originated in discussion with the HW/SW co-design course tutor)
-  · FPGA-based hardware-in-the-loop validation of the idle-gating
-  policy - closes the internal-only validation gap without needing
-  fabricated ReRAM silicon · dual-channel / faster-PHY ReRAM interface -
-  closes part of the 4.6x AI-inference gap, an available mitigation not
-  a hidden cost, and a natural extension of the same FPGA platform
+**Slide 35 - Beyond 3 months, by theme**
+- On-slide, ordered by amount-of-work per theme (largest first, per
+  the Lead's own prioritization): **Architectural scaling & density**
+  (recessed-channel 1T1R density - could overturn the density verdict
+  · macro-scale 1T1R array limits beyond the 1024x1024 baseline-parity
+  restriction · L3 cache/write-buffer mitigation for ReRAM writes ·
+  node scaling + 3D deck stacking · endurance-aware wear-leveling) →
+  **Model fidelity** (Native MLC Logic - resolve NVSim's Mat.cpp
+  floating-point exception · PCM's zero power-down activity, not yet
+  root-caused · ReadVoltage/WritePulseWidth parameter-optimization
+  sweep) → **Validation** (standalone device-to-system simulator
+  wrapper - generalizing "The Bridge," idea originated in discussion
+  with the HW/SW co-design course tutor · FPGA-based hardware-in-the-
+  loop validation of the idle-gating policy, closes the internal-only
+  validation gap without needing fabricated ReRAM silicon).
+- Note: the former "Memory Controller Queue Analysis (Flatline
+  Paradox)" future-work item was removed here and from
+  `Project_Book.typ` §4.2 - it's now resolved (see T4-11, Section 3.2 /
+  Appendix A: an address-footprint/rank-mapping artifact, not a queue-
+  depth question), so it no longer belongs in future work.
 
 ---
 
@@ -520,8 +536,12 @@ callouts + badge, no chart)*
 
 - Full 14-item fidelity audit list
 - ReadVoltage sensitivity sweep (±20%, PDP change <4%)
-- Worst-case-stacking explanation (DDR5 spec-limit vs typical, ReRAM
-  ungated) - have this ready, it's the most likely hard question
+- Worst-case-stacking explanation (DDR5 spec-limit vs typical - confirmed
+  no typical figure exists in any datasheet checked; ReRAM's power-down
+  mechanism now live but an honest zero-savings placeholder; DDR5 now
+  gets a real measured power-down credit ReRAM doesn't, so the
+  comparison no longer uniformly favors ReRAM) - have this ready, it's
+  the most likely hard question
 - References Used on the Slides: resolves every [N] bracket now appearing
   on main slides (47x-fact, SLC/MLC, Bridge-in-parameters) - [3] NVSim,
   [4] NVMain, [6]/[31] EMBER, [7] resistance targets, [33] recessed-channel
