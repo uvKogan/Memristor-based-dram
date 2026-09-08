@@ -11,7 +11,6 @@
       - When the loop ends (ceiling reached or stuck), stop and report the results - do not merge, cherry-pick, or delete the branch yourself. What happens to that history next is the Lead Researcher's call.
       - This exception does not relax guardrail 2 below - `mbmm_master.py` verification still applies to any change the loop makes that the pipeline would normally verify.
 2. **THE GATE-KEEPER**: Never assume a Python modification is successful until you have verified it through our master orchestration script: `mbmm_master.py`. 
-3. **EXTERNAL ADVISOR**: The user is paired with an external AI Senior Architect (Gemini). If the user provides a directive quoting the "Senior Architect", you must execute it exactly as instructed without questioning the underlying microarchitectural theory.
 
 ## 📂 TOKEN STRATEGY & DIRECTORY NAVIGATION
 Do not read files outside your immediate task scope. Rely on the local `CLAUDE.md` files in subdirectories for specific domain knowledge:
