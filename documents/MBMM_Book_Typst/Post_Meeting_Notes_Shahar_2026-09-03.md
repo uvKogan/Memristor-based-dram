@@ -386,6 +386,21 @@ both `Project_Book.typ` §3.1.4 and the deck's Endurance slide (matching the num
 Still open, and NOT fixable from the book alone: the 10⁷-vs-10⁹ reconciliation needs an actual
 conversation with Shahar to find out which figure/capacity he was recalling - flag this live.
 
+**Literature reconciliation done (2026-09-09), conversation itself still pending:** a `/research`
+pass (`research_notes/item8_endurance_10e7_vs_10e9.md`) confirmed both numbers are real and not in
+conflict. Genuine >10⁹-10¹⁰ RRAM endurance claims exist in the literature (e.g., Chen et al., IEEE
+TED 2012, HfO2/Hf 1T1R, >10¹⁰ cycles - already indirectly in the book's citation graph as ref (27)
+in Lanza et al. [15]'s own bibliography) - but they are near-universally single-device, lab-tuned,
+sparsely-sampled demonstrations, exactly the class of claim [15] (already cited by the book for
+this figure) explicitly warns against over-trusting (its own Table 2 rates most 10⁹+ claims "low
+reliability" because a 10-decade cycle count often rests on only ~10-80 actually-measured points).
+A newly found, independent, very recent industry survey (Hellenbrand et al., MRS Communications
+2024) confirms real shipped/qualified RRAM parts (Panasonic, Nuvoton, Weebit Nano, Fujitsu,
+Crossbar, IntrinSic) spec endurance at 10⁴-10⁷, not above it - the book's 10⁷ SLC choice sits at
+the top of real-world production reality, not below it. Full citations, quotes, and a ready-to-use
+talking point for the live conversation are in the research note. The conversation itself (which
+capacity/figure Shahar was recalling) is still the one item that can't be closed from a desk.
+
 Action items (calculation part superseded by RESOLVED above; reconciliation still open):
 - Add the actual calculation (module line count × per-cell endurance rating ÷ write rate) as a
   visible worked example in both the book (currently it's stated in prose, not shown as an
