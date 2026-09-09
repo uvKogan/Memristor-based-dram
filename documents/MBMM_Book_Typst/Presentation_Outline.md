@@ -108,8 +108,18 @@ ReRAM replace DDR5 in a commodity DIMM?"
 **Slide 8 - Where this sits**
 - On-slide: device-level ReRAM literature = extensive · system-level,
   DIMM-scale, workload-driven evaluation = the gap this fills
+- On-slide (2026-09-09, alignment fix): third bullet added - the one
+  real-hardware anchor point, Intel Optane DC PMM (only NVM
+  main-memory module ever shipped): 305 ns idle random-read latency
+  vs. 81 ns DRAM, 6.6/2.3 GB/s read/write bandwidth [32] - different
+  device architecture, not directly benchmarked against this study's
+  simulated figures. Matches `Project_Book.typ` §1.3's Optane passage,
+  which the deck had never carried before (book-only gap found by a
+  book/deck alignment audit).
 - Say: honest positioning - acknowledges you haven't done a formal
-  literature survey slide, but states the angle precisely.
+  literature survey slide, but states the angle precisely. Optane is
+  real, measured, third-party data - worth naming even though it can't
+  be a direct number-for-number comparison.
 
 ---
 
@@ -543,8 +553,10 @@ callouts + badge, no chart)*
   comparison no longer uniformly favors ReRAM) - have this ready, it's
   the most likely hard question
 - References Used on the Slides: resolves every [N] bracket now appearing
-  on main slides (47x-fact, SLC/MLC, Bridge-in-parameters) - [3] NVSim,
-  [4] NVMain, [6]/[31] EMBER, [7] resistance targets, [33] recessed-channel
+  on main slides (47x-fact, SLC/MLC, Bridge-in-parameters, Where This
+  Sits) - [3] NVSim, [4] NVMain, [6]/[31] EMBER, [7] resistance targets,
+  [33] recessed-channel, [32] Optane real-hardware anchor point (added
+  2026-09-09 alongside the Where This Sits slide's new Optane bullet)
 - 2026-09-02 (Lead-caught): both the "Full 14-item fidelity audit" list
   and "References Used on the Slides" (grown to 10 and 9 items
   respectively as items were added over this session) overflowed the
@@ -562,7 +574,7 @@ callouts + badge, no chart)*
   first): (1) since `MBMM Project Book UPDATED.docx` (last version
   presented) - fidelity audit deepened 11/9 found/repaired to 14/12, the
   DDR5 CAS-RCD-RP timing and ReRAM MLC-multiplier fixes, new Section 1.3
-  Related Work, references 30->41, 128GB 1T1R SLC lifetime 24.4->17.3yr,
+  Related Work, references 30->44, 128GB 1T1R SLC lifetime 24.4->17.3yr,
   headline verdict unchanged; (2) since the SysTOR poster - the poster's
   numbers held up under re-verification (2.3x latency, ~25yr@128GB both
   match), what's new is the explicit measured-vs-projected disclosure

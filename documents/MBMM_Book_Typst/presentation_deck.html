@@ -149,6 +149,7 @@ ul.points li .warn { color: var(--warn); font-weight: 600; }
   line-height: 1.45;
 }
 .speaker-note b { color: var(--text-dim); font-style: normal; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; margin-right: 0.6em; }
+body.notes-hidden .speaker-note { display: none; }
 
 .chart-row {
   display: flex;
@@ -448,9 +449,10 @@ table.data tr.hl { background: var(--accent-soft); }
   <ul class="points">
     <li>Device-level ReRAM literature: <strong>extensive</strong></li>
     <li>System-level, DIMM-scale, workload-driven evaluation: <strong style="color:var(--accent);">the gap this fills</strong></li>
+    <li>One real-hardware anchor point exists: Intel Optane DC PMM (the only NVM main-memory module ever shipped) measured <strong>305 ns</strong> idle random-read latency vs. 81 ns DRAM, <strong>6.6/2.3 GB/s</strong> read/write bandwidth [32] - different device architecture, so not directly benchmarked against this study's simulated figures, but the field's one genuine real-silicon data point</li>
   </ul>
 </div>
-<div class="speaker-note"><b>Say</b>Honest positioning - acknowledges no formal literature survey slide, but states the angle precisely.</div>
+<div class="speaker-note"><b>Say</b>Honest positioning - acknowledges no formal literature survey slide, but states the angle precisely. Optane is real, measured, third-party data - worth naming even though it's architecturally different (selector-gated PCM) and can't be a direct number-for-number comparison.</div>
 </section>
 <section class="slide divider">
     <div class="sec-num">03</div>
@@ -910,6 +912,7 @@ table.data tr.hl { background: var(--accent-soft); }
     <li>[10] JEDEC JESD79-5, DDR5 SDRAM Standard, Nov. 2025</li>
     <li>[11] Lee et al., PCM as scalable DRAM alternative, ISCA 2009 - PCM baseline's architectural framing</li>
     <li>[31] Levy et al., EMBER, IEEE JSSC 2024 - MLC read-latency/write multiplier source</li>
+    <li>[32] Izraelevitz et al., Optane DC PMM measurements, arXiv 2019 - the real-hardware anchor point</li>
     <li>[33] Fackenthal et al., ISSCC 2014 - the 6F&sup2; recessed-channel 16Gb ReRAM counter-example</li>
     <li>[41] Choi et al., 20nm 8Gb PRAM, ISSCC 2012 - actual source of the PCM baseline's inherited timing/energy numbers</li>
     <li>Metal-oxide RRAM endurance surveys motivating this project's conservative SLC/MLC endurance targets</li>
@@ -932,7 +935,7 @@ table.data tr.hl { background: var(--accent-soft); }
     <li>Fidelity audit deepened: <strong>11 found/9 repaired &rarr; 14 found/12 repaired</strong> - continued scrutiny, not new bugs</li>
     <li>DDR5's own timing was unsourced too: CAS-RCD-RP corrected 34-34-34 &rarr; real 40-39-39</li>
     <li>ReRAM's MLC multipliers re-sourced and corrected twice: now <strong>1.5x / 3.263x</strong> read/write latency</li>
-    <li>New <strong>Section 1.3 Related Work</strong>; references 30 &rarr; <strong>41</strong></li>
+    <li>New <strong>Section 1.3 Related Work</strong>; references 30 &rarr; <strong>44</strong></li>
     <li>128 GB 1T1R SLC lifetime tightened 24.4 &rarr; <strong>17.3 years</strong></li>
   </ul>
   <p class="lede" style="font-size:0.85rem; margin-top:0.8em;">Headline verdict unchanged: 1.5x latency, 1.12 W vs. 0.623 W, 47x leakage.</p>
@@ -956,7 +959,7 @@ table.data tr.hl { background: var(--accent-soft); }
 </div>
 <div class="navzone left" id="nav-left"></div>
 <div class="navzone right" id="nav-right"></div>
-<div id="hint"><kbd>&larr;</kbd> <kbd>&rarr;</kbd> or click edges &middot; swipe on touch</div>
+<div id="hint"><kbd>&larr;</kbd> <kbd>&rarr;</kbd> or click edges &middot; swipe on touch &middot; <kbd>N</kbd> toggles speaker notes</div>
 <div id="hud"><span class="cur" id="cur">01</span>/<span id="total">00</span></div>
 <script>
 const track = document.getElementById('track');
@@ -982,7 +985,10 @@ document.addEventListener('keydown', (e) => {
   else if (['ArrowLeft','PageUp','Backspace'].includes(e.key)) { prev(); e.preventDefault(); }
   else if (e.key === 'Home') { go(0); }
   else if (e.key === 'End') { go(slides.length - 1); }
+  else if (e.key === 'n' || e.key === 'N') { document.body.classList.toggle('notes-hidden'); }
 });
+
+document.body.classList.add('notes-hidden');
 document.getElementById('nav-left').addEventListener('click', prev);
 document.getElementById('nav-right').addEventListener('click', next);
 
