@@ -1,7 +1,10 @@
 # Meeting Prep Cheat Sheet - grilling arc, corrected answers
 
-Personal rehearsal notes from the pre-meeting grilling sessions. Not part of the
-book's fix tracker - a separate, personal prep artifact.
+Personal rehearsal notes from the pre-meeting grilling sessions. Not part of the book's fix tracker - a separate, personal prep artifact.
+
+> **Updated 2026-09-12:** numbers below are corrected to the current book (post-2026-09-05
+> idle-gating re-run). Where an answer itself changed, the old framing is marked *superseded*
+> rather than deleted, so the rehearsal history stays readable.
 
 ## Parking lot (cover separately, not yet done)
 - How the NVMain memory system is actually built/configured *from* NVSim's
@@ -17,8 +20,7 @@ book's fix tracker - a separate, personal prep artifact.
   (needs device params as input). Need both for an end-to-end, workload-grounded
   answer.
 - ETL pipeline exists for two reasons: avoids manual-transcription errors at scale,
-  and the toolchain *seams* are exactly where bugs hide - the audit found 14, fixed
-  12, accepted 2 as permanent. Say "assessed and documented as permanent," never
+  and the toolchain *seams* are exactly where bugs hide - the audit found 14, fixed 13, and accepted 1 (trace provenance) as permanent - idle power-down was the second permanent item until its 2026-09-05 restoration. Say "assessed and documented as permanent," never
   "bypassed."
 - 1T1R: 20F², transistor-gated, faster, sneak-path-free. 1S1R: 4F² (~5x denser),
   selector-gated, slower access. Neither dominates - compared head-to-head on
@@ -30,15 +32,14 @@ book's fix tracker - a separate, personal prep artifact.
   papers (Upton et al., ESSCIRC 2023; Levy et al., IEEE JSSC 2024).
 
 ## Round 2 - Headline results
-- Latency: close (1.3–1.7x) on compute-bound GCC; far (4.6x) on the
+- Latency: close (1.5x, 136 vs 90 ns) on compute-bound GCC (1S1R SLC costs a further 1.3–1.7x over 1T1R across the suite); far (4.6x) on the
   highest-parallelism workload (GPT-2 inference). Caveat every time: 4.6x is a
   memory-latency ratio, not an application-level slowdown. Never say "faster than
   DDR5" - ReRAM is always somewhat slower than DDR5; the "faster" claim is against
-  legacy PCM (49x under compute-bound GCC), a different baseline entirely.
+  legacy PCM (47x under compute-bound GCC), a different baseline entirely.
 - Power: leakage is the dominant story, not its absence - 97% static for 1S1R,
-  99.99% static for 1T1R ("Static Leakage Dominance," the book's named headline
-  finding). "Zero refresh" is the separate, correct claim: DDR5 spends 44.7% of its
-  GCC power on refresh alone; ReRAM (non-volatile) spends none.
+  99.98% static for 1T1R ("Static Leakage Dominance," the book's named headline
+  finding). "Zero refresh" is the separate, correct claim: DDR5 spends 46.6% of its GCC power on refresh alone (44.7% before idle-gating shrank its total); ReRAM (non-volatile) spends none.
 - Power is nearly workload-*independent* (1.12W→1.23W, ~10% swing across the whole
   suite) because leakage swamps dynamic energy. What differs is technology: 1T1R
   ~50.9W tier vs. 1S1R ~1.12–1.30W tier - a 47x device-level leakage gap
@@ -46,10 +47,9 @@ book's fix tracker - a separate, personal prep artifact.
   significant figures; no external paper independently confirms the exact
   magnitude, but the direction (selectors eliminate transistor leakage) is field
   consensus.
-- State both ends of the power comparison, never just one: 1.7x DDR5 at the
-  conservative calibration floor, within 11% of parity at the favorable ceiling -
+- State both ends of the power comparison, never just one: 1.8x DDR5 at the restored, real 0.623 W floor, within 11% of parity at the favorable ceiling -
   both ends of the DDR5 band are vendor spec currents, not measured typicals.
-- Endurance: 8GB worst-case streaming (LBM) → 1.1 years; 64–128GB → 9–17 years;
+- Endurance: 8GB worst-case streaming (LBM) → 1.09 years (1.1); 64–128GB → 9–17 years;
   every other workload clears the target 2x–100x+ even at 8GB.
 
 ## Round 3 - Defense of the four disclosed limitations
@@ -57,22 +57,17 @@ book's fix tracker - a separate, personal prep artifact.
   device number exactly, 0.0% anchor error) - never checked against real fabricated
   ReRAM hardware, because none exists. Device-level physics is real/published;
   system-level DIMM behavior is 100% simulated. Keep those two claims separate.
-- **Idle-gating / power parity**: idle-gating is a power-*saving policy*, not "static
-  power" itself - currently un-simulatable (NVMain's power-down state machine is
-  disabled in source, a tool limitation). The comparison asymmetry cuts **both
-  ways** (DDR5 also has unexercised power-down states) - the one truly one-sided,
+- **Idle-gating / power parity**: idle-gating is a power-*saving policy*, not "static power" itself. *Superseded 2026-09-05:* it is no longer un-simulatable - NVMain's power-down state machine is restored for every technology. DDR5 now realizes real savings (0.651 → 0.623 W); ReRAM's power-down energy is a no-savings placeholder because no real ReRAM gating characterization exists; PCM shows no power-down activity. So DDR5's power-down states are exercised now, and the asymmetry no longer cuts both ways - the one truly one-sided,
   physical asymmetry: DRAM must keep refreshing to retain data even when idle;
   gated non-volatile ReRAM retains data at zero power. Real-world gated ReRAM would
   very likely beat these worst-case numbers - bounding arithmetic (grounded in
   Malladi et al.'s real Microsoft Bing/Cosmos idle-time measurements, already
-  cited) shows break-even with DDR5 needs only 43% idle-gating captured (10%
-  against the vendor ceiling); a plausible 90%-idle capture would land ~0.14W, 4.5x
-  *below* DDR5. Say "the arithmetic suggests X, pending actual simulation," never
+  cited) shows break-even with DDR5's restored floor needs 46% idle-gating captured (10% against the vendor ceiling); a plausible 90%-idle capture would land ~0.14W, 4.3x *below* DDR5. Say "the arithmetic suggests X, pending actual simulation," never
   "we showed X." The datacenter-workload citation already exists - it is not a
-  future-work gap. What's actually future work: simulating an actual gating policy.
+  future-work gap. What's actually future work: a real ReRAM power-gating characterization (what fraction of leakage is gatable, at what entry/exit cost) - the mechanism itself is already simulated.
 - **Endurance hot-spot bound**: a 2x hot-spot factor halves every SLC figure - 128GB
   still clears the server target even halved (8.7yr 1T1R / 12.4yr 1S1R); 64GB drops
-  to the target's lower edge (4.3–6.2yr). MLC is separately bad at any capacity
+  to the target's lower edge (4.4–6.2yr). MLC is separately bad at any capacity
   (0.39–0.65yr at its own 16GB physical size, marginal even at 128GB) - an
   independent argument to restrict MLC to read-dominant use.
 - **Trace fidelity**: cache-less/first-10M-instruction capture is a *safe,
@@ -89,10 +84,17 @@ book's fix tracker - a separate, personal prep artifact.
   correction" - every technology now admits the identical request population per
   workload for 5 of 6 workloads. LBM (streaming) is deliberately the one
   service-limited exception, disclosed as a genuine throughput finding: of an
-  identical 16,447,102-request admission, DDR5 completes 100%, 1T1R SLC 40.0%,
-  1S1R SLC 28.0%, PCM 3.9%.
+  identical 16,447,102-request admission, DDR5 completes 100%, 1T1R SLC 39.8%, 1S1R SLC 28.0%, 1T1R MLC 22.4%, 1S1R MLC 13.5%, PCM 3.9% (idle-gating re-run).
 
 ## Round 4 - What's next
+
+> *Superseded 2026-09-05/06:* Power-Down Restoration below is **done**. The current top
+> priority (book §4.1, deck Future Work 1/2) is sourcing a real ReRAM power-gating
+> characterization, paired with an Interface Parity evaluation in the same 3 months. The
+> "memory controller queue-depth analysis (Flatline Paradox)" item is also resolved (T4-11:
+> an address-footprint effect, not queueing) and has left future work. Two new items: a
+> larger full-model AI-inference trace, and re-running the chip-count matrix under restored
+> idle-gating.
 
 - Headline answer to "what's next": **Power-Down Restoration** - the book's own
   named "single highest-leverage item." Restore NVMain's disabled power-down state

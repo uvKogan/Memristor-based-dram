@@ -1,6 +1,6 @@
 # Reference Guide — MBMM Project Book
 
-A quick-reference summary of all 41 sources cited in `Project_Book.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts.
+A quick-reference summary of all 44 sources cited in `Project_Book.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts.
 
 The book's MLC penalty multipliers are: **1.5x read latency, 3.263x write latency, 1.1x read energy, 3.0x write energy** (2 bits/cell vs. 1 bit/cell), all sourced from the EMBER macro's two publications, [6] and [31] below.
 
@@ -154,6 +154,15 @@ The parallel evaluation for the competing NVM: unmodified STT-RAM main memory is
 
 **[41] Y. Choi et al., "A 20nm 1.8V 8Gb PRAM with 40MB/s Program Bandwidth," ISSCC 2012**
 Added 2026-09-01 to close a citation gap found during meeting prep: the book's PCM baseline (§2.3) is named for Lee et al. [11]'s architectural framing, but PCM was never run through this project's own NVSim pipeline — its actual timing/energy numbers are inherited unmodified from NVMain's bundled `pcm_microsoft_2009.config`, whose own header comment attributes those specific numbers to this Samsung ISSCC 2012 PRAM paper, not to Lee et al. [11] is the "why PCM as a DRAM alternative" citation; [41] is the "where these specific numbers came from" citation — different questions, both now answered. Verified via web search (IEEE Xplore, pp. 46-48); not independently re-derived or checked against the paper's own tables.
+
+**[42] D. Kau et al., "A Stackable Cross Point Phase Change Memory," IEDM 2009**
+Added 2026-09-05 (Shahar-notes items 1, 3&9): Intel/Numonyx's own device paper confirming that the shipped PCM product line (3D XPoint/Optane) is a selector-gated 1S1R cross-point design - an Ovonic Threshold Switch in series with the phase-change element, no access transistor. Cited in §2.3 to separate that real architecture from the book's PCM baseline, which specifies no access device at all. pp. 617-620, DOI 10.1109/IEDM.2009.5424263.
+
+**[43] International Technology Roadmap for Semiconductors, 2011 Edition, PIDS chapter**
+Added 2026-09-05 (Shahar-notes item 6): the 22nm Low Operating Power logic subthreshold-leakage design target (5 nA/µm), one of two independent sources for the transistor side of the 47x leakage ratio. Cited in Appendix A ("Access-Device Leakage Model"). A roadmap target, not a measurement - [44] supplies the measured counterpart.
+
+**[44] C. Auth et al., "A 22nm High Performance and Low-Power CMOS Technology Featuring Fully-Depleted Tri-Gate Transistors, Self-Aligned Contacts and High Density MIM Capacitors," VLSI Technology 2012**
+Added 2026-09-05 (Shahar-notes item 6): Intel's measured off-state leakage on fabricated 22nm FinFET silicon, 5-20 nA/µm for the mid-power variant. [43]'s 5 nA/µm LOP target sits inside this measured band, so the transistor-leakage input is corroborated by real silicon. Cited in Appendix A. Corroborating evidence, not a re-derivation of NVSim's internal constant (NVSim [3] itself was not accessible to confirm it). pp. 131-132.
 
 ---
 

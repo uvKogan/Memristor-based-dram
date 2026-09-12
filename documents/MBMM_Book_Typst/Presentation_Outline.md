@@ -11,7 +11,7 @@ gating-parity claim or the streaming comparison uses the *honest* framing
 from `Presentation_Fixes_Tracker.md`. As of 2026-08-23 the book has been
 updated to match (gating parity reworded as a projection contingent on
 unmodeled gating in Abstract/§3.3/Table 7/Conclusion; streaming claim
-scoped to compute-bound with the 1.9-2.1x penalty disclosed) - book and
+scoped to compute-bound with the streaming penalty disclosed - 1.7-2.0x as of the 2026-09-12 realignment; the earlier 1.9-2.1x predated the DDR5 timing fix) - book and
 talk now say the same thing. Canonical fix status lives in
 `Review_Fixes_Tracker.md`.
 
@@ -196,7 +196,7 @@ ReRAM replace DDR5 in a commodity DIMM?"
 **Slide 11 - The Bridge, in parameters**
 - On-slide: two-column list - NVSim output (Table 1) [3]: read/write
   latency (ns), read/write energy (nJ), leakage (mW/chip), die area
-  (mm²), capacity · NVMain input (Appendix B) [4]: tCAS/tRCD/tRP
+  (mm²), capacity · NVMain input (Sections 2.1, 3.1.6) [4]: tCAS/tRCD/tRP
   (cycles), Erd/Ewr (nJ/access), Eactstdby/Eprestdby (nJ/cycle),
   ROWS/COLS/RANKS/BANKS
 - Say: this is what "the bridge" does at the field level - unit and
@@ -230,19 +230,15 @@ ReRAM replace DDR5 in a commodity DIMM?"
 
 **Slide 14 - I audited my own toolchain**
 - On-slide: "14 silent failure modes found in the standard NVSim→NVMain
-  flow; 12 repaired and validated" - 4 bullets, each an issue → fix pair:
+  flow; 13 repaired and validated" - 4 bullets, each an issue → fix pair:
   leakage/access-energy silently ignored → wired into the power model
   (this is what the 47x leakage gap and 1.12 W rest on) · DDR5's
   refresh timing/supply inherited unscaled from a DDR3-1333 template →
   corrected to real DDR5-4800 JEDEC values · ReRAM's MLC multipliers
   unsourced ("EMBER heuristics" not in the cited paper) → re-sourced to
-  Upton et al. [6] / Levy et al. [31], re-derived · idle power-down
-  still disabled in NVMain's source → found and documented, NOT yet
-  fixed (explicitly flagged as still-open, ties to the top-priority
-  future-work item)
+  Upton et al. [6] / Levy et al. [31], re-derived · idle power-down disabled in NVMain's source → restored for every technology (DDR5 realizes real savings, 0.651 → 0.623 W; ReRAM's power-down energy is a disclosed no-savings placeholder)
 - Say: this is a genuine strength - present it as rigor, not confession.
-  Twelve of fourteen are fixed and re-validated; the two still open
-  (idle power-down, trace provenance) are disclosed, not hidden.
+  Thirteen of fourteen are fixed and re-validated; the one still open (trace provenance) is disclosed, not hidden.
 - 2026-09-02 (Lead-caught, two fixes): (1) title was "We Audited Our Own
   Toolchain" - plural voice, inconsistent with this being single-author
   work (confirmed the book itself is 100% first-person "I" throughout,
@@ -274,7 +270,7 @@ ReRAM replace DDR5 in a commodity DIMM?"
 **Slide 16 - Assumptions that shape every result that follows**
 - On-slide: 4 bullets - gem5 traces are uncached (max memory pressure) ·
   GPT-2 trace provenance unverified · DDR5 power = datasheet spec-limit,
-  not typical · ReRAM power = worst-case, gating not yet simulated
+  not typical · ReRAM power = no gating benefit claimed (power-down runs in simulation, placeholder energy)
 - Say: read every number in the next 25 minutes through this lens - this
   slide is the fix for "caveats surfacing too late."
 
@@ -285,16 +281,13 @@ ReRAM replace DDR5 in a commodity DIMM?"
 ### Latency (4 slides)
 **Slide 17 - Compute-bound: the closest gap**
 `results/slide_graphs/15_latency_gcc.png`
-- On-slide: 1T1R SLC 131 ns vs DDR5 87 ns - 1.5x, smallest gap in
-  the suite
+- On-slide: 1T1R SLC 136 ns vs DDR5 90 ns - 1.5x, smallest gap in the suite (Table 7)
 
 **Slide 18 - Streaming: the honest number**
 `results/slide_graphs/16_streaming_honest.png`
-- On-slide: STREAM latency (DDR5/1T1R SLC/1S1R SLC, 1.9-2.1x DDR5) next
-  to LBM completion rate (100% → 40% → 28% → 16% → 9% → 4%)
+- On-slide: STREAM latency (DDR5/1T1R SLC/1S1R SLC; 1T1R SLC is 1.7-2.0x DDR5 across LBM and STREAM) next to LBM completion rate (100% → 39.8% → 28.0% → 22.4% → 13.5% → 3.9%, idle-gating re-run)
 - Say: the book was updated 2026-08-23 to match this framing
-  (compute-bound, streaming penalty disclosed) - the completion panel is the point: 1T1R only finishes 40% of
-  what DDR5 finishes in the same window, so the reported latency ratio
+  (compute-bound, streaming penalty disclosed) - the completion panel is the point: 1T1R only finishes 39.8% of what DDR5 finishes in the same window, so the reported latency ratio
   understates the real gap. Streaming is the weakest regime, say so
   plainly.
 - 2026-09-02 (Lead-caught): "the same window" was never defined anywhere
@@ -305,7 +298,7 @@ ReRAM replace DDR5 in a commodity DIMM?"
 
 **Slide 19 - AI inference: DDR5 wins**
 `results/slide_graphs/17_latency_gpt2.png`
-- On-slide: 4.6x DDR5 under GPT-2 parallel read-storm; small-print
+- On-slide: 4.6x DDR5 under GPT-2 parallel read-storm - a memory-latency ratio under cache-less traces, not an application slowdown; small-print
   caveat baked into the chart footnote: GPT-2 trace provenance
   unverified, treat as representative stress pattern
 - Say: no hedging - DDR5 territory today for high-parallelism serving.
@@ -320,8 +313,7 @@ ReRAM replace DDR5 in a commodity DIMM?"
 `results/slide_graphs/19_device_leakage.png`
 - On-slide: device-level leakage, 1T1R 795 mW/chip vs 1S1R 17 mW/chip
   [3] - the single number that decides everything downstream. Added:
-  DDR5 standby floor (~358 mW, whole-module vendor spec, not
-  like-for-like) alongside it for scale.
+  DDR5 standby/power-down floor (~332 mW, 53% of its restored 0.623 W; whole-module vendor spec, not like-for-like). Both leakage inputs cited: selector [7], transistor ITRS 2011 [43] + Intel 22nm silicon [44] alongside it for scale.
 - Say: this comes straight out of NVSim's own transistor-vs-selector
   access-device model (Dong et al., IEEE TCAD 2012 [3]) at 22nm FinFET
   LOP - before any workload is simulated. A dedicated sweep confirms
@@ -331,13 +323,11 @@ ReRAM replace DDR5 in a commodity DIMM?"
 
 **Slide 22 - Full-module power**
 `results/slide_graphs/20_module_power.png`
-- On-slide: 1T1R 50.9 W (infeasible) · 1S1R 1.12 W · DDR5 0.651 W ·
-  PCM 0.040 W
+- On-slide: 1T1R 50.9 W (infeasible) · 1S1R 1.12 W · DDR5 0.623 W (real, gated) · PCM 0.040 W (no power-down activity) · ReRAM power-down fires on 86-89% of cycle-slots, no savings claimed
 
 **Slide 23 - Power-Delay Product**
 `results/slide_graphs/21_pdp_geomean.png`
-- On-slide: 1S1R beats 1T1R by ~29-31x; DDR5 still ~3.7-5x ahead of
-  ungated 1S1R
+- On-slide: 1S1R SLC beats 1T1R SLC by 29x on geo-mean (32x under GCC); DDR5 leads 1S1R SLC ~7x on geo-mean (103 vs 738 W·ns), 3.8x under GCC, 4.5-5.2x under streaming
 
 ### Scaling (2 slides)
 **Slide 24 - Compute-bound scaling: a real, modest gain** (retitled
@@ -346,9 +336,7 @@ ReRAM replace DDR5 in a commodity DIMM?"
 - On-slide: GCC (1T1R SLC) latency improves ~14% from 1-chip to full
   DIMM (152.6 -> 130.9 ns, `results/system_v6/processed_pareto_metrics.csv`)
   - a real gain, not zero. Linear leakage cost still applies alongside it.
-- Say: the opposite of what the "low-MLP, no scaling benefit" theory
-  predicts - flagged as an open question, next-step work on the book,
-  not resolved here.
+- Say: root-caused (2026-09-05) - GCC's ~51 MB trace spans many 64 KB rank spans, so added ranks genuinely help; an address-footprint effect, not MLP (book §3.2, Appendix A). Chip-count trajectories come from the pre-restoration matrix (book §3.2 dataset note).
 - 2026-09-02 (Lead-caught, major finding): the Lead independently
   observed while looking at the live deck that this chart visually shows
   latency DECREASING as chip count increases, contradicting the "zero
@@ -376,9 +364,7 @@ was "Breaking the flatline")
   CSV). AlexNet IFMAP is nearly as flat (394.7 -> 397.4 ns). The two
   highest-parallelism (highest-MLP) workloads in the whole suite show
   NO scaling benefit at all - the opposite of the book's MLP theory.
-- Say: this directly contradicts the MLP-driven explanation as
-  originally written - flagged as the top open item for the next book
-  revision, not resolved yet.
+- Say: root-caused (2026-09-05) - GPT-2 IFMAP's ~64.0 KB footprint never leaves rank 0; an address-footprint artifact of single-layer captures, not MLP (book §3.2, Appendix A). A full-model AI trace is future work.
 - 2026-09-02 (Lead-caught, same finding as Slide 24): same root cause
   and same disposition - deck wording corrected to the verified data,
   root-cause explanation deferred to future book work, chart PNG's own
@@ -412,7 +398,7 @@ was "Breaking the flatline")
   this slide's on-slide bullets previously stopped at 64 GB (~9 yr),
   leaving 128 GB mentioned only in the speaker note (not visible during
   a presentation). Added the 128 GB figure (~17 yr, matching the
-  summary table's 17.3 yr for 1T1R SLC, both sourced from
+  summary table's 17.3 yr for 1T1R SLC (17.4 yr since the 2026-09-12 realignment to the idle-gating re-run), both sourced from
   `Project_Book.typ`'s "9-17 years" range) to the visible bullet so the
   summary slide's column header doesn't introduce a new number with no
   visible setup. (Since fixed for real, same session: the chart PNG was
@@ -422,8 +408,8 @@ was "Breaking the flatline")
   missing 128 GB bar is stale/outdated as of that fix.)
 - On-slide (2026-09-05, Shahar-notes item 8): added a lede showing the
   actual endurance calculation worked out (134.2M cache-line locations ×
-  10⁷ rated cycles ≈ 1.34×10¹⁵ total writes ÷ LBM's ~39.2M writes/s
-  annualized ≈ 1.08 yr at 8 GB) instead of only stating the conclusion -
+  10⁷ rated cycles ≈ 1.34×10¹⁵ total writes ÷ LBM's ~39.1M writes/s
+  annualized ≈ 1.09 yr at 8 GB, from 3,257,597 LBM writes ≈ 39.1M writes/s in the idle-gating re-run) instead of only stating the conclusion -
   answers Shahar's "show calculations" request directly. First version
   overflowed the slide (equation + full speaker note together); fixed by
   trimming the speaker note, which was largely redundant once the math
@@ -436,43 +422,39 @@ was "Breaking the flatline")
 ### The flagship claim - reframed (3 slides, the most important section)
 **Slide 29 - Where this stands today** *(number callouts, no chart)*
 - On-slide, three big stat callouts:
-  - **1.12 W** - 1S1R SLC, full module, ungated
-  - **0.651 W** - DDR5-4800, conservative calibration floor
-  - **1.7x** - the gap, today, with zero gating credit taken
+  - **1.12 W** - 1S1R SLC, full module, no gating benefit claimed
+  - **0.623 W** - DDR5-4800, restored idle-gating floor
+  - **1.8x** - the gap, today, with zero ReRAM gating credit taken (DDR5's is real)
   - (small print) at DDR5's spec-limit ceiling (1.008 W) the gap narrows
     to 1.11x - a secondary bound, not the headline
 - Say: this is the honest baseline number - no gating credit taken yet.
 
 **Slide 30 - The path to parity (explicitly unsimulated)** *(number
 callouts + badge, no chart)*
-- On-slide, prominent badge: "NOT YET SIMULATED - TOP FUTURE-WORK ITEM"
-  - **43%** idle time needed to break even with DDR5's floor
+- On-slide, prominent badge: "Mechanism restored (DDR5 real) - ReRAM side still a projection"
+  - **46%** idle time needed to break even with DDR5's restored 0.623 W floor
   - **90%** idle time (plausible for web-serving deployments, per
-    published Bing/Cosmos utilization data) → ~0.14 W, ~4.5x below the
-    DDR5 floor
+    published Bing/Cosmos utilization data) → ~0.14 W, ~4.3x below DDR5's restored floor
   - Both numbers are back-of-envelope arithmetic on measured static
-    power, not a simulated gating policy
+    power, not a simulated ReRAM gating benefit
 - Say: name this as a projection out loud. Advisors respect "here's what
   I haven't shown yet" far more than an unlabeled leap.
 
 **Slide 31 - Summary table** *(table, no chart)*
-- On-slide footnote added: "*128 GB lifetime is a linear-scaling
-  projection from the physically simulated 8 GB (SLC) / 16 GB (MLC)
+- On-slide footnote added: "*Worst-case LBM lifetime, uniform wear leveling, SLC 10⁷ / MLC 10⁶ cycles. 128 GB lifetime is a linear-scaling projection from the physically simulated 8 GB (SLC) / 16 GB (MLC)
   capacity - no 64 GB or 128 GB configuration was separately built or
   run."
 
 | Technology | GCC latency | Power | Geo-mean PDP | Density (×DDR5) | Lifetime @128GB* | Role |
 |---|---|---|---|---|---|---|
-| DDR5-4800 | 87 ns | 0.651 W | 104 | 1.00 | n/a (volatile) | commodity baseline |
-| PCM | 6,399 ns | 0.040 W | 165 | 1.25 | not evaluated | floor-power niche, 4-49x latency cost |
-| 1T1R SLC | 131 ns | 50.9 W | 21,351 | 0.22 | 17.3 yr | latency-only niche, infeasible ungated |
-| **1S1R SLC** | 190 ns | 1.12 W | 737 | 1.92 | 24.8 yr | **highest-potential candidate - power parity contingent on future gating work** |
-| 1T1R MLC | 183 ns | 50.9 W | 32,567 | 0.44 | 3.1 yr | infeasible ungated |
-| 1S1R MLC | 289 ns | 1.13 W | 1,222 | 3.84 | 5.2 yr | read-only capacity tier (frozen weights) |
+| DDR5-4800 | 90 ns | 0.623 W (46.6% refresh) | 103 | 1.00 | n/a (volatile) | commodity baseline (idle-gating restored) |
+| PCM | 6,404 ns | 0.040 W | 165 | 1.25 | not evaluated | floor-power NVM, 4-47x latency cost |
+| 1T1R SLC | 136 ns | 50.9 W | 21,508 | 0.22 | 17.4 yr | latency-only niche, infeasible even power-gated |
+| **1S1R SLC** | 192 ns | 1.12 W | 738 | 1.92 | 24.8 yr | **flagship - parity contingent on real ReRAM power-gating characterization** |
+| 1T1R MLC | 185 ns | 50.9 W | 32,633 | 0.44 | 3.1 yr | infeasible even power-gated |
+| 1S1R MLC | 287 ns | 1.13 W | 1,221 | 3.84 | 5.2 yr | read-only capacity tier (frozen weights) |
 
-- Say: this is the whole evaluation on one slide. Note the 1S1R SLC role
-  wording deliberately does not say "flagship, one policy from parity" -
-  that's the book's current wording, and it's what's changing.
+- Say: this is the whole evaluation on one slide. The 1S1R SLC role matches the book's Table 7: flagship, but parity is contingent on a real ReRAM power-gating characterization - never "one policy from parity."
 
 ---
 
@@ -484,10 +466,7 @@ callouts + badge, no chart)*
   reusable beyond this project's own numbers
 
 **Slide 33 - The one-sentence takeaway**
-- On-slide: "1S1R ReRAM is latency-competitive and density-superior for
-  compute-bound and moderate workloads today, with a credible but
-  unproven path to power parity via idle-gating; 1T1R is a latency-only
-  niche; AI-inference serving stays DDR5 territory for now."
+- On-slide: "1S1R ReRAM is latency-competitive for compute-bound work and density-superior today - with a credible, unproven path to power parity, contingent on real ReRAM power-gating data." Lede: "Sustained streaming: within a disclosed 1.7-2.0x of DDR5. 1T1R: a latency-only niche. High-parallelism AI serving: DDR5 territory, for now."
 
 ---
 
@@ -522,8 +501,7 @@ callouts + badge, no chart)*
   node scaling + 3D deck stacking · endurance-aware wear-leveling) →
   **Model fidelity** (Native MLC Logic - resolve NVSim's Mat.cpp
   floating-point exception · PCM's zero power-down activity, not yet
-  root-caused · ReadVoltage/WritePulseWidth parameter-optimization
-  sweep) → **Validation** (standalone device-to-system simulator
+  root-caused · ReadVoltage/WritePulseWidth parameter-optimization sweep · a larger, full-model AI-inference trace · re-running the single/8/16-chip matrix under restored idle-gating) → **Validation** (standalone device-to-system simulator
   wrapper - generalizing "The Bridge," idea originated in discussion
   with the HW/SW co-design course tutor · FPGA-based hardware-in-the-
   loop validation of the idle-gating policy, closes the internal-only
@@ -544,8 +522,8 @@ callouts + badge, no chart)*
 
 ## Backup slides (prepare, don't present unless asked)
 
-- Full 14-item fidelity audit list
-- ReadVoltage sensitivity sweep (±20%, PDP change <4%)
+- Full 14-item fidelity audit list, numbered as in book §3.1.6 with each item's status (13 repaired; item 6, trace provenance, still open)
+- ReadVoltage sensitivity sweep (±20%, PDP change <4%; the sweep predates the power-model repair, and with the 1T1R SLC module now 99.98% static the insensitivity holds a fortiori)
 - Worst-case-stacking explanation (DDR5 spec-limit vs typical - confirmed
   no typical figure exists in any datasheet checked; ReRAM's power-down
   mechanism now live but an honest zero-savings placeholder; DDR5 now
@@ -555,8 +533,7 @@ callouts + badge, no chart)*
 - References Used on the Slides: resolves every [N] bracket now appearing
   on main slides (47x-fact, SLC/MLC, Bridge-in-parameters, Where This
   Sits) - [3] NVSim, [4] NVMain, [6]/[31] EMBER, [7] resistance targets,
-  [33] recessed-channel, [32] Optane real-hardware anchor point (added
-  2026-09-09 alongside the Where This Sits slide's new Optane bullet)
+  [33] recessed-channel, [32] Optane real-hardware anchor point (added 2026-09-09 alongside the Where This Sits slide's new Optane bullet), plus (2026-09-12) [10] JESD79-5D, [11] Lee et al., [14]/[15] endurance targets, [41] Choi et al., [42] Kau et al., [43] ITRS 2011, [44] Auth et al.
 - 2026-09-02 (Lead-caught): both the "Full 14-item fidelity audit" list
   and "References Used on the Slides" (grown to 10 and 9 items
   respectively as items were added over this session) overflowed the
@@ -572,17 +549,12 @@ callouts + badge, no chart)*
   2026-09-02 for the Shahar meeting specifically (not backup-only in
   spirit - usable to open the meeting or answer "what changed" if asked
   first): (1) since `MBMM Project Book UPDATED.docx` (last version
-  presented) - fidelity audit deepened 11/9 found/repaired to 14/12, the
+  presented) - fidelity audit deepened 11/9 found/repaired to 14/13, the
   DDR5 CAS-RCD-RP timing and ReRAM MLC-multiplier fixes, new Section 1.3
-  Related Work, references 30->44, 128GB 1T1R SLC lifetime 24.4->17.3yr,
-  headline verdict unchanged; (2) since the SysTOR poster - the poster's
-  numbers held up under re-verification (2.3x latency, ~25yr@128GB both
-  match), what's new is the explicit measured-vs-projected disclosure
+  Related Work, references 30->44, 128GB 1T1R SLC lifetime 24.4->17.4yr,
+  headline verdict unchanged; (2) since the SysTOR poster - the poster's numbers held up under re-verification (~25yr@128GB matches; the 2.3x latency is now 2.1x, 192.3/90.2 ns, because DDR5 slowed with its real 40-39-39 timing and restored idle-gating), what's new is the explicit measured-vs-projected disclosure
   layer (only 8/16GB was ever physically simulated) and the audit
-  narrative growing from the poster's implicit lineage to a documented
-  14/12. Exact positions: Slide 49 (divider), Slide 50 (Backup 1/2,
-  Since the Last Book Version), Slide 51 (Backup 2/2, Since the SysTOR
-  Poster).
+  narrative growing from the poster's implicit lineage to a documented 14/13. Positions (2026-09-12): the last four slides - divider, Backup 1/3 Since the 3 September Review, Backup 2/3 Since the Last Book Version, Backup 3/3 Since the SysTOR Poster.
 - 2026-09-02 (Lead-caught): Slides 50 and 51 each originally carried an
   intro/closing lede, 5 long multi-clause bullets, and a 3-4 sentence
   speaker note - genuinely overflowed the fixed slide height (title
@@ -656,3 +628,21 @@ Slide 9 pipeline diagram and Slide 10 numbers-at-a-glance slide are both
 built directly in the deck (HTML/CSS, no chart script) as of the T4-2
 meeting-prep pass. Slide 7's cast-of-characters table was already a
 real table, not a placeholder.
+
+## 2026-09-12 additions: book/deck realignment after the idle-gating re-run
+
+A full read of `Project_Book.typ` against every slide found the published deck stale (pre-2026-09-02
+title slide) and several numbers that the 2026-09-05 idle-gating pass had updated in Tables 3/4/7 but
+not elsewhere. Everything above now matches the book. The main changes:
+
+- **Audit count:** 13 of 14 repaired (item 5 restored); only item 6, trace provenance, stays open. The
+  "Full Fidelity Audit" backup slide now lists all 14 items with status.
+- **Post-restoration latency everywhere:** GCC 136 vs 90 ns (1.51x), PCM 47x slower than 1T1R SLC
+  (was 49x), streaming penalty 1.7-2.0x (was 1.9-2.1x, which predated the DDR5 timing fix).
+- **LBM completion and endurance from the re-run's stats:** 39.8/28.0/22.4/13.5/3.9% (the earlier MLC
+  16.3/9.3% were stale); 1T1R SLC LBM 3,257,597 writes, 1.09 yr at 8 GB, 17.4 yr at 128 GB. Chart
+  26 now reproduces Table 5 exactly (365-day year, exact write counts).
+- **Power/PDP wording:** 332 mW DDR5 standby floor, 46.6% refresh share, geo-mean PDP ratios 29x and ~7x.
+- **New backup slide:** "Since the 3 September Review" (8 items, each with its book section).
+- **Future work:** larger full-model AI trace; chip-count matrix re-run under restored idle-gating.
+- **Charts regenerated** from live data: 16 (completion), 21 (PDP label no longer clipped), 26 (endurance).

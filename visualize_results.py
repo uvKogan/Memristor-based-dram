@@ -43,8 +43,8 @@ METRICS_FILE = "/home/yuvalk/MBMM/results/processed_bar_chart_metrics.csv"
 # Pareto, whose existing single-line footnote was measured to already fit within
 # its axes bounds (924px vs 1380px) and so was left untouched per the v3 scope.
 STANDARD_FOOTNOTE = (
-    'Full-DIMM module sums; ReRAM worst-case ungated (NVMain power-down disabled in source).\n'
-    'DRAM/PCM baselines model standard idle behavior. MBMM pipeline: NVSim→NVMain, 200M cycles.'
+    'Full-DIMM module sums; 83.33 ms matched-host window. DDR5 idle-gating savings are real.\n'
+    'ReRAM power-down energy: no-savings placeholder. PCM: no power-down activity. NVSim→NVMain.'
 )
 
 # Technology order for the v3 two-panel power breakdown chart only (groups SLC/MLC
@@ -262,8 +262,8 @@ def generate_bar_charts(df):
                     fontsize=14, fontweight='bold', pad=15)
 
         fig.text(0.99, 0.01,
-                'Workload executed on 64-chip (16GB) Full DIMM configuration. '
-                'DDR5 @ 2400 MHz; ReRAM/PCM @ 800 MHz.',
+                'Full DIMM, 64 chips (8 GB SLC / 16 GB MLC). '
+                'Clocks: DDR5 2400 MHz; ReRAM 800 MHz; PCM 400 MHz.',
                 ha='right', va='bottom', fontsize=9, style='italic', color='gray')
         ax.set_xticks(bars_x)
         ax.set_xticklabels(display_techs, rotation=45, ha='right', fontsize=10)

@@ -34,8 +34,8 @@ GEOMETRIC_MEANS_FILE = "/home/yuvalk/MBMM/results/processed_geometric_means.csv"
 # see the matching fix in visualize_results.py for the pixel measurements that
 # established this bug across the power/PDP/hero-PDP figure families.
 STANDARD_FOOTNOTE = (
-    'Full-DIMM module sums; ReRAM worst-case ungated (NVMain power-down disabled in source).\n'
-    'DRAM/PCM baselines model standard idle behavior. MBMM pipeline: NVSim→NVMain, 200M cycles.'
+    'Full-DIMM module sums; 83.33 ms matched-host window. DDR5 idle-gating savings are real.\n'
+    'ReRAM power-down energy: no-savings placeholder. PCM: no power-down activity. NVSim→NVMain.'
 )
 
 # Gold Master color palette (exact hex codes)
