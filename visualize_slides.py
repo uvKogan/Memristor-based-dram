@@ -167,16 +167,17 @@ def slide_streaming_honest(df):
     stream_vals = [bench_row(df, 'stream', t)['Latency_ns'] for t in stream_techs]
 
     # Right panel: LBM completion % out of the identical 16,447,102-request
-    # admission (results/cycle8_matched_host_report.md, admission/completion
-    # table) — the same matched-host correction Project_Book.typ Section
-    # 3.1.6 item 11 documents. Hardcoded here because it is a raw
-    # admission/completion count, not a column in any processed_*.csv.
+    # admission (Project_Book.typ Section 3.1.1 / 3.1.6 item 11). Completed =
+    # mem_reads + mem_writes summed over every channel in
+    # results/system/stats_*_lbm_spec2017.out (idle-gating-restored re-run,
+    # 2026-09-05). Hardcoded here because it is a raw completion count, not a
+    # column in any processed_*.csv.
     completion_pct = {
         'DDR5_4800': 100.00,
-        '1T1R_SLC': 39.97,
-        '1S1R_SLC': 27.99,
-        '1T1R_MLC': 16.27,
-        '1S1R_MLC': 9.35,
+        '1T1R_SLC': 39.83,
+        '1S1R_SLC': 28.05,
+        '1T1R_MLC': 22.41,
+        '1S1R_MLC': 13.48,
         'pcm_microsoft_2009': 3.90,
     }
     comp_vals = [completion_pct[t] for t in techs]
@@ -313,7 +314,7 @@ def slide_pdp_geomean(geomeans):
     ax.set_yscale('log')
     ax.set_xticks(range(len(techs)))
     ax.set_xticklabels(_labels(techs), rotation=15, ha='right')
-    ax.set_ylabel('Geometric-mean PDP (W·ns), log scale — lower is better')
+    ax.set_ylabel('Geo-mean PDP (W·ns, log) - lower is better')
     ax.set_title('Overall efficiency: 1S1R closes most of the ReRAM gap')
     ax.grid(axis='y', which='both', alpha=0.3)
     _save(fig, "21_pdp_geomean.png",
@@ -459,29 +460,30 @@ def slide_density_projection(hero_df):
 # ============================================================================
 
 def slide_endurance():
-    """Reproduces Project_Book.typ Table 5. Lifetime = (endurance_cycles x
-    cell_count) / write_rate, module-summed, 83.33ms matched-host window.
-    Write rates: results/cycle8_matched_host_report.md endurance-counters
-    table (module-summed LBM writes/sec)."""
-    SECONDS_PER_YEAR = 365.25 * 24 * 3600
+    """Reproduces Project_Book.typ Table 5 exactly. Lifetime = (64-byte line
+    locations x rated SLC cycles) / (writes per 83.33 ms matched-host window,
+    annualized at 31,536,000 s/yr), 1T1R SLC full DIMM, uniform wear leveling.
+    Write counts: mem_writes summed over every channel in
+    results/system/stats_reram_22nm_1t1r_slc_full_dimm_*.out (idle-gating-
+    restored re-run, 2026-09-05)."""
+    SECONDS_PER_YEAR = 365 * 24 * 3600
     SLC_ENDURANCE = 1e7
-    CELLS_8GB = 134_200_000  # 8 GB / 64B line, per Project_Book.typ Section 3.1.4
+    LINES_8GB = 8 * 2**30 // 64  # 134,217,728 line locations (Section 3.1.4)
+    WINDOW_S = 0.25 / 3  # 250M trace cycles at a 3 GHz host = 83.33 ms
 
-    # LBM (worst case) write rates/sec, module-summed, from cycle8 report
-    write_rate_lbm = {
-        '1T1R_SLC': 39_233_764,
-        '1S1R_SLC': 27_414_851,
-    }
-    workloads = {
-        'LBM\n(worst case)': write_rate_lbm['1T1R_SLC'],
-        'GCC': 2.05e6,
-        'STREAM': 1.20e6,
-        'AlexNet\nOFMAP': 0.16e6,
+    workloads = {  # writes completed per matched-host window
+        'LBM\n(worst case)': 3_257_597,
+        'GCC': 170_800,
+        'STREAM': 100_000,
+        'AlexNet\nOFMAP': 13_542,
     }
 
-    def lifetime_years(write_rate, capacity_gb=8):
-        cells = CELLS_8GB * (capacity_gb / 8)
-        return (SLC_ENDURANCE * cells) / write_rate / SECONDS_PER_YEAR
+    def lifetime_years(writes, capacity_gb=8):
+        lines = LINES_8GB * (capacity_gb / 8)
+        return (SLC_ENDURANCE * lines) / (writes / WINDOW_S) / SECONDS_PER_YEAR
+
+    def fmt(v):
+        return f'{v:.2f}y' if v < 2 else (f'{v:.1f}y' if v < 100 else f'{v:,.0f}y')
 
     labels = list(workloads.keys())
     at_8gb = [lifetime_years(r, 8) for r in workloads.values()]
@@ -506,9 +508,9 @@ def slide_endurance():
     ax.grid(axis='y', which='both', alpha=0.3)
 
     for i, (v8, v64, v128) in enumerate(zip(at_8gb, at_64gb, at_128gb)):
-        ax.text(i - width, v8, f'{v8:.1f}y', ha='center', va='bottom', fontsize=10, fontweight='bold')
-        ax.text(i, v64, f'{v64:.0f}y', ha='center', va='bottom', fontsize=10, fontweight='bold')
-        ax.text(i + width, v128, f'{v128:.0f}y', ha='center', va='bottom', fontsize=10, fontweight='bold')
+        ax.text(i - width, v8, fmt(v8), ha='center', va='bottom', fontsize=10, fontweight='bold')
+        ax.text(i, v64, fmt(v64), ha='center', va='bottom', fontsize=10, fontweight='bold')
+        ax.text(i + width, v128, fmt(v128), ha='center', va='bottom', fontsize=10, fontweight='bold')
 
     _save(fig, "26_endurance.png",
           footnote="Assumes ideal uniform wear leveling - no wear-leveling controller implemented in this codebase.")

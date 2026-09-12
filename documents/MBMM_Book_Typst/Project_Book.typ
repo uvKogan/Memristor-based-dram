@@ -30,23 +30,15 @@ DRAM replacement in standard DIMMs. Utilizing a cross-layer pipeline
 bridging NVSim #strong[\[3\]] and NVMain 2.0 #strong[\[4\]], I
 characterize 1T1R (transistor-gated) and 1S1R (selector-gated)
 architectures across six workloads - drawn from five benchmarks, with
-AlexNet split into read-dominant and write-dominant phases - spanning
-compute-bound, memory-streaming, and AI-inference behavior. Under
-bandwidth-saturating workloads with high memory-level parallelism
-(MLP - many independent memory requests in flight at once), multi-rank
-configurations achieve substantial latency reductions through rank-level
-interleaving. However, single-threaded latency-bound workloads exhibit a
-\"Flatline Paradox\": insufficient MLP leaves ranks idle, preventing
-latency or power scaling regardless of chip count.
+AlexNet split into read-dominant and write-dominant phases - spanning compute-bound, memory-streaming, and AI-inference behavior. Multi-rank scaling tracks each trace's address footprint rather than its memory-level parallelism: compute-bound GCC, whose trace spans many ranks, gains \~14% latency from a full DIMM, while the two single-layer AI-inference traces - too small to leave one rank - stay flat (Section 3.2), and every added chip costs linear leakage.
 
 The key quantitative results are: (1) In wall-clock latency, 1T1R SLC
-ReRAM operates within 1.50x of DDR5-4800 under compute-bound workloads -
-where it runs 49x faster than the legacy PCM baseline (13-16x under
+ReRAM operates within 1.51x of DDR5-4800 under compute-bound workloads - where it runs 47x faster than the legacy PCM baseline (13-16x under
 sustained streaming) - while trailing DDR5 by 4.6x under
 high-parallelism AI inference (a memory-latency ratio under the
 cache-less trace capture of Section 2.1, not a projected application
 slowdown); the selector-gated 1S1R SLC follows 1T1R
-at a \~1.5x average-latency cost (1.3-1.7x across the suite) while
+at a \~1.4x average-latency cost (1.3-1.7x across the suite) while
 offering 1.9x DDR5\'s die-level density (3.8x as MLC). (2) Under
 the repaired power model, selector-gated 1S1R ReRAM emerges as a
 credible low-power path past DRAM: a full module draws 1.12 W - 1.8x
@@ -61,7 +53,7 @@ its standby draw, pending real device characterization no literature
 search located (Appendix A), so no simulated power benefit is yet
 claimed for it. Power parity is therefore
 still a projection contingent on that future characterization - bounding arithmetic
-on measured static power, not a simulated result - while DDR5 spends 33-45% of
+on measured static power, not a simulated result - while DDR5 spends 33-47% of
 its module power on refresh it can never shed - a concrete opening for
 gating-capable memory controllers and selector-first DIMM designs. The
 contrast that proves the point: the transistor-gated 1T1R module leaks
@@ -82,11 +74,7 @@ unsourced DDR5 CAS/RCD/RP timing placeholder, and unsourced ReRAM MLC
 read/write latency and energy penalty multipliers attributed to a
 citation that does not support them (later found to include a further,
 independent data error in the MLC read-latency figure, also
-corrected) - of which this work repaired twelve, validating every repair against
-device-level anchors (0.0%
-error) or exact predicted arithmetic, and re-running the affected
-simulations (the DRAM and PCM baselines model standard idle behavior;
-ReRAM figures are worst-case ungated). (3)
+corrected) - of which this work repaired thirteen, validating every repair against device-level anchors (0.0% error) or exact predicted arithmetic, and re-running the affected simulations (with idle-gating restored, DDR5 realizes real power-down savings, ReRAM\'s power-down energy is a disclosed no-savings placeholder, and PCM shows no power-down activity). (3)
 DIMM write endurance scales linearly with module capacity: at the
 modeled 8 GB SLC module, worst-case sustained streaming (LBM) yields 1.1
 years - below the 5-10 year server replacement target - but at the
@@ -103,10 +91,7 @@ operating-point selection.
 ReRAM write-latency penalties are workload-dependent and are confined to
 write-active workloads, positioning selector-gated 22nm SLC ReRAM as a
 latency-competitive, density-superior DDR5 alternative for compute-bound
-workloads - and within a disclosed 1.9-2.1x of DDR5 under sustained
-streaming - with a clear research path - restoring
-idle-power gating to both the simulation stack and the architecture -
-standing between it and outright power parity. High-parallelism AI
+workloads - and within a disclosed 1.7-2.0x of DDR5 under sustained streaming - with a clear research path - a real ReRAM power-gating characterization, then gating-capable memory controllers - standing between it and outright power parity. High-parallelism AI
 inference remains DDR5 territory.
 
 // GEN-BEGIN toc
@@ -702,14 +687,7 @@ Section 3.1.3, write endurance in Section 3.1.4, and density in Section
 One framing note before the numbers, so the trust boundary is explicit
 from the outset: every figure in this chapter passed through a
 simulation-fidelity audit of the NVSim-to-NVMain toolchain that found
-#strong[fourteen] silent failure modes, of which #strong[twelve] were
-repaired - each repair validated against device-level anchors or exact
-predicted arithmetic, and the affected simulations re-run - while
-#strong[two] remain as disclosed permanent limitations rather than
-bugs: idle-power gating is disabled in the simulator source (so all
-ReRAM power figures are worst-case ungated), and the traces carry
-weak provenance (cache-less capture, and one AI trace unattributable to
-a preserved generator configuration). The full audit, with the repair
+#strong[fourteen] silent failure modes, of which #strong[thirteen] were repaired - each repair validated against device-level anchors or exact predicted arithmetic, and the affected simulations re-run - while #strong[one] remains as a disclosed permanent limitation rather than a bug: the traces carry weak provenance (cache-less capture, and one AI trace unattributable to a preserved generator configuration). The simulator\'s idle-power gating, disabled in source when the audit began, is restored for every technology: DDR5 realizes real savings from it, while ReRAM\'s power-down energy is a disclosed no-savings placeholder, so no ReRAM power figure claims a gating benefit. The full audit, with the repair
 arithmetic, is Section 3.1.6; results below cite its item numbers where
 a specific repair or caveat applies.
 
@@ -730,9 +708,7 @@ and both AlexNet phases - are completed in full by every technology, so
 there the cost of a slower memory appears purely as latency and queueing
 over identical populations. LBM\'s sustained streaming is the one
 service-limited case, and it is a clean, like-for-like throughput
-result: of an identical 16,447,102-request admission, DDR5 completes
-100%, 1T1R SLC 40.0%, 1S1R SLC 28.0%, 1T1R MLC 16.3%, 1S1R MLC 9.3%, and
-PCM 3.9% - a delivered-throughput ordering, graded exactly by device
+result: of an identical 16,447,102-request admission, DDR5 completes 100%, 1T1R SLC 39.8%, 1S1R SLC 28.0%, 1T1R MLC 22.4%, 1S1R MLC 13.5%, and PCM 3.9% - a delivered-throughput ordering, graded exactly by device
 write speed, that hardens this section\'s MLC verdict and quantifies the
 sustained-streaming cost of every resistive technology at once; its
 single accounting consequence is that LBM latency averages cover each
@@ -751,13 +727,7 @@ real latency cost.
 
 Under standard compute-bound workloads with small, infrequent memory
 bursts like gcc (Figure 1), the 22nm 1T1R SLC ReRAM configuration
-demonstrates exceptional responsiveness. Averaging 104.73 cycles at 800
-MHz (130.91 ns), 1T1R SLC is slower than DDR5-4800 in absolute
-wall-clock time (81.16 ns, or 194.78 cycles at 2400 MHz - an average
-that now includes DDR5\'s faithfully modeled refresh blocking; Section
-3.1.6, item 7) - a 61% latency overhead that is the smallest
-cross-technology gap in the suite. The selector-gated 1S1R SLC follows
-at 190.35 ns, a 1.5x cost over 1T1R for the selector\'s slower access
+demonstrates exceptional responsiveness. Averaging 108.97 cycles at 800 MHz (136.21 ns), 1T1R SLC is slower than DDR5-4800 in absolute wall-clock time (90.17 ns, or 216.40 cycles at 2400 MHz - an average that includes DDR5\'s faithfully modeled refresh blocking, Section 3.1.6, item 7, its datasheet-sourced timing, item 12, and the small power-down transition cost of the restored idle-gating mechanism, item 5) - a 51% latency overhead that is the smallest cross-technology gap in the suite. The selector-gated 1S1R SLC follows at 192.33 ns, a 1.4x cost over 1T1R for the selector\'s slower access
 path: NVSim\'s device characterization prices a 1S1R read at 52.1 ns
 versus 32.1 ns for 1T1R (1.6x) and a write at 72.9 versus 32.3 ns
 (2.3x), because the crossbar must sense through the non-linear selector
@@ -781,13 +751,11 @@ To contrast the compute-bound nature of GCC, I evaluated the memory
 subsystem under the lbm trace (Figure 2), a fluid dynamics workload
 characterized by heavy, continuous memory streaming. Here, the
 architectural dynamics change significantly. The 1T1R SLC configuration
-averages 374.50 cycles at 800 MHz (468.12 ns), compared to DDR5-4800 at
-600.31 cycles at 2400 MHz (250.13 ns) - a 1.9x wall-clock edge to DDR5
+averages 375.73 cycles at 800 MHz (469.67 ns), compared to DDR5-4800 at 652.10 cycles at 2400 MHz (271.71 ns) - a 1.7x wall-clock edge to DDR5
 from its higher operating frequency. The efficiency implications under
 streaming are governed by each technology\'s leakage tier and are
 quantified in Section 3.1.3. This workload also exposes the limits of
-Multi-Level Cells: the 1S1R MLC latency spikes to 1062.99 cycles
-(1328.74 ns), as continuous write-pressure backs up the FRFCFS
+Multi-Level Cells: the 1S1R MLC latency spikes to 1062.81 cycles (1328.51 ns), as continuous write-pressure backs up the FRFCFS
 controller queue with ISPV programming operations, increasing average
 total latency by 2.8x relative to 1T1R SLC (2.0x relative to its own
 1S1R SLC sibling).
@@ -802,8 +770,7 @@ GPT-2 Inference (IFMAP).]
 However, when the system is subjected to the massive parallel
 read-storms typical of Large Language Model (LLM) inference, the
 dynamics shift. In the GPT-2 trace (Figure 3), the 1T1R SLC
-configuration averages 366.73 cycles at 800 MHz (458.41 ns), trailing
-the DDR5-4800 baseline (240.65 cycles at 2400 MHz, 100.27 ns) by
+configuration averages 366.76 cycles at 800 MHz (458.45 ns), trailing the DDR5-4800 baseline (240.95 cycles at 2400 MHz, 100.39 ns) by
 approximately 4.6x in wall-clock terms. Despite ReRAM\'s fast raw read
 speed, this data exposes the queueing delays within the memory
 controller. Under extreme read pressure, the ReRAM DIMM cannot clear its
@@ -832,10 +799,9 @@ To explicitly isolate and prove the MLC write penalty, I engineered a
 \"Write-Torture\" test by comparing the Input Feature Map (IFMAP) and
 Output Feature Map (OFMAP) traces of AlexNet Layer 1 #strong[(Figures 4
 and 5)]. The data reveals a severe architectural bottleneck. Under the
-read-heavy IFMAP workload, 1S1R MLC averages 550.82 cycles. However,
-under the write-heavy OFMAP workload, the 1S1R MLC latency spikes to
-2412.40 cycles - just over 2× degradation compared to its SLC
-counterpart (1081.98 cycles). This empirical gap confirms the analytical
+read-heavy IFMAP workload, 1S1R MLC averages 551.13 cycles. However,
+under the write-heavy OFMAP workload, the 1S1R MLC latency spikes to 2412.58 cycles - just over 2× degradation compared to its SLC
+counterpart (1082.16 cycles). This empirical gap confirms the analytical
 penalty method implemented in my simulation stack: MLC ReRAM incurs a
 severe latency tax during write operations, dictating that MLC
 topologies must be strictly relegated to read-only or read-mostly
@@ -847,7 +813,7 @@ operation streams - IFMAP issues only reads (184,319 requests), OFMAP
 only writes (13,542) - and every technology replays the identical pair.
 The write-side degradation factor (OFMAP over IFMAP average latency)
 therefore ranks write tolerance directly: DDR5 is nearly
-read/write-symmetric at 1.08x, 1T1R SLC degrades 2.1x, 1S1R SLC 2.6x,
+read/write-symmetric at 1.05x, 1T1R SLC degrades 2.1x, 1S1R SLC 2.6x,
 1T1R MLC 3.2x, 1S1R MLC 4.4x, and PCM 3.6x. Two device-level facts from
 Table 1 sit beneath that ranking. The selector prices writes
 intrinsically: a 1S1R write costs 1.4x its read at the device (72.9 vs
@@ -864,10 +830,7 @@ measured system latency.
 
 The STREAM benchmark (Figure 6) applies pure vector-kernel bandwidth
 pressure, isolating sustained memory bandwidth from compute
-dependencies. The 1T1R SLC configuration averages 473.17 cycles (591.46
-ns), trailing the DDR5-4800 baseline (276.04 ns) by 2.1x in wall-clock
-latency, with 1S1R SLC at 890.29 ns; together with the LBM result, this
-brackets sustained streaming as a 1.9-3.2x latency-deficit regime across
+dependencies. The 1T1R SLC configuration averages 473.29 cycles (591.62 ns), trailing the DDR5-4800 baseline (299.60 ns) by 2.0x in wall-clock latency, with 1S1R SLC at 890.44 ns; together with the LBM result, this brackets sustained streaming as a 1.7-3.0x latency-deficit regime across
 the SLC ReRAM family. The efficiency consequences are quantified in
 Section 3.1.3.
 
@@ -898,53 +861,51 @@ suite, complementing the per-workload bar charts.
     [#strong[1S1R MLC]],
   ),
   [#strong[GCC]],
-  [87.2],
-  [6,399.2],
-  [130.9],
-  [190.3],
-  [182.6],
-  [288.5],
+  [90.2],
+  [6,403.8],
+  [136.2],
+  [192.3],
+  [185.1],
+  [286.5],
   [#strong[LBM]],
-  [271.5],
+  [271.7],
   [7,363.4],
-  [468.1],
-  [662.1],
-  [809.7],
-  [1,328.7],
+  [469.7],
+  [661.1],
+  [809.3],
+  [1,328.5],
   [#strong[STREAM]],
-  [299.9],
+  [299.6],
   [7,666.5],
-  [591.5],
-  [890.3],
-  [977.0],
-  [1,675.7],
+  [591.6],
+  [890.4],
+  [977.1],
+  [1,675.8],
   [#strong[GPT-2]],
-  [100.3],
+  [100.4],
   [1,816.1],
   [458.4],
   [618.4],
   [588.4],
   [828.4],
   [#strong[AlexNet IFMAP]],
-  [118.6],
+  [118.7],
   [1,438.0],
-  [397.4],
-  [523.9],
-  [500.2],
-  [688.5],
+  [397.7],
+  [523.3],
+  [499.7],
+  [688.9],
   [#strong[AlexNet OFMAP]],
-  [124.7],
-  [5,209.3],
-  [819.7],
-  [1,352.5],
-  [1,602.3],
-  [3,015.5],
+  [124.9],
+  [5,209.4],
+  [819.9],
+  [1,352.7],
+  [1,602.5],
+  [3,015.7],
 )
 ]
 
-#emph[Wall-clock nanoseconds (clock domains: ReRAM 800 MHz, PCM 400 MHz,
-DDR5 2400 MHz). Source:
-results/system\_v6/processed\_bar\_chart\_metrics.csv.]
+#emph[Wall-clock nanoseconds (clock domains: ReRAM 800 MHz, PCM 400 MHz, DDR5 2400 MHz), including the small power-down transition latency of the restored idle-gating mechanism (Section 3.1.6, item 5). Source: results/processed\_bar\_chart\_metrics.csv (re-run 2026-09-05).]
 
 === 3.1.2 Power Analysis: Static Leakage Dominance
 <power-analysis-static-leakage-dominance>
@@ -959,12 +920,7 @@ correctly required repairing the simulation toolchain first. All power
 figures in this section therefore come from the repaired model
 documented in Section 3.1.6: NVSim\'s per-technology leakage is wired
 into the standby-energy parameters NVMain actually reads (validated
-against device-level anchors to 0.0% error), power is accounted as the
-whole-module sum for every technology, and no idle-gating is applied,
-because NVMain\'s power-down machinery is disabled in source. The ReRAM
-figures are consequently worst-case ungated, while the DRAM and PCM
-baselines model their standard idle behavior - an asymmetry restated
-wherever cross-technology totals are compared.
+against device-level anchors to 0.0% error), power is accounted as the whole-module sum for every technology, and NVMain\'s restored idle-gating mechanism is live for every technology (Section 3.1.6, item 5). Its effect is not symmetric, and that asymmetry is restated wherever cross-technology totals are compared: DDR5 realizes real, JEDEC-datasheet-backed power-down savings, ReRAM\'s power-down energy is a disclosed placeholder equal to its standby energy (so no ReRAM figure claims a gating benefit), and PCM shows no power-down activity at all.
 
 #block(breakable: false)[
 #image("media/media/image6.png", width: 6.5in, height: 2.494313210848644in)
@@ -980,7 +936,7 @@ standing power floor. The non-volatile opportunity shows immediately:
 ReRAM\'s refresh component is identically zero, because retention is
 free, while the decomposition in Figure 7 exposes DDR5\'s structural
 burden - even with its own idle-gating mechanism now restored and live
-(Section 3.1.6, item 5), 46.7% of its 0.623 W module-sum draw under GCC
+(Section 3.1.6, item 5), 46.6% of its 0.623 W module-sum draw under GCC
 is still refresh power, energy spent merely retaining data, on top of a
 53% standby/power-down floor, with actual access activity accounting
 for about 0.1%. Restoring idle-gating lowered DDR5\'s total draw (from
@@ -991,12 +947,10 @@ selector-gated 1S1R module converts that opportunity into a
 commodity-envelope number: 1.12 W (97% static), refresh-free, with
 essentially every milliwatt of its draw exposed to future idle-gating.
 The repaired leakage wiring prices the alternative just as clearly: the
-transistor-gated 1T1R module leaks 50.9 W (99.99% static), roughly two
+transistor-gated 1T1R module leaks 50.9 W (99.98% static), roughly two
 orders of magnitude above DDR5, and PCM sits at 0.040 W (91% static).
-Real dynamic power is small for every ReRAM configuration (12-98 mW
-module-wide under GCC, now technology-differentiated through the
-repaired access energies of Section 3.1.6, item 10): ungated ReRAM power
-is leakage, full stop.
+Real dynamic power is small for every ReRAM configuration (12-48 mW module-wide under GCC, now technology-differentiated through the
+repaired access energies of Section 3.1.6, item 10): with no gating savings claimed, ReRAM power is leakage, full stop.
 
 #block(breakable: false)[
 #image("media/media/image7.png", width: 6.5in, height: 2.494313210848644in)
@@ -1071,7 +1025,7 @@ per-technology access energies (Section 3.1.6, items 10 and 13), each
 MLC write also costs 3.0x its SLC counterpart in energy, and under lbm
 the energy
 penalty outweighs the throughput throttling: 1T1R MLC dynamic power
-reaches 162.1 mW against SLC\'s 140.6 mW. At module scale, both variants
+reaches 162.1 mW against SLC\'s 140.1 mW. At module scale, both variants
 remain pinned to the same 50.9 W static tier, reconfirming that ReRAM
 DIMMs are fundamentally bounded by their static peripheral leakage
 rather than dynamic cell activity.
@@ -1084,7 +1038,7 @@ under the STREAM benchmark.]
 ]
 
 The standard stream benchmark (Figure 10) follows the same direction as
-lbm rather than reversing it: 1T1R SLC dynamic power reaches 99.5 mW
+lbm rather than reversing it: 1T1R SLC dynamic power reaches 99.4 mW
 while MLC now draws more, at 121.7 mW, because the corrected
 write-latency penalty (3.263x, Section 3.1.6, item 13) throttles MLC
 throughput less than the earlier unsourced 4x estimate implied, so more
@@ -1117,13 +1071,12 @@ one would expect ReRAM power to spike. It mostly does not. Despite the
 severe latency penalty incurred during OFMAP writes (as established in
 Section 3.1.1), no configuration exhibits a power spike large enough to
 threaten the static tier - OFMAP dynamic power is lower than IFMAP
-dynamic power for 1T1R SLC (87.7 vs. 122.2 mW) and for both 1S1R
-variants (120.6 vs. 163.3 mW SLC; 112.1 vs. 131.4 mW MLC), because slow
+dynamic power for 1T1R SLC (90.0 vs. 122.2 mW) and for both 1S1R variants (122.5 vs. 163.2 mW SLC; 112.1 vs. 131.4 mW MLC), because slow
 ISPV write operations throttle request throughput enough to offset the
 higher energy per write. 1T1R MLC is the exception: its corrected,
 less-severe write-latency penalty throttles throughput less than the
 SLC comparison would suggest, so OFMAP\'s higher per-write energy edges
-narrowly ahead of IFMAP\'s (119.5 vs. 99.5 mW) - a genuine but small
+narrowly ahead of IFMAP\'s (119.5 vs. 99.6 mW) - a genuine but small
 reversal (both values sit three orders of magnitude below the 50.9 W
 static tier) that does not disturb the section\'s conclusion: extended
 write durations never translate into a power spike large enough to
@@ -1209,8 +1162,7 @@ zero power-down activity in either run, likely because its
 FRFCFS-WQF write-queue-flush controller keeps its request queue
 non-empty far more of the time than the plain FRFCFS controller
 ReRAM/DDR5 use, starving the power-down entry condition - an open
-follow-up item, not yet root-caused to full confidence. Source:
-results/system/processed\_bar\_chart\_metrics.csv (re-run 2026-09-05).]
+follow-up item, not yet root-caused to full confidence. Source: results/processed\_bar\_chart\_metrics.csv (re-run 2026-09-05).]
 
 === 3.1.3 Power-Delay Product (PDP): The Architectural Sweet Spot
 <power-delay-product-pdp-the-architectural-sweet-spot>
@@ -1219,10 +1171,7 @@ true architectural viability is measured by the balance between them. I
 utilized the Power-Delay Product (PDP \= Total System Power \[W\] ×
 Average Request Latency \[ns\]; units W·ns \= nJ) to rank
 configurations. All PDP values in this section are computed from the
-repaired, module-sum power model of Section 3.1.6 with no idle gating
-applied: the ReRAM values are therefore worst-case ungated, while the
-DRAM and PCM baselines model standard idle behavior. This asymmetry must
-accompany any reading of the cross-technology ranking.
+repaired, module-sum power model of Section 3.1.6 with its idle-gating mechanism restored: DDR5\'s values include real power-down savings, ReRAM\'s include only the small power-down transition latency (its power-down energy is a no-savings placeholder), and PCM shows no power-down activity. This asymmetry must accompany any reading of the cross-technology ranking.
 
 #image("media/media/image12.png", width: 6.5in, height: 3.816531058617673in)
 
@@ -1372,8 +1321,7 @@ no-real-number-available placeholder equal to existing standby energy,
 so its power is unchanged by design; the small PDP shifts visible above
 (mostly under 1%, up to +4.0% for 1T1R SLC under GCC) are pure
 transition-latency overhead with no offsetting power benefit. PCM shows
-no power-down activity in either run (Appendix A). Source:
-results/system processed CSVs (re-run 2026-09-05).]
+no power-down activity in either run (Appendix A). Source: results/processed CSVs (re-run 2026-09-05).]
 
 === 3.1.4 Endurance Viability Analysis
 <endurance-viability-analysis>
@@ -1400,12 +1348,7 @@ simulation statistics, the projected lifetimes are summarized below.
 The calculation itself, worked for the 8 GB SLC module under LBM (the
 worst case): total write budget under uniform wear leveling is
 $134.2 times 10^6$ line locations $times 10^7$ rated cycles/line $=
-1.342 times 10^15$ total writes available across the module. LBM admits
-3,269,479 writes in the 83.33 ms matched-host window, a rate of
-$3,269,479 \/ 0.08333 med "s" approx 39.2 times 10^6$ writes/s. Lifetime
-is then the write budget divided by the annualized write rate:
-$1.342 times 10^15 \/ (39.2 times 10^6 times 31,536,000 med "s/yr")
-approx 1.08$ years - matching Table 5\'s reported figure exactly. The
+1.342 times 10^15$ total writes available across the module. LBM completes 3,257,597 writes in the 83.33 ms matched-host window, a rate of $3,257,597 \/ 0.08333 med "s" approx 39.1 times 10^6$ writes/s. Lifetime is then the write budget divided by the annualized write rate: $1.342 times 10^15 \/ (39.1 times 10^6 times 31,536,000 med "s/yr") approx 1.09$ years - matching Table 5\'s reported figure. The
 same arithmetic at 64 GB (8x the line count, same write rate) gives
 $approx 8.7$ years.
 
@@ -1427,9 +1370,9 @@ capacity).
     [#strong[Lifetime (SLC 10⁷, 64 GB)]],
   ),
   [LBM (worst case)],
-  [3,269,479],
-  [39.2 M/s],
-  [1.08 years],
+  [3,257,597],
+  [39.1 M/s],
+  [1.09 years],
   [8.7 years†],
   [GCC],
   [170,800],
@@ -1439,23 +1382,20 @@ capacity).
   [STREAM],
   [100,000],
   [1.20 M/s],
-  [35.4 years],
-  [283 years],
+  [35.5 years],
+  [284 years],
   [AlexNet OFMAP],
   [13,542],
   [0.16 M/s],
   [262 years],
-  [2,094 years],
+  [2,095 years],
 )
 ]
 
 †Lifetimes scale linearly with module capacity; the 64 GB column
 reflects a commodity server-class module, where ReRAM\'s density
 advantage is realized. Directly measured MLC lifetimes at the physical
-16 GB module under LBM: 0.39 years for 1T1R MLC (1,824,503 writes in
-83.33 ms at 21.9 M/s) and 0.65 years for 1S1R selector MLC (1,090,741
-writes at 13.1 M/s); even at 128 GB these reach only 3.09 and 5.18 years
-respectively. All lifetimes assume uniform wear leveling.
+16 GB module under LBM: 0.39 years for 1T1R MLC (1,825,508 writes in 83.33 ms at 21.9 M/s) and 0.65 years for 1S1R selector MLC (1,090,968 writes at 13.1 M/s); even at 128 GB these reach only 3.11 and 5.20 years respectively. All counts are from the 2026-09-05 idle-gating re-run. All lifetimes assume uniform wear leveling.
 
 The results reframe endurance as a capacity- and workload-dependent
 constraint. At the modeled 8 GB module, the worst-case sustained
@@ -1464,8 +1404,7 @@ for SLC - below the 5-10 year server replacement target (enterprise
 server useful life currently averages 5.4 years and is trending toward
 six to seven years \[16\]) - while every other workload clears the
 target - by 2-4x for compute-bound GCC (20.8 years) and by an order of
-magnitude or more beyond it (35.4 years for STREAM, 262 years for
-AlexNet OFMAP). Because uniform wear leveling spreads a fixed workload
+magnitude or more beyond it (35.5 years for STREAM, 262 years for AlexNet OFMAP). Because uniform wear leveling spreads a fixed workload
 write rate over the module\'s entire cell population, lifetime scales
 linearly with capacity: at the 64-128 GB module sizes where ReRAM\'s
 density advantage is actually realized, worst-case SLC lifetime reaches
@@ -1486,7 +1425,7 @@ than leaving it open-ended: a controller that lets the hottest region
 absorb twice its uniform share of writes simply halves every figure
 above - the 128 GB SLC configurations still clear the server target
 (8.7 years for 1T1R, 12.4 for the selector), while the halved 64 GB
-figures (4.3-6.2 years) sit at the target\'s lower edge - so imperfect
+figures (4.4-6.2 years) sit at the target\'s lower edge - so imperfect
 leveling shifts where the capacity threshold lies, not whether one
 exists.
 
@@ -1511,8 +1450,7 @@ leakage dominates over per-operation read energy, the per-read energy
 variation is negligible: total PDP changed by less than 4% across the
 full +/-20% sweep. One limitation applies: this sweep was executed
 before the power-model repair of Section 3.1.6 and has not been re-run
-under the repaired dataset. Because the repair raises the static share
-of ReRAM system power to 99.5% or more (Section 3.1.2), per-operation
+under the repaired dataset. Because the repair raises the static share of the swept 1T1R SLC module\'s power to 99.98% (Section 3.1.2), per-operation
 read energy becomes an even smaller fraction of the total, so the
 insensitivity conclusion holds a fortiori; read-latency invariance is
 unaffected by the repair, which changes power accounting only.
@@ -1533,8 +1471,7 @@ A systematic audit of the NVSim-to-NVMain flow, conducted against the
 raw simulator sources and statistics files, found fourteen silent
 failure modes that bounded which conclusions this evaluation could
 honestly draw - across the ReRAM configurations, the metrics pipeline,
-and both non-ReRAM baselines. Twelve of the fourteen have since been
-repaired in this project\'s toolchain, with the affected simulations
+and both non-ReRAM baselines. Thirteen of the fourteen have since been repaired in this project\'s toolchain, with the affected simulations
 re-run; every power and PDP figure in this book derives from the
 resulting repaired dataset.
 (1) Found and fixed: the pipeline\'s original efficiency metric
@@ -1598,9 +1535,7 @@ template and never rescaled when the clock was raised to 2400 MHz -
 refresh operations fired 3.6x too often (derived tREFI 1.085 µs vs.
 JEDEC 3.906 µs) at 6.6x too little cost each (tRFC 44.6 vs. 295 ns).
 Recalibrating to JEDEC JESD79-5 raised DDR5\'s refresh share from 57.9%
-to 71.3% of module power under GCC (a share subsequently reduced to the
-final 33-45% band once item 8\'s vendor-current calibration repriced the
-non-refresh components) and its average GCC latency from 69.9 to 81.2
+to 71.3% of module power under GCC (a share subsequently reduced to a 33-45% band once item 8\'s vendor-current calibration repriced the non-refresh components, settling at 33-47% once item 5\'s restored idle-gating lowered DDR5\'s non-refresh draw) and its average GCC latency from 69.9 to 81.2
 ns, because refresh blocking is now faithfully priced. (8) Found and
 partially fixed: every supply parameter in the DDR5 configuration proved
 to be NVMain\'s stock built-in default rather than a datasheet value.
@@ -1667,15 +1602,11 @@ verified exactly (407,363 GCC / 16,447,102 LBM admissions across all
 eight configuration families). The correction moved exactly what its
 direction analysis predicted: admission-sensitive compute-bound latency
 rose (1T1R SLC GCC 98.0 to 130.9 ns, widening the DDR5 gap from 1.21x to
-1.61x), trace-limited AI workloads did not move (the 4.7x GPT-2 deficit
-is unchanged), static power did not move (anchors exact to the last
+1.61x), trace-limited AI workloads did not move (the GPT-2 deficit, 4.7x at the time and 4.6x after item 12\'s DDR5 timing correction, is unchanged), static power did not move (anchors exact to the last
 digit), and endurance write pressure rose toward each configuration\'s
-service ceiling (worst-case 1T1R SLC lifetime 24.4 to 17.3 years at 128
-GB). Exact-config snapshots now ship with every results generation,
+service ceiling (worst-case 1T1R SLC lifetime 24.4 to 17.3 years at 128 GB; 17.4 after the idle-gating re-run). Exact-config snapshots now ship with every results generation,
 closing a reproducibility gap in which on-disk configurations had
-drifted from the state that produced banked results. The residual
-limitations are items (5) and (6), plus the spec-limit character of
-vendor IDD tables: ReRAM totals are worst-case ungated, absolute
+drifted from the state that produced banked results. The residual limitations are item (6), the no-savings placeholder that item (5) leaves in place of a real ReRAM power-down energy, and the spec-limit character of vendor IDD tables: ReRAM totals claim no gating benefit, absolute
 queueing magnitudes inherit the uncached-trace caveat - and, more
 broadly, the pipeline is open-loop trace replay with no CPU or
 accelerator feedback path, so every latency reported here is a
@@ -1772,8 +1703,7 @@ including writes - complete within the fixed simulation window).
 A dedicated NVSim sensitivity sweep, prompted by a related citation
 question over the HRS resistance target (Appendix A), separately
 confirmed that the 47x transistor-vs-selector leakage-class separation
-of item (3) is completely insensitive to that target across four orders
-of magnitude of HRS - so no further re-simulation was triggered by that
+of item (3) is completely insensitive to that target across the more than two orders of magnitude of HRS it spans - so no further re-simulation was triggered by that
 finding; see Appendix A for the sweep itself.
 
 == 3.2. Architectural Scaling & Memory Level Parallelism (Pareto Frontiers)
@@ -1783,7 +1713,7 @@ of 22nm ReRAM, understanding its viability as a main memory replacement
 requires evaluating how these modules scale. To map this, I plotted
 multi-objective Pareto frontiers comparing Total System Power against
 Average Total Latency as the ReRAM architecture scales from a single
-chip to a 64-chip Full DIMM (8 GB SLC / 16 GB MLC).
+chip to a 64-chip Full DIMM (8 GB SLC / 16 GB MLC). One dataset note governs this whole section: the 2026-09-05 idle-gating re-run (Section 3.1.6, item 5) covered the full-DIMM configurations only, so every chip-count trajectory here comes from the complete pre-restoration matrix (results/system\_v6). Full-DIMM endpoints therefore differ slightly from Tables 2-4 (1T1R SLC under GCC: 130.91 ns here versus 136.21 ns in Table 2, the difference being power-down transition latency). That re-run changed no ReRAM power figure and moved full-DIMM ReRAM latencies by at most 4%, so the trends below are expected to hold; re-running the chip-count matrix under the restored mechanism is listed in Section 4.1.
 
 #block(breakable: false)[
 #image("media/media/image18.png", width: 6.5in, height: 4.682203630796151in)
@@ -2119,20 +2049,10 @@ The headline is an opportunity: 1S1R SLC -
 drawing 1.12 W with zero refresh - lands 1.8x from DDR5\'s 0.623 W
 restored-floor, and within 11% of outright
 parity at the spec-limit ceiling; that gap is precisely the component an
-idle-gating policy attacks, because 1S1R\'s draw is 97% static while
-DDR5 spends 33-45% of its module power on refresh it can never shed.
-Power parity for 1S1R SLC is therefore a projection contingent on
-idle-gating the toolchain cannot yet simulate - bounded by the
-arithmetic below, not demonstrated - and a
+idle-gating policy attacks, because 1S1R\'s draw is 97% static while DDR5 spends 33-47% of its module power on refresh it can never shed.
+Power parity for 1S1R SLC is therefore a projection contingent on a real ReRAM power-gating characterization the toolchain cannot yet supply - bounded by the arithmetic below, not demonstrated - and a
 concrete research and product opening for gating-capable controllers and
-selector-first DIMM architectures. The full ungated ranking, matching
-Figure 27 bar-for-bar: DDR5 104.3 W·ns (158.1 at the Micron calibration
-ceiling - the Micron-side configuration was reconstructed from its
-original documented current-magnitude derivation and re-run under the
-item (12) DDR5 timing correction, confirming the same \~4.8% relative
-increase the hynix-floor figure carried; see Section 3.1.6, item 8), PCM
-165.3, 1S1R SLC
-737.1, 1S1R MLC 1,222.4, 1T1R SLC 21,350.6, and 1T1R MLC 32,567.1. The
+selector-first DIMM architectures. The full ranking, matching Figure 27 bar-for-bar and Table 4: DDR5 103.3 W·ns (158.1 at the Micron calibration ceiling - an ungated figure: the Micron-side configuration was reconstructed from its original documented current-magnitude derivation and re-run under the item (12) DDR5 timing correction, confirming the same \~4.8% relative increase the hynix-floor figure carried, but has not been re-run with idle-gating restored; see Section 3.1.6, item 8), PCM 165.3, 1S1R SLC 738.1, 1S1R MLC 1,221.1, 1T1R SLC 21,508.4, and 1T1R MLC 32,632.8. The
 selector\'s 47x standby discipline
 cleanly partitions the ReRAM family: 1T1R is not a viable DDR5
 successor at any cell density, even power-gated (50.9 W per module,
@@ -2140,12 +2060,10 @@ successor at any cell density, even power-gated (50.9 W per module,
 contrast that elevates leakage discipline to the deciding architectural
 requirement. PCM, for its part, survives on its 0.04 W floor at latency
 costs relative to 1T1R SLC that range from \~4-6x under parallel AI to
-13-16x under streaming and 49x under compute-bound GCC (now that it runs
+13-16x under streaming and 47x under compute-bound GCC (now that it runs
 at its cited 400 MHz basis - Section 3.1.6, item 9): it is not
 displaced, but it marks the floor-power bound that gated ReRAM must
-beat. ReRAM\'s path past both DDR5 and PCM therefore runs exclusively
-through the idle-gating capability that the current toolchain cannot yet
-simulate (Section 4.1).
+beat. ReRAM\'s path past both DDR5 and PCM therefore runs exclusively through idle-gating - a mechanism now restored in the toolchain, but whose ReRAM energy benefit still awaits a real power-gating characterization (Section 4.1).
 
 How much of that draw a gating policy could actually reclaim is bounded
 by how idle real memory is - a fraction that is strongly
@@ -2181,16 +2099,13 @@ idle-gating mechanism is now restored and simulated (Section 3.1.6, item
 slightly from the pre-restoration 43%, since DDR5 now has a little less
 room to close) - a threshold still far below the web-serving example
 above, and one that much busier deployments still clear - and just
-f \= 10% against the 1.008 W vendor ceiling (the Micron-calibration
-variant, not re-run this session and therefore still ungated); a policy
+f \= 10% against the 1.008 W vendor ceiling (the Micron-calibration variant, not yet re-run with idle-gating restored and therefore still ungated); a policy
 capturing 90% idleness, plausible for the measured web-serving class,
 lands at roughly 0.14 W, about 4.3x below DDR5\'s restored floor. Two
 honesty bounds and one physical asymmetry frame
 this: bandwidth utilization overstates achievable gating, since
 power-down entry and exit residency consume part of every idle window;
-DRAM also possesses power-down states that this comparison does not
-exercise (the asymmetry caveat of Section 3.1.6, item 5, cuts both
-ways); but the floor asymmetry is physical - an idle DRAM module must
+DDR5\'s own power-down states are now exercised, so its 0.623 W floor already carries its gating credit (Section 3.1.6, item 5), which keeps this threshold like-for-like rather than tilted toward ReRAM; but the floor asymmetry is physical - an idle DRAM module must
 keep refreshing to retain data, while a gated non-volatile module
 retains it at zero power. These are bounding calculations, not
 a real characterization; sourcing a real ReRAM power-gating energy
@@ -2219,7 +2134,7 @@ summary of the entire evaluation.
   ),
   [#strong[DDR5-4800]],
   [90.2],
-  [0.623 (46.7% refresh)],
+  [0.623 (46.6% refresh)],
   [103.3],
   [1.00],
   [n/a (volatile)],
@@ -2230,13 +2145,13 @@ summary of the entire evaluation.
   [165.3],
   [1.25],
   [not evaluated],
-  [floor-power NVM; 4-49x latency cost],
+  [floor-power NVM; 4-47x latency cost],
   [#strong[1T1R SLC]],
   [136.2],
   [50.870],
   [21,508.4],
   [0.22],
-  [17.3 yr],
+  [17.4 yr],
   [latency-optimized niche; infeasible even power-gated],
   [#strong[1S1R SLC]],
   [192.3],
@@ -2280,10 +2195,7 @@ has been demonstrated (Appendix A, ref \[33\]), which would close most
 of 1T1R\'s density disadvantage against 1S1R if adopted. Lifetime: LBM
 worst case, uniform wear leveling, SLC 10⁷ / MLC 10⁶ endurance; under
 the matched-host window the write streams are service-limited and differ
-per configuration - 1T1R SLC absorbs 3,269,479 LBM writes per 83.33 ms
-(39.2 M/s) versus 2,284,570 for 1S1R SLC (27.4 M/s), so the slower
-writer wears correspondingly slower (1S1R SLC worst case 24.8 yr at 128
-GB versus 1T1R\'s 17.3).]
+per configuration - 1T1R SLC absorbs 3,257,597 LBM writes per 83.33 ms (39.1 M/s) versus 2,288,852 for 1S1R SLC (27.5 M/s), so the slower writer wears correspondingly slower (1S1R SLC worst case 24.8 yr at 128 GB versus 1T1R\'s 17.4).]
 
 = 4. Conclusion and Future Work
 <conclusion-and-future-work>
@@ -2302,9 +2214,7 @@ affected simulations re-run. Using a cross-layer simulation pipeline
 spanning device physics (NVSim), cycle-accurate memory simulation
 (NVMain 2.0), and real workload traces from gem5 and SCALE-Sim, I
 evaluated 20 memory configurations across 6 workloads. The key
-quantitative findings are: 1T1R SLC ReRAM operates within 1.50x of
-DDR5-4800\'s wall-clock latency under compute-bound execution - where it
-runs 49x faster than the legacy PCM baseline (13-16x under sustained
+quantitative findings are: 1T1R SLC ReRAM operates within 1.51x of DDR5-4800\'s wall-clock latency under compute-bound execution - where it runs 47x faster than the legacy PCM baseline (13-16x under sustained
 streaming) - while trailing DDR5 by 4.6x under parallel AI inference
 (Section 3.1.1); DDR5, now benefiting from its own restored idle-gating
 mechanism, still spends 33-47% of its module power on refresh
@@ -2329,7 +2239,7 @@ exceed the target by an order of magnitude at any capacity (Table 5).
 The deployment recommendation follows directly from the repaired data,
 and it inverts the intuitive choice: 1S1R SLC is the flagship
 configuration - scale-viable power, 1.9x DDR5\'s die-level density (3.8x
-as MLC), and a modest \~1.5x average-latency cost against 1T1R (1.3-1.7x
+as MLC), and a modest \~1.4x average-latency cost against 1T1R (1.3-1.7x
 across the suite) - while 1T1R SLC, despite the best raw latency in the
 ReRAM family, is infeasible even power-gated at DIMM scale and is
 confined to a latency-optimized niche; MLC density
@@ -2362,18 +2272,13 @@ leakage class, not cell speed, decides efficiency. Endurance (3.1.4):
 lifetime scales linearly with capacity, so the constraint binds only for
 small modules under sustained write streaming. Robustness (3.1.5): the
 operating point is stable - read latency invariant and system-level PDP
-within 4% across a +/-20% ReadVoltage sweep. Scaling (3.2): added ranks
-pay off only where memory-level parallelism exists to use them - the
-Flatline Paradox - making single-chip or 8-chip configurations
-Pareto-optimal for write-heavy deployments.
+within 4% across a +/-20% ReadVoltage sweep. Scaling (3.2): added ranks pay off only where a workload\'s address footprint spans them - GCC gains \~14% at full DIMM while the two single-layer AI-inference traces stay flat - and every added chip costs linear leakage.
 
 The scope of these claims is bounded by four disclosed limitations,
 gathered here deliberately in one place: validation is internal to the
 toolchain - parameters are anchored to real silicon and vendor
 datasheets, but no end-to-end result is checked against measured
-hardware (Section 2.2); the power-parity path rests on bounding
-arithmetic over idle-gating the simulator cannot yet exercise (Sections
-3.1.6 item 5 and 3.3); endurance projections assume ideal uniform wear
+hardware (Section 2.2); the power-parity path rests on bounding arithmetic, because the restored idle-gating mechanism still has no real ReRAM power-down energy to exercise (Sections 3.1.6 item 5 and 3.3); endurance projections assume ideal uniform wear
 leveling, with the hot-spot exposure bounded but not simulated (Section
 3.1.4); and the traces are cache-less, first-10M-instruction captures
 with one AI trace of unverifiable provenance (Sections 2.1, 3.1.6 item
@@ -2422,8 +2327,11 @@ confidence.
 
 - #strong[Native MLC Logic]: Resolve the NVSim C++ \"Floating Point
   Exception\" (FPE) specifically within the Mat.cpp sensing logic to
-  replace my current \"Analytical Penalty Method\" with native
-  circuit-level characterization of iterative sensing.
+  replace my current \"Analytical Penalty Method\" with native circuit-level characterization of iterative sensing.
+
+- #strong[Chip-Count Matrix Under Restored Idle-Gating]: The 2026-09-05 idle-gating re-run covered full-DIMM configurations only, so Section 3.2\'s single-, 8- and 16-chip trajectories still come from the pre-restoration matrix. Re-running those 72 ReRAM configurations under the restored mechanism would put every scaling result on the same dataset as Tables 2-4.
+
+- #strong[Representative AI-Inference Trace]: Both AI-inference traces available to this study are single-layer SCALE-Sim captures whose \~64-68 KB address footprints never leave one rank (Section 3.2, Appendix A). A full-model trace is needed before any claim about how AI inference scales with rank count.
 
 - #strong[Standalone Device-to-System Simulator Wrapper]: Generalizing
   \"The Bridge\" (Section 2.1) - the cross-layer ETL pipeline that
@@ -2732,13 +2640,10 @@ data, has been made publicly available.
   using the same matched-host LBM window as Section 3.1.1
   (Section 3.1.6, item 11), raising `QueueSize` from the 32-entry
   default until each configuration stopped completing within a bounded
-  wall-clock budget. At the 1T1R SLC full-DIMM scale - the
-  configuration behind Section 3.1.1\'s "1T1R SLC completes 40.0%"
-  figure - completion rose from 40.0% (32, the reported baseline) to
+  wall-clock budget. At the 1T1R SLC full-DIMM scale - the configuration behind Section 3.1.1\'s LBM completion figure (39.8% with idle-gating restored; this sweep predates that re-run) - completion rose from 40.0% (32, the pre-restoration baseline) to
   40.0% (48) to 40.7% (64, the practical ceiling; 80 exceeded the
   simulation-time budget) of DDR5\'s 16,447,102-request reference, at a
-  real latency cost: average total latency rose from 374.5 ns to 536.4
-  ns (+43.2%) to 686.9 ns (+83.4%) over the same range. The effect is
+  real latency cost: average total latency rose from 468.1 ns to 670.6 ns (+43.2%) to 858.6 ns (+83.4%) - 374.5, 536.4, and 686.9 cycles at 800 MHz over the same range. The effect is
   far larger at single-chip scale, where less inherent bank/rank
   parallelism leaves more of LBM\'s demand queue-depth-limited rather
   than device-limited: completed requests rose monotonically from
