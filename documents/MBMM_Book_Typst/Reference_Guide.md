@@ -1,6 +1,6 @@
 # Reference Guide — MBMM Project Book
 
-A quick-reference summary of all 44 sources cited in `Project_Book.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts.
+A quick-reference summary of all 46 sources cited in `Project_Book.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts.
 
 The book's MLC penalty multipliers are: **1.5x read latency, 3.263x write latency, 1.1x read energy, 3.0x write energy** (2 bits/cell vs. 1 bit/cell), all sourced from the EMBER macro's two publications, [6] and [31] below.
 
@@ -163,6 +163,12 @@ Added 2026-09-05 (Shahar-notes item 6): the 22nm Low Operating Power logic subth
 
 **[44] C. Auth et al., "A 22nm High Performance and Low-Power CMOS Technology Featuring Fully-Depleted Tri-Gate Transistors, Self-Aligned Contacts and High Density MIM Capacitors," VLSI Technology 2012**
 Added 2026-09-05 (Shahar-notes item 6): Intel's measured off-state leakage on fabricated 22nm FinFET silicon, 5-20 nA/µm for the mid-power variant. [43]'s 5 nA/µm LOP target sits inside this measured band, so the transistor-leakage input is corroborated by real silicon. Cited in Appendix A. Corroborating evidence, not a re-derivation of NVSim's internal constant (NVSim [3] itself was not accessible to confirm it). pp. 131-132.
+
+**[45] Y. Y. Chen et al., "Balancing SET/RESET Pulse for >10^10 Endurance in HfO2/Hf 1T1R Bipolar RRAM," IEEE Trans. Electron Devices, 2012**
+Added 2026-09-13 (Shahar-notes item 8): a real, peer-reviewed >10^10-cycle demonstration on a 40 nm HfO2/Hf 1T1R cell - the kind of figure behind a recalled "~10^9" endurance rating. Cited in §3.1.4 as the high end of the literature, next to [15]'s caution that such single-device, sparsely sampled claims overestimate lifetime. Also appears in [15]'s own bibliography. vol. 59, no. 12, pp. 3243-3249, DOI 10.1109/TED.2012.2218607.
+
+**[46] M. Hellenbrand, I. Teck, J. L. MacManus-Driscoll, "Progress of emerging non-volatile memory technologies in industry," MRS Communications, 2024**
+Added 2026-09-13 (Shahar-notes item 8): a company-by-company industry survey showing shipped or qualified filamentary RRAM parts (Panasonic, Nuvoton, Weebit Nano, Fujitsu, Crossbar, IntrinSic) rated at 10^4-10^7 cycles. Cited in §3.1.4 to show the book's 10^7 SLC rating sits at the top of production reality. Its 10^12-10^15 figures are FRAM/MRAM, not RRAM - never quote them as RRAM endurance. vol. 14, pp. 1099-1112, DOI 10.1557/s43579-024-00660-2.
 
 ---
 

@@ -490,3 +490,23 @@ Action items (first two superseded by RESOLVED above; third addressed):
 4. Items 1, 3, 9 (PCM architecture disclosure + Optane real numbers) are the most book-narrative-
    affecting - do these together, since fixing PCM's characterization and adding Optane's real
    numbers are the same piece of work.
+
+## Evidence pass (2026-09-13)
+
+Every item above was re-checked for visible evidence in both `Project_Book.typ` and
+`presentation_deck.html` (on-slide, not only in hidden speaker notes). Seven were already fully covered
+(overarching framing, 1, 3&9, 6, and the calculation half of 8). Gaps found and closed the same day:
+
+- **2:** the deck's "One Chip → a Full DIMM" slide labeled 800 MHz a "device clock" on-slide; relabeled as
+  an uncited DIMM-interface assumption, matching §2.3.
+- **4:** the book never stated that no typical figure exists; §3.1.2 and §3.1.6 item 8 now do ([29],
+  JEDEC's max-only IDD template).
+- **5:** the queue-depth result is now on the main streaming slide, not only a backup.
+- **7:** book §3.1.2 and the Full-Module Power slide now explain PCM's low power: its inherited NVMain
+  leakage constant, never NVSim-characterized, with no gating credit.
+- **8:** the 10⁷-vs-10⁹ reconciliation is now in book §3.1.4 and on the Endurance slide, with new refs
+  [45] Chen et al. (IEEE TED 2012) and [46] Hellenbrand et al. (MRS Communications 2024) plus [15]. Only the
+  live question - which figure or capacity Shahar recalled - remains.
+- **10:** book §3.1.4 and the summary-slide footnote now state that 1S1R's longer life is a consequence
+  of its slower writes, not a separate advantage.
+
