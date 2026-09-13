@@ -145,8 +145,7 @@ ReRAM replace DDR5 in a commodity DIMM?"
 **Slide 10 - One chip → a full DIMM (numbers to have cold)**
 - On-slide: stat callouts - 1 Gb per-chip capacity (gigabit, not
   gigabyte; Table 1) · 1-64 chips replicated per config (single →
-  8chip → 16chip → full DIMM) · 800 MHz ReRAM device clock (PCM 400 MHz,
-  DDR5 2400 MHz) · 64-bit DIMM bus width · 8/16 GB full-DIMM capacity,
+  8chip → 16chip → full DIMM) · 800 MHz ReRAM DIMM interface - a disclosed assumption with no ReRAM citation (PCM 400 MHz, DDR5 2400 MHz) · 64-bit DIMM bus width · 8/16 GB full-DIMM capacity,
   SLC / MLC (2 bits/cell doubles it) · 3 GHz host CPU issue rate
   (CPUFreq) - same for ReRAM, PCM, and DDR5, explicitly labeled "not a
   device clock" so it doesn't read as DDR5's own frequency · one lede line: 64 × 1 Gb
@@ -285,7 +284,7 @@ ReRAM replace DDR5 in a commodity DIMM?"
 
 **Slide 18 - Streaming: the honest number**
 `results/slide_graphs/16_streaming_honest.png`
-- On-slide: STREAM latency (DDR5/1T1R SLC/1S1R SLC; 1T1R SLC is 1.7-2.0x DDR5 across LBM and STREAM) next to LBM completion rate (100% → 39.8% → 28.0% → 22.4% → 13.5% → 3.9%, idle-gating re-run)
+- On-slide: STREAM latency (DDR5/1T1R SLC/1S1R SLC; 1T1R SLC is 1.7-2.0x DDR5 across LBM and STREAM) next to LBM completion rate (100% → 39.8% → 28.0% → 22.4% → 13.5% → 3.9%, idle-gating re-run); second lede (2026-09-13, Shahar item 5): a deeper controller queue (32 → 64) lifts 1T1R SLC completion 40.0% → 40.7% at +83% latency (Appendix A)
 - Say: the book was updated 2026-08-23 to match this framing
   (compute-bound, streaming penalty disclosed) - the completion panel is the point: 1T1R only finishes 39.8% of what DDR5 finishes in the same window, so the reported latency ratio
   understates the real gap. Streaming is the weakest regime, say so
@@ -323,7 +322,7 @@ ReRAM replace DDR5 in a commodity DIMM?"
 
 **Slide 22 - Full-module power**
 `results/slide_graphs/20_module_power.png`
-- On-slide: 1T1R 50.9 W (infeasible) · 1S1R 1.12 W · DDR5 0.623 W (real, gated) · PCM 0.040 W (no power-down activity) · ReRAM power-down fires on 86-89% of cycle-slots, no savings claimed
+- On-slide: 1T1R 50.9 W (infeasible) · 1S1R 1.12 W · DDR5 0.623 W (real, gated) · PCM 0.040 W (its inherited NVMain leakage constant, never NVSim-characterized - no gating credit; Shahar item 7) · ReRAM power-down fires on 86-89% of cycle-slots, no savings claimed
 
 **Slide 23 - Power-Delay Product**
 `results/slide_graphs/21_pdp_geomean.png`
@@ -409,7 +408,7 @@ was "Breaking the flatline")
 - On-slide (2026-09-05, Shahar-notes item 8): added a lede showing the
   actual endurance calculation worked out (134.2M cache-line locations ×
   10⁷ rated cycles ≈ 1.34×10¹⁵ total writes ÷ LBM's ~39.1M writes/s
-  annualized ≈ 1.09 yr at 8 GB, from 3,257,597 LBM writes ≈ 39.1M writes/s in the idle-gating re-run) instead of only stating the conclusion -
+  annualized ≈ 1.09 yr at 8 GB, from 3,257,597 LBM writes ≈ 39.1M writes/s in the idle-gating re-run); second lede (2026-09-13, Shahar item 8): why 10⁷ not 10⁹ - >10¹⁰ on single lab devices [45], sparse single-device claims overestimate endurance [15], shipped RRAM rated 10⁴-10⁷ [46] instead of only stating the conclusion -
   answers Shahar's "show calculations" request directly. First version
   overflowed the slide (equation + full speaker note together); fixed by
   trimming the speaker note, which was largely redundant once the math
@@ -533,7 +532,7 @@ callouts + badge, no chart)*
 - References Used on the Slides: resolves every [N] bracket now appearing
   on main slides (47x-fact, SLC/MLC, Bridge-in-parameters, Where This
   Sits) - [3] NVSim, [4] NVMain, [6]/[31] EMBER, [7] resistance targets,
-  [33] recessed-channel, [32] Optane real-hardware anchor point (added 2026-09-09 alongside the Where This Sits slide's new Optane bullet), plus (2026-09-12) [10] JESD79-5D, [11] Lee et al., [14]/[15] endurance targets, [41] Choi et al., [42] Kau et al., [43] ITRS 2011, [44] Auth et al.
+  [33] recessed-channel, [32] Optane real-hardware anchor point (added 2026-09-09 alongside the Where This Sits slide's new Optane bullet), plus (2026-09-12) [10] JESD79-5D, [11] Lee et al., [14]/[15] endurance targets, [41] Choi et al., [42] Kau et al., [43] ITRS 2011, [44] Auth et al., and (2026-09-13) [45] Chen et al., [46] Hellenbrand et al.
 - 2026-09-02 (Lead-caught): both the "Full 14-item fidelity audit" list
   and "References Used on the Slides" (grown to 10 and 9 items
   respectively as items were added over this session) overflowed the
@@ -551,7 +550,7 @@ callouts + badge, no chart)*
   first): (1) since `MBMM Project Book UPDATED.docx` (last version
   presented) - fidelity audit deepened 11/9 found/repaired to 14/13, the
   DDR5 CAS-RCD-RP timing and ReRAM MLC-multiplier fixes, new Section 1.3
-  Related Work, references 30->44, 128GB 1T1R SLC lifetime 24.4->17.4yr,
+  Related Work, references 30->46, 128GB 1T1R SLC lifetime 24.4->17.4yr,
   headline verdict unchanged; (2) since the SysTOR poster - the poster's numbers held up under re-verification (~25yr@128GB matches; the 2.3x latency is now 2.1x, 192.3/90.2 ns, because DDR5 slowed with its real 40-39-39 timing and restored idle-gating), what's new is the explicit measured-vs-projected disclosure
   layer (only 8/16GB was ever physically simulated) and the audit
   narrative growing from the poster's implicit lineage to a documented 14/13. Positions (2026-09-12): the last four slides - divider, Backup 1/3 Since the 3 September Review, Backup 2/3 Since the Last Book Version, Backup 3/3 Since the SysTOR Poster.
@@ -646,3 +645,22 @@ not elsewhere. Everything above now matches the book. The main changes:
 - **New backup slide:** "Since the 3 September Review" (8 items, each with its book section).
 - **Future work:** larger full-model AI trace; chip-count matrix re-run under restored idle-gating.
 - **Charts regenerated** from live data: 16 (completion), 21 (PDP label no longer clipped), 26 (endurance).
+
+## 2026-09-13 additions: Shahar-notes evidence pass
+
+A note-by-note search of book and deck for evidence on all 11 of Shahar's 2026-09-03 points found
+seven fully covered and four with gaps, now closed:
+
+- **Item 2 (800 MHz):** Slide "One Chip → a Full DIMM" called 800 MHz a "device clock" on-slide,
+  contradicting the book (an interface assumption); the caveat lived only in the hidden speaker note.
+  Label now reads "ReRAM DIMM interface: an assumption, no ReRAM citation".
+- **Item 4 (DDR5 typical):** the book now states what the deck already claimed - vendors publish only
+  worst-case IDD limits ([29], JEDEC's max-only template), so no typical figure exists to use.
+- **Item 5 (write buffers):** the main streaming slide now carries the queue-depth result, not only the backup.
+- **Item 7 (PCM too good):** book §3.1.2 and the Full-Module Power slide now say why PCM is low - its
+  inherited NVMain leakage constant, never NVSim-characterized - not a gating benefit.
+- **Item 8 (10⁷ vs 10⁹):** book §3.1.4 and the Endurance slide now reconcile the two with new refs [45]
+  (Chen et al., TED 2012) and [46] (Hellenbrand et al., MRS Communications 2024), plus [15].
+- **Item 10 (1S1R vs 1T1R):** book §3.1.4 and the summary-slide footnote now state that 1S1R's longer
+  life is a consequence of its slower writes, not a separate advantage.
+

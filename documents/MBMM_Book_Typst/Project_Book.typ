@@ -948,7 +948,7 @@ commodity-envelope number: 1.12 W (97% static), refresh-free, with
 essentially every milliwatt of its draw exposed to future idle-gating.
 The repaired leakage wiring prices the alternative just as clearly: the
 transistor-gated 1T1R module leaks 50.9 W (99.98% static), roughly two
-orders of magnitude above DDR5, and PCM sits at 0.040 W (91% static).
+orders of magnitude above DDR5, and PCM sits at 0.040 W (91% static) - a figure that reflects PCM\'s inherited model rather than a gating advantage: its static floor is the leakage constant of the NVMain configuration it inherits (Section 2.3), never characterized through this project\'s NVSim pipeline, and its power-down mechanism never engages (Table 3 note).
 Real dynamic power is small for every ReRAM configuration (12-48 mW module-wide under GCC, now technology-differentiated through the
 repaired access energies of Section 3.1.6, item 10): with no gating savings claimed, ReRAM power is leakage, full stop.
 
@@ -997,9 +997,7 @@ lands within 1.8x of DDR5 at the restored, real floor (within
 headroom unexercised - a credible successor profile - while an always-on
 1T1R DIMM, at 67-82x DDR5\'s power, is infeasible even with gating. One
 honest bound on that comparison: both ends of the DDR5 band are vendor
-#emph[specification] currents (Section 2.3), not measured typicals - a
-typical-current module sits below the spec-limit ceiling - so the
-11%-of-parity figure is the most favorable end of a disclosed range, not
+#emph[specification] currents (Section 2.3), not measured typicals, and no typical figure exists to substitute: every Micron DDR5 datasheet checked, including \[29\], labels its only IDD column as worst-case current limits, no SK hynix typical figure was found, and JEDEC\'s own DDR5 IDD reporting template (a JC42.3 committee draft of \[10\]) defines only a maximum column. A typical-current module would sit below the spec-limit ceiling, so the 11%-of-parity figure is the most favorable end of a disclosed range, not
 an expected-case estimate. The
 selector\'s leakage discipline is thereby elevated from a device
 curiosity to the deciding architectural requirement.
@@ -1332,8 +1330,7 @@ ReRAM cells are typically rated at 10#super[7] cycles and MLC at
 wide range of endurance values reported across published metal-oxide
 RRAM demonstrations \[14\], with conservatism warranted by documented
 methodological inconsistencies in reported endurance data \[15\] - the
-practical lifetime under real workloads depends on the actual write
-frequency, not the worst-case specification. In NVMain, each recorded
+practical lifetime under real workloads depends on the actual write frequency, not the worst-case specification. Higher ratings do appear in the literature - single-device laboratory demonstrations report >10#super[10] cycles, for example in a 40 nm HfO#sub[2]/Hf 1T1R cell \[45\] - but \[15\] finds that most endurance claims above 10#super[6] cycles rest on very few measured data points from a single device and overestimate lifetime, while shipped and qualified filamentary RRAM parts are specified at 10#super[4]-10#super[7] cycles \[46\]. The 10#super[7] SLC rating therefore sits at the top of production reality rather than at laboratory records; a 10#super[9] rating would scale every lifetime below by 100x. In NVMain, each recorded
 write event programs one 64-byte cache line, so wear is accounted per
 line location: the physical 8 GB SLC full-DIMM module (64 chips of 1 Gb)
 comprises 134.2 million cache-line locations, and lifetime is the time
@@ -1408,8 +1405,7 @@ magnitude or more beyond it (35.5 years for STREAM, 262 years for AlexNet OFMAP)
 write rate over the module\'s entire cell population, lifetime scales
 linearly with capacity: at the 64-128 GB module sizes where ReRAM\'s
 density advantage is actually realized, worst-case SLC lifetime reaches
-9-17 years (the slower-writing selector variant, 12-25), meeting the
-target at 64 GB and exceeding it at 128 GB. MLC is harsher: at its
+9-17 years (the slower-writing selector variant, 12-25 - longer only because its slower writes complete fewer writes per window, Table 7), meeting the target at 64 GB and exceeding it at 128 GB. MLC is harsher: at its
 physical 16 GB module the measured LBM lifetimes are 0.39 years (1T1R)
 and 0.65 years (1S1R), and even at 128 GB they remain below or marginal
 to the target - an independent endurance argument for restricting MLC to
@@ -1545,8 +1541,7 @@ the IDD current magnitudes were subsequently calibrated to published
 vendor datasheets (Micron and SK hynix 16 Gb DDR5-4800 tables) \[29\],
 \[30\], run as a two-vendor band - the conservative SK hynix floor is
 this book\'s headline, the Micron ceiling is reported alongside - with a
-documented caveat that datasheet IDD values are specification limits
-rather than typicals; calibrating with real currents also exposed and
+documented caveat that datasheet IDD values are specification limits rather than typicals (vendors publish no typical DDR5 IDD figure to use instead, Section 3.1.2); calibrating with real currents also exposed and
 forced the repair of a sign artifact in NVMain\'s activate-energy
 formula (clamped at zero, worst case 2.8% of module power before the
 fix). (9) Found and fixed: the PCM baseline\'s cycle timings were
@@ -2514,6 +2509,10 @@ data, has been made publicly available.
 #strong[\[43\]] International Technology Roadmap for Semiconductors, 2011 Edition, Process Integration, Devices, and Structures (PIDS), Semiconductor Industry Association, 2011, pp. 10-11 (subthreshold source/drain leakage current design targets: HP logic 100 nA/µm, LOP logic 5 nA/µm, LSTP logic 10 pA/µm).
 
 #strong[\[44\]] C. Auth et al., \"A 22nm High Performance and Low-Power CMOS Technology Featuring Fully-Depleted Tri-Gate Transistors, Self-Aligned Contacts and High Density MIM Capacitors,\" in #emph[2012 Symposium on VLSI Technology (VLSIT) Digest of Technical Papers], June 2012, pp. 131-132.
+
+#strong[\[45\]] Y. Y. Chen, B. Govoreanu, L. Goux, R. Degraeve, A. Fantini, G. S. Kar, D. J. Wouters, G. Groeseneken, J. A. Kittl, M. Jurczak, and L. Altimime, \"Balancing SET/RESET Pulse for >10#super[10] Endurance in HfO#sub[2]/Hf 1T1R Bipolar RRAM,\" #emph[IEEE Trans. Electron Devices], vol. 59, no. 12, pp. 3243-3249, Dec. 2012. DOI: 10.1109/TED.2012.2218607
+
+#strong[\[46\]] M. Hellenbrand, I. Teck, and J. L. MacManus-Driscoll, \"Progress of emerging non-volatile memory technologies in industry,\" #emph[MRS Communications], vol. 14, pp. 1099-1112, 2024. DOI: 10.1557/s43579-024-00660-2
 
 #pagebreak() <section-3>
 = Appendix A: Simulation Parameters and Literature Grounding
