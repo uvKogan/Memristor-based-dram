@@ -1,0 +1,189 @@
+User-defined configuration file (/home/yuvalk/MBMM/documents/MBMM_Book_Typst/research_notes/leak47x_runs/sw_1S1R_m256_2x8.cfg) is loaded
+
+Memory Cell: RRAM (Memristor)
+Cell Area (F^2)    : 4.000 (2.000Fx2.000F)
+Cell Aspect Ratio  : 1.000
+Cell Turned-On Resistance : 100.000Kohm
+Cell Turned-Off Resistance: 1000.000Mohm
+Read Mode: Current-Sensing
+  - Read Voltage: 1.400V
+Reset Mode: Voltage
+  - Reset Voltage: 2.000V
+  - Reset Pulse: 10.000ns
+Set Mode: Voltage
+  - Set Voltage: 2.000V
+  - Set Pulse: 10.000ns
+Access Type: Diode
+>>> [DEBUG] Entering applyConstraint...
+>>> [DEBUG] Exiting applyConstraint successfully!
+
+====================
+DESIGN SPECIFICATION
+====================
+Design Target: Random Access Memory
+Capacity   : 128MB
+Data Width : 512Bits (64Bytes)
+
+Searching for the best solution that is optimized for area ...
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+>>> [DEBUG-SOLVER] Exploring Geometry: 2x2
+>>> [DEBUG-AREA] width: 0.000 | height: 0.000
+>>> [CRITICAL] Zero dimension detected!
+>>> [DEBUG-LATENCY] entering CalculateLatency...
+>>> [DEBUG-SENSE] Subarray width: 0.000
+
+=============
+CONFIGURATION
+=============
+Bank Organization: 2 x 8
+ - Row Activation   : 1 / 2
+ - Column Activation: 8 / 8
+Mat Organization: 2 x 2
+ - Row Activation   : 2 / 2
+ - Column Activation: 2 / 2
+ - Subarray Size    : 4096 Rows x 4096 Columns
+Mux Level:
+ - Senseamp Mux      : 256
+ - Output Level-1 Mux: 1
+ - Output Level-2 Mux: 1
+Local Wire:
+ - Wire Type : Local Aggressive
+ - Repeater Type: No Repeaters
+ - Low Swing : No
+Global Wire:
+ - Wire Type : Global Aggressive
+ - Repeater Type: No Repeaters
+ - Low Swing : No
+Buffer Design Style: Latency-Optimized
+=============
+   RESULT
+=============
+Area:
+ - Total Area = 734.248um x 3.674mm = 2.697mm^2
+ |--- Mat Area      = 367.124um x 459.217um = 168589.753um^2   (77.064%)
+ |--- Subarray Area = 183.562um x 221.122um = 40589.612um^2   (80.022%)
+ - Area Efficiency = 77.064%
+Timing:
+ -  Read Latency = 12.932ns
+ |--- H-Tree Latency = 6.115ns
+ |--- Mat Latency    = 6.817ns
+    |--- Predecoder Latency = 160.875ps
+    |--- Subarray Latency   = 6.656ns
+       |--- Row Decoder Latency = 2.576ns
+       |--- Bitline Latency     = 2.292ns
+       |--- Senseamp Latency    = 1.453ns
+       |--- Mux Latency         = 335.631ps
+       |--- Precharge Latency   = 8.551ns
+ - Write Latency = 33.072ns
+ |--- H-Tree Latency = 3.058ns
+ |--- Mat Latency    = 30.015ns
+    |--- Predecoder Latency = 160.875ps
+    |--- Subarray Latency   = 29.854ns
+       |--- Row Decoder Latency = 2.576ns
+       |--- Charge Latency      = 4.407ns
+ - Read Bandwidth  = 5.067GB/s
+ - Write Bandwidth = 2.144GB/s
+Power:
+ -  Read Dynamic Energy = 1.951nJ
+ |--- H-Tree Dynamic Energy = 137.677pJ
+ |--- Mat Dynamic Energy    = 226.611pJ per mat
+    |--- Predecoder Dynamic Energy = 0.066pJ
+    |--- Subarray Dynamic Energy   = 56.636pJ per active subarray
+       |--- Row Decoder Dynamic Energy = 0.119pJ
+       |--- Mux Decoder Dynamic Energy = 0.143pJ
+       |--- Bitline & Cell Read Energy = 0.911pJ
+       |--- Senseamp Dynamic Energy    = 2.402pJ
+       |--- Mux Dynamic Energy         = 0.050pJ
+       |--- Precharge Dynamic Energy   = 0.482pJ
+ - Write Dynamic Energy = 1.604nJ
+ |--- H-Tree Dynamic Energy = 137.677pJ
+ |--- Mat Dynamic Energy    = 183.331pJ per mat
+    |--- Predecoder Dynamic Energy = 0.066pJ
+    |--- Subarray Dynamic Energy   = 45.816pJ per active subarray
+       |--- Row Decoder Dynamic Energy = 0.119pJ
+       |--- Mux Decoder Dynamic Energy = 0.143pJ
+       |--- Mux Dynamic Energy         = 0.050pJ
+ - Leakage Power = 55.061mW
+ |--- H-Tree Leakage Power = 0.000pW
+ |--- Mat Leakage Power    = 3.441mW per mat
+
+Finished!
