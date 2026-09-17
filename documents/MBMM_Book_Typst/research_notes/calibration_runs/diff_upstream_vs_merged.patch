@@ -1,0 +1,1341 @@
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/BankWithHtree.cpp nvsim_merged/BankWithHtree.cpp
+--- upstream_nvsim/BankWithHtree.cpp	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/BankWithHtree.cpp	2026-09-15 23:03:18.231166588 +0300
+@@ -168,7 +168,7 @@
+ 	/* Calculate the physical signals that are required in routing */
+ 	numAddressBit = (int)(log2((double)capacity / blockSize / associativity) + 0.1);
+ 			/* use double during the calculation to avoid overflow */
+-	if (memoryType == data) {
++	if (memoryType == dataT) {
+ 		numDataDistributeBit = blockSize;
+ 		numDataBroadcastBit = (int)(log2(associativity));	/* TO-DO: this is not the only way */
+ 	} else if (memoryType == tag) {
+@@ -400,7 +400,7 @@
+ 	}
+ 
+ 	/* If this mat is cache data array, determine if the number of cache ways assigned to this mat is legal */
+-	if (memoryType == data) {
++	if (memoryType == dataT) {
+ 		if (numRowPerSet > (int)pow(2, numDataBroadcastBitToRoute)) {
+ 			/* There is no enough ways to distribute into multiple rows */
+ 			invalid = true;
+@@ -427,7 +427,7 @@
+ 
+ 	/* Determine the number of columns in a mat */
+ 	long matBlockSize;
+-	if (memoryType == data) {		/* Data array */
++	if (memoryType == dataT) {		/* Data array */
+ 		/* numDataDistributeBit is the bits in a data word that is assigned to this mat */
+ 		matBlockSize = numDataDistributeBitToRoute;
+ 		numWay = (int)pow(2, numDataBroadcastBitToRoute);
+@@ -514,7 +514,7 @@
+ 		}
+ 
+ 		/* Determine if the aspect ratio meets the constraint */
+-		if (memoryType == data)
++		if (memoryType == dataT)
+ 			if (height / width > CONSTRAINT_ASPECT_RATIO_BANK || width / height > CONSTRAINT_ASPECT_RATIO_BANK) {
+ 				/* illegal */
+ 				invalid = true;
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/BankWithoutHtree.cpp nvsim_merged/BankWithoutHtree.cpp
+--- upstream_nvsim/BankWithoutHtree.cpp	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/BankWithoutHtree.cpp	2026-09-15 23:03:18.231166588 +0300
+@@ -131,7 +131,7 @@
+ 	numDataBitRouteToMat = blockSize;
+ 
+ 
+-	if (memoryType == data) { /* Data array */
++	if (memoryType == dataT) { /* Data array */
+ 		numDataBitRouteToMat = blockSize / numActiveMatPerColumn / numActiveMatPerRow;
+ 		if (numRowPerSet > associativity) {
+ 			/* There is no enough ways to distribute into multiple rows */
+@@ -201,19 +201,23 @@
+ 		if (cell->memCellType == SRAM) {
+ 			/* SRAM, DRAM, and eDRAM all use voltage sensing */
+ 			voltageSense = true;
+-		} else if (cell->memCellType == MRAM || cell->memCellType == PCRAM || cell->memCellType == memristor || cell->memCellType == FBRAM) {
++		} else if (cell->memCellType == MRAM || cell->memCellType == PCRAM || cell->memCellType == memristor || cell->memCellType == FBRAM || cell->memCellType == FeFET || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM) {
+ 			voltageSense = cell->readMode;
+ 		} else {/* NAND flash */
+ 			// TO-DO
+ 		}
+ 
+ 		int numSenseAmp;
+-		if (memoryType == data)
++		if (memoryType == dataT)
+ 			numSenseAmp = blockSize;
+ 		else
+ 			numSenseAmp = blockSize * associativity;
+ 
+-		globalSenseAmp.Initialize(numSenseAmp, !voltageSense, senseVoltage, mat.width * numColumnMat / numSenseAmp);
++                bool mlc = false; 
++                if (cell->memCellType == MLCCTT || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM) {
++                    mlc = true;
++                }
++		globalSenseAmp.Initialize(numSenseAmp, !voltageSense, senseVoltage, mat.width * numColumnMat / numSenseAmp, mlc, cell->nLvl, cell->nFingers);
+ 		if (globalSenseAmp.invalid) {
+ 			invalid = true;
+ 			initialized = true;
+@@ -269,7 +273,7 @@
+ 		}
+ 
+ 		/* Determine if the aspect ratio meets the constraint */
+-		if (memoryType == data)
++		if (memoryType == dataT)
+ 			if (height / width > CONSTRAINT_ASPECT_RATIO_BANK || width / height > CONSTRAINT_ASPECT_RATIO_BANK) {
+ 				/* illegal */
+ 				invalid = true;
+@@ -365,7 +369,7 @@
+ 						readDynamicEnergy += capGlobalBitline * vpre * vpre * numWay;
+ 						writeDynamicEnergy += capGlobalBitline * vpre * vpre * numDataBitRouteToMat;
+ 					}
+-				} else if (cell->memCellType == MRAM || cell->memCellType == PCRAM || cell->memCellType == memristor || cell->memCellType == FBRAM) {
++				} else if (cell->memCellType == MRAM || cell->memCellType == PCRAM || cell->memCellType == memristor || cell->memCellType == FBRAM || cell->memCellType == FeFET || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM) {
+ 					double vWrite = MAX(fabs(cell->resetVoltage), fabs(cell->setVoltage));
+ 					double tau, latencyOff, latencyOn;
+ 					double vPre = mat.subarray.voltagePrecharge;
+Only in nvsim_merged: Buffer.cpp
+Only in nvsim_merged: Buffer.h
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/Comparator.cpp nvsim_merged/Comparator.cpp
+--- upstream_nvsim/Comparator.cpp	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/Comparator.cpp	2026-09-15 23:03:18.235100758 +0300
+@@ -98,7 +98,7 @@
+ 		cout << "[Comparator] Error: Require initialization first!" << endl;
+ 	} else {
+ 		for (int i = 0; i < COMPARATOR_INV_CHAIN_LEN; i++) {
+-			CalculateGateCapacitance(INV, 1, widthNMOSInv[i], widthPMOSInv[i], tech->featureSize * MAX_TRANSISTOR_HEIGHT, *tech, &(capInput[i]), &(capOutput[i]));
++                    CalculateGateCapacitance(INV, 1, widthNMOSInv[i], widthPMOSInv[i], tech->featureSize * MAX_TRANSISTOR_HEIGHT, *tech, &(capInput[i]), &(capOutput[i]));
+ 		}
+ 		double capComp, capTemp;
+ 		CalculateGateCapacitance(NAND, 2, widthNMOSComp, 0, tech->featureSize*40, *tech, &capTemp, &capComp);
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/Mat.cpp nvsim_merged/Mat.cpp
+--- upstream_nvsim/Mat.cpp	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/Mat.cpp	2026-09-15 23:03:18.235100758 +0300
+@@ -100,7 +100,7 @@
+ 
+ 	/* Determine the number of rows in a subarray */
+ 	numRow = 1 << _numAddressBit;
+-	if (memoryType == data)
++	if (memoryType == dataT)
+ 		numRow *= numWay;	/* Only for cache design that partitions a set into multiple rows */
+ 	numRow /= (muxSenseAmp * muxOutputLev1 * muxOutputLev2);	/* Distribute to column decoding */
+ 	if (numRow == 0) {
+@@ -120,9 +120,15 @@
+ 	if (memoryType == tag)
+ 		numColumn *= numWay;
+ 
++        //Qing: for data array, numColumn must be times of 64b
++        if (memoryType == dataT && (numColumn % 64 > 0)) {
++		invalid = true;
++		initialized = true;
++		return;
++	}
++
+ 	subarray.Initialize(numRow, numColumn, numRowPerSet > 1, true /* TO-DO: need to correct */,
+ 			muxSenseAmp, internalSenseAmp, muxOutputLev1, muxOutputLev2, areaOptimizationLevel);
+-
+ 	if (subarray.invalid) {
+ 		invalid = true;
+ 		initialized = true;
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/MemCell.cpp nvsim_merged/MemCell.cpp
+--- upstream_nvsim/MemCell.cpp	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/MemCell.cpp	2026-09-15 23:03:18.235100758 +0300
+@@ -88,6 +88,10 @@
+ 	resistanceOffAtReadVoltage = 0;
+ 	resistanceOnAtHalfReadVoltage = 0;
+ 	resistanceOffAtHalfReadVoltage = 0;
++
++        /*For multi-level cells SA*/
++        nFingers = 8;
++        nLvl = 4;
+ }
+ 
+ MemCell::~MemCell() {
+@@ -122,6 +126,16 @@
+ 				memCellType = FBRAM;
+ 			else if (!strcmp(tmp, "memristor"))
+ 				memCellType = memristor;
++                        else if (!strcmp(tmp, "CTT"))
++                                memCellType = CTT;
++                        else if (!strcmp(tmp, "MLCCTT"))
++                                memCellType = MLCCTT;
++                        else if (!strcmp(tmp, "FeFET"))
++                                memCellType = FeFET;
++                        else if (!strcmp(tmp, "MLCFeFET"))
++                                memCellType = MLCFeFET;
++                        else if (!strcmp(tmp, "MLCRRAM"))
++                                memCellType = MLCRRAM;
+ 			else if (!strcmp(tmp, "SLCNAND"))
+ 				memCellType = SLCNAND;
+ 			else
+@@ -424,6 +438,25 @@
+ 			}
+ 			continue;
+ 		}
++
++        if (!strncmp("-InputFingers", line, strlen("-InputFingers"))) {
++            if (memCellType != MLCCTT && memCellType != MLCFeFET && memCellType != MLCRRAM)
++                cout << "Warning: this parameters is used only for MLC Sense Amplifiers." << endl;
++            else {
++                sscanf(line, "-InputFingers: %d", &nFingers);
++            }
++            continue;
++        }
++        
++        if (!strncmp("-CellLevels", line, strlen("-CellLevels"))) {
++            if (memCellType != MLCCTT && memCellType != MLCFeFET && memCellType != MLCRRAM)
++                cout << "Warning: this parameters is used only for MLC." << endl;
++            else {
++                sscanf(line, "-CellLevels: %lf", &nLvl);
++            }
++            continue;
++        }
++                
+ 	}
+ 
+ 	fclose(fp);
+@@ -477,7 +510,7 @@
+ }
+ 
+ double MemCell::GetMemristance(double _relativeReadVoltage) { /* Get the LRS resistance of memristor at log-linera region of I-V curve */
+-	if (memCellType == memristor) {
++	if (memCellType == memristor || memCellType == FeFET || memCellType == MLCFeFET || memCellType == MLCRRAM) {
+ 		double x1, x2, x3;  // x1: read voltage, x2: half voltage, x3: applied voltage
+ 		if (readVoltage == 0) {
+ 			x1 = readCurrent * resistanceOnAtReadVoltage;
+@@ -499,8 +532,9 @@
+ 
+ void MemCell::CalculateWriteEnergy() {
+ 	if (resetEnergy == 0) {
++                cout << " Warning: over-writing reset energy" << endl;
+ 		if (resetMode) {
+-			if (memCellType == memristor)
++			if (memCellType == memristor || memCellType == FeFET || memCellType == MLCFeFET || memCellType == MLCRRAM)
+ 				if (accessType == none_access)
+ 					resetEnergy = fabs(resetVoltage) * (fabs(resetVoltage) - voltageDropAccessDevice) / resistanceOnAtResetVoltage * resetPulse;
+ 				else
+@@ -533,8 +567,9 @@
+ 		}
+ 	}
+ 	if (setEnergy == 0) {
++                cout << " Warning: over-writing set energy" << endl;
+ 		if (setMode) {
+-			if (memCellType == memristor)
++			if (memCellType == memristor || memCellType == FeFET || memCellType == MLCFeFET || memCellType == MLCRRAM)
+ 				if (accessType == none_access)
+ 					setEnergy = fabs(setVoltage) * (fabs(setVoltage) - voltageDropAccessDevice) / resistanceOnAtSetVoltage * setPulse;
+ 				else
+@@ -620,13 +655,28 @@
+ 	case MLCNAND:
+ 		cout << "Memory Cell: Multi-Level Cell NAND Flash" << endl;
+ 		break;
++	case CTT:
++		cout << "Memory Cell: Single-Level Cell CTT" << endl;
++		break;
++	case MLCCTT:
++		cout << "Memory Cell: Multi-Level Cell CTT" << endl;
++		break;
++	case FeFET:
++		cout << "Memory Cell: Single-Level Cell FeFET" << endl;
++		break;
++	case MLCFeFET:
++		cout << "Memory Cell: Multi-Level Cell FeFET" << endl;
++		break;
++	case MLCRRAM:
++		cout << "Memory Cell: Multi-Level Cell RRAM (Memristor)" << endl;
++		break;
+ 	default:
+ 		cout << "Memory Cell: Unknown" << endl;
+ 	}
+ 	cout << "Cell Area (F^2)    : " << area << " (" << heightInFeatureSize << "Fx" << widthInFeatureSize << "F)" << endl;
+ 	cout << "Cell Aspect Ratio  : " << aspectRatio << endl;
+ 
+-	if (memCellType == PCRAM || memCellType == MRAM || memCellType == memristor || memCellType == FBRAM) {
++	if (memCellType == PCRAM || memCellType == MRAM || memCellType == memristor || memCellType == FBRAM || memCellType == FeFET || memCellType == MLCFeFET || memCellType == MLCRRAM) {
+ 		if (resistanceOn < 1e3 )
+ 			cout << "Cell Turned-On Resistance : " << resistanceOn << "ohm" << endl;
+ 		else if (resistanceOn < 1e6)
+@@ -696,5 +746,9 @@
+ 		cout << "Programming Time   : " << TO_SECOND(flashProgramTime) << endl;
+ 		cout << "Erase Time         : " << TO_SECOND(flashEraseTime) << endl;
+ 		cout << "Gate Coupling Ratio: " << gateCouplingRatio << endl;
+-	}
++	} 
++        if (memCellType == MLCCTT || memCellType == MLCFeFET || memCellType == MLCRRAM) {
++                cout << "Number of Input Fingers: " << nFingers << endl;
++                cout << "Number of Levels per Cell: " << nLvl << endl;
++        }
+ }
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/MemCell.h nvsim_merged/MemCell.h
+--- upstream_nvsim/MemCell.h	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/MemCell.h	2026-09-15 23:03:18.235100758 +0300
+@@ -111,7 +111,10 @@
+ 	double resistanceOnAtHalfReadVoltage; /* Low resistance state when 1/2 read voltage is applied */
+ 	double resistanceOffAtHalfReadVoltage; /* High resistance state when 1/2 read voltage is applied */
+ 	double resistanceOnAtHalfResetVoltage; /* Low resistance state when 1/2 reset voltage is applied */
+-
++    
++        /*For multi-level cells SA*/
++        int nFingers;
++        double nLvl;
+ 	/* For NAND flash */
+ 	double flashEraseVoltage;		/* The erase voltage, Unit: V, highest W/E voltage in ITRS sheet */
+ 	double flashPassVoltage;		/* The voltage applied on the unselected wordline within the same block during programming, Unit: V */
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/Mux.cpp nvsim_merged/Mux.cpp
+--- upstream_nvsim/Mux.cpp	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/Mux.cpp	2026-09-15 23:03:18.235100758 +0300
+@@ -64,14 +64,14 @@
+ 
+ 	if ((numInput > 1) && (numMux > 0 )) {
+ 		double minNMOSWidth = minDriverCurrent / tech->currentOnNmos[inputParameter->temperature - 300];
+-		if (cell->memCellType == MRAM || cell->memCellType == PCRAM || cell->memCellType == memristor) {
++		if (cell->memCellType == MRAM || cell->memCellType == PCRAM || cell->memCellType == memristor || cell->memCellType == FeFET || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM) {
+ 			/* Mux resistance should be small enough for voltage dividing */
+ 			double maxResNMOSPassTransistor = cell->resistanceOn * IR_DROP_TOLERANCE;
+-	    	widthNMOSPassTransistor = CalculateOnResistance(tech->featureSize, NMOS, inputParameter->temperature, *tech)
++	    	        widthNMOSPassTransistor = CalculateOnResistance(tech->featureSize, NMOS, inputParameter->temperature, *tech)
+ 					* tech->featureSize / maxResNMOSPassTransistor;
+-	    	if (widthNMOSPassTransistor > inputParameter->maxNmosSize * tech->featureSize) {	// Change the transistor size to avoid severe IR drop
+-	    		widthNMOSPassTransistor = inputParameter->maxNmosSize * tech->featureSize;
+-	    	}
++	    	        if (widthNMOSPassTransistor > inputParameter->maxNmosSize * tech->featureSize) {	// Change the transistor size to avoid severe IR drop
++	    		    widthNMOSPassTransistor = inputParameter->maxNmosSize * tech->featureSize;
++	    	        }
+ 			widthNMOSPassTransistor = MAX(MAX(widthNMOSPassTransistor,minNMOSWidth), 6 * MIN_NMOS_SIZE * tech->featureSize);
+ 		} else {
+ 			widthNMOSPassTransistor = MAX(6 * MIN_NMOS_SIZE * tech->featureSize, minNMOSWidth);
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/Result.cpp nvsim_merged/Result.cpp
+--- upstream_nvsim/Result.cpp	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/Result.cpp	2026-09-15 23:03:18.235100758 +0300
+@@ -308,6 +308,10 @@
+ 			<< cell->area * tech->featureSize * tech->featureSize * bank->capacity / bank->numRowMat
+ 			/ bank->numColumnMat / bank->numRowSubarray / bank->numColumnSubarray
+ 			/ bank->mat.subarray.area * 100 << "%)" <<endl;
++	//Qing: subarray buffer area
++	cout << " |--- Subarray Buffer Area = " << TO_METER(bank->mat.subarray.subarrayBuffer.height) << " x "
++			<< TO_METER(bank->mat.subarray.subarrayBuffer.width) << " = " << TO_SQM(bank->mat.subarray.subarrayBuffer.area) <<endl;
++	//Qing.
+ 	cout << " - Area Efficiency = " << cell->area * tech->featureSize * tech->featureSize
+ 			* bank->capacity / bank->area * 100 << "%" << endl;
+ 
+@@ -332,7 +336,7 @@
+ 	if (bank->mat.memoryType == tag && bank->mat.internalSenseAmp)
+ 		cout << "    |--- Comparator Latency  = " << TO_SECOND(bank->mat.comparator.readLatency) << endl;
+ 
+-	if (cell->memCellType == PCRAM || cell->memCellType == FBRAM ||
++	if (cell->memCellType == PCRAM || cell->memCellType == FBRAM || cell->memCellType == FeFET || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM ||
+ 			(cell->memCellType == memristor && (cell->accessType == CMOS_access || cell->accessType == BJT_access))) {
+ 		cout << " - RESET Latency = " << TO_SECOND(bank->resetLatency) << endl;
+ 		if (inputParameter->routingMode == h_tree)
+@@ -384,10 +388,19 @@
+ 		cout << "       |--- Charge Latency      = " << TO_SECOND(bank->mat.subarray.chargeLatency) << endl;
+ 	}
+ 
++	//Qing: subarray buffer latency
++	cout << "- Subarray Buf R/W Latency  = " << TO_SECOND(bank->mat.subarray.subarrayBuffer.readLatency) << endl;
++	cout << "- Subarray Buf XOR Latency  = " << TO_SECOND(bank->mat.subarray.subarrayBuffer.xorLatency) << endl;
++	//Qing.
++    //bank->mat.subarray.PrintProperty();	
+ 	double readBandwidth = (double)bank->blockSize /
+ 			(bank->mat.subarray.readLatency - bank->mat.subarray.rowDecoder.readLatency
+ 			+ bank->mat.subarray.precharger.readLatency) / 8;
+-	cout << " - Read Bandwidth  = " << TO_BPS(readBandwidth) << endl;
++	if (cell->memCellType == MLCCTT || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM) {
++            readBandwidth *= log2(cell->nLvl);
++        }
++        cout << " - Read Bandwidth  = " << TO_BPS(readBandwidth) << endl;
++
+ 	double writeBandwidth = (double)bank->blockSize /
+ 			(bank->mat.subarray.writeLatency) / 8;
+ 	cout << " - Write Bandwidth = " << TO_BPS(writeBandwidth) << endl;
+@@ -396,11 +409,11 @@
+ 
+ 	cout << " -  Read Dynamic Energy = " << TO_JOULE(bank->readDynamicEnergy) << endl;
+ 	if (inputParameter->routingMode == h_tree)
+-		cout << " |--- H-Tree Dynamic Energy = " << TO_JOULE(bank->readDynamicEnergy - bank->mat.readDynamicEnergy
++		cout << " |--- H-Tree Read Dynamic Energy = " << TO_JOULE(bank->readDynamicEnergy - bank->mat.readDynamicEnergy
+ 													* bank->numActiveMatPerColumn * bank->numActiveMatPerRow)
+ 													<< endl;
+ 	else
+-		cout << " |--- Non-H-Tree Dynamic Energy = " << TO_JOULE(bank->readDynamicEnergy - bank->mat.readDynamicEnergy
++		cout << " |--- Non-H-Tree Read Dynamic Energy = " << TO_JOULE(bank->readDynamicEnergy - bank->mat.readDynamicEnergy
+ 													* bank->numActiveMatPerColumn * bank->numActiveMatPerRow)
+ 													<< endl;
+ 	cout << " |--- Mat Dynamic Energy    = " << TO_JOULE(bank->mat.readDynamicEnergy) << " per mat" << endl;
+@@ -412,7 +425,7 @@
+ 	cout << "       |--- Mux Decoder Dynamic Energy = " << TO_JOULE(bank->mat.subarray.bitlineMuxDecoder.readDynamicEnergy
+ 													+ bank->mat.subarray.senseAmpMuxLev1Decoder.readDynamicEnergy
+ 													+ bank->mat.subarray.senseAmpMuxLev2Decoder.readDynamicEnergy) << endl;
+-	if (cell->memCellType == PCRAM || cell->memCellType == FBRAM || cell->memCellType == MRAM || cell->memCellType == memristor ) {
++	if (cell->memCellType == PCRAM || cell->memCellType == FBRAM || cell->memCellType == MRAM || cell->memCellType == memristor || cell->memCellType == FeFET || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM) {
+ 		cout << "       |--- Bitline & Cell Read Energy = " << TO_JOULE(bank->mat.subarray.cellReadEnergy) << endl;
+ 	}
+ 	if (inputParameter->internalSensing)
+@@ -421,16 +434,16 @@
+ 													+ bank->mat.subarray.senseAmpMuxLev1.readDynamicEnergy
+ 													+ bank->mat.subarray.senseAmpMuxLev2.readDynamicEnergy) << endl;
+ 	cout << "       |--- Precharge Dynamic Energy   = " << TO_JOULE(bank->mat.subarray.precharger.readDynamicEnergy) << endl;
+-
+-	if (cell->memCellType == PCRAM || cell->memCellType == FBRAM ||
++	
++	if (cell->memCellType == PCRAM || cell->memCellType == FBRAM || cell->memCellType == FeFET || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM ||
+ 			(cell->memCellType == memristor && (cell->accessType == CMOS_access || cell->accessType == BJT_access))) {
+ 		cout << " - RESET Dynamic Energy = " << TO_JOULE(bank->resetDynamicEnergy) << endl;
+ 		if (inputParameter->routingMode == h_tree)
+-			cout << " |--- H-Tree Dynamic Energy = " << TO_JOULE(bank->resetDynamicEnergy - bank->mat.resetDynamicEnergy
++			cout << " |--- H-Tree Write Dynamic Energy = " << TO_JOULE(bank->resetDynamicEnergy - bank->mat.resetDynamicEnergy
+ 														* bank->numActiveMatPerColumn * bank->numActiveMatPerRow)
+ 														<< endl;
+ 		else
+-			cout << " |--- H-Tree Dynamic Energy = " << TO_JOULE(bank->resetDynamicEnergy - bank->mat.resetDynamicEnergy
++			cout << " |--- H-Tree Write Dynamic Energy = " << TO_JOULE(bank->resetDynamicEnergy - bank->mat.resetDynamicEnergy
+ 														* bank->numActiveMatPerColumn * bank->numActiveMatPerRow)
+ 														<< endl;
+ 		cout << " |--- Mat Dynamic Energy    = " << TO_JOULE(bank->mat.resetDynamicEnergy) << " per mat" << endl;
+@@ -448,11 +461,11 @@
+ 		cout << "       |--- Cell RESET Dynamic Energy  = " << TO_JOULE(bank->mat.subarray.cellResetEnergy) << endl;
+ 		cout << " - SET Dynamic Energy = " << TO_JOULE(bank->setDynamicEnergy) << endl;
+ 		if (inputParameter->routingMode == h_tree)
+-			cout << " |--- H-Tree Dynamic Energy = " << TO_JOULE(bank->setDynamicEnergy - bank->mat.setDynamicEnergy
++			cout << " |--- H-Tree Write Dynamic Energy = " << TO_JOULE(bank->setDynamicEnergy - bank->mat.setDynamicEnergy
+ 														* bank->numActiveMatPerColumn * bank->numActiveMatPerRow)
+ 														<< endl;
+ 		else
+-			cout << " |--- Non-H-Tree Dynamic Energy = " << TO_JOULE(bank->setDynamicEnergy - bank->mat.setDynamicEnergy
++			cout << " |--- Non-H-Tree Write Dynamic Energy = " << TO_JOULE(bank->setDynamicEnergy - bank->mat.setDynamicEnergy
+ 														* bank->numActiveMatPerColumn * bank->numActiveMatPerRow)
+ 														<< endl;
+ 		cout << " |--- Mat Dynamic Energy    = " << TO_JOULE(bank->mat.setDynamicEnergy) << " per mat" << endl;
+@@ -471,11 +484,11 @@
+ 	} else if (cell->memCellType == SLCNAND) {
+ 		cout << " - Erase Dynamic Energy = " << TO_JOULE(bank->resetDynamicEnergy) << " per block" << endl;
+ 		if (inputParameter->routingMode == h_tree)
+-			cout << " |--- H-Tree Dynamic Energy = " << TO_JOULE(bank->resetDynamicEnergy - bank->mat.resetDynamicEnergy
++			cout << " |--- H-Tree Write Dynamic Energy = " << TO_JOULE(bank->resetDynamicEnergy - bank->mat.resetDynamicEnergy
+ 														* bank->numActiveMatPerColumn * bank->numActiveMatPerRow)
+ 														<< endl;
+ 		else
+-			cout << " |--- Non-H-Tree Dynamic Energy = " << TO_JOULE(bank->resetDynamicEnergy - bank->mat.resetDynamicEnergy
++			cout << " |--- Non-H-Tree Write Dynamic Energy = " << TO_JOULE(bank->resetDynamicEnergy - bank->mat.resetDynamicEnergy
+ 														* bank->numActiveMatPerColumn * bank->numActiveMatPerRow)
+ 														<< endl;
+ 		cout << " |--- Mat Dynamic Energy    = " << TO_JOULE(bank->mat.resetDynamicEnergy) << " per mat" << endl;
+@@ -492,11 +505,11 @@
+ 														+ bank->mat.subarray.senseAmpMuxLev2.writeDynamicEnergy) << endl;
+ 		cout << " - Programming Dynamic Energy = " << TO_JOULE(bank->setDynamicEnergy) << " per page" << endl;
+ 		if (inputParameter->routingMode == h_tree)
+-			cout << " |--- H-Tree Dynamic Energy = " << TO_JOULE(bank->setDynamicEnergy - bank->mat.setDynamicEnergy
++			cout << " |--- H-Tree Write Dynamic Energy = " << TO_JOULE(bank->setDynamicEnergy - bank->mat.setDynamicEnergy
+ 														* bank->numActiveMatPerColumn * bank->numActiveMatPerRow)
+ 														<< endl;
+ 		else
+-			cout << " |--- Non-H-Tree Dynamic Energy = " << TO_JOULE(bank->setDynamicEnergy - bank->mat.setDynamicEnergy
++			cout << " |--- Non-H-Tree Write Dynamic Energy = " << TO_JOULE(bank->setDynamicEnergy - bank->mat.setDynamicEnergy
+ 														* bank->numActiveMatPerColumn * bank->numActiveMatPerRow)
+ 														<< endl;
+ 		cout << " |--- Mat Dynamic Energy    = " << TO_JOULE(bank->mat.setDynamicEnergy) << " per mat" << endl;
+@@ -514,11 +527,11 @@
+ 	} else {
+ 		cout << " - Write Dynamic Energy = " << TO_JOULE(bank->writeDynamicEnergy) << endl;
+ 		if (inputParameter->routingMode == h_tree)
+-			cout << " |--- H-Tree Dynamic Energy = " << TO_JOULE(bank->writeDynamicEnergy - bank->mat.writeDynamicEnergy
++			cout << " |--- H-Tree Write Dynamic Energy = " << TO_JOULE(bank->writeDynamicEnergy - bank->mat.writeDynamicEnergy
+ 														* bank->numActiveMatPerColumn * bank->numActiveMatPerRow)
+ 														<< endl;
+ 		else
+-			cout << " |--- Non-H-Tree Dynamic Energy = " << TO_JOULE(bank->writeDynamicEnergy - bank->mat.writeDynamicEnergy
++			cout << " |--- Non-H-Tree Write Dynamic Energy = " << TO_JOULE(bank->writeDynamicEnergy - bank->mat.writeDynamicEnergy
+ 														* bank->numActiveMatPerColumn * bank->numActiveMatPerRow)
+ 														<< endl;
+ 		cout << " |--- Mat Dynamic Energy    = " << TO_JOULE(bank->mat.writeDynamicEnergy) << " per mat" << endl;
+@@ -538,6 +551,11 @@
+ 		}
+ 	}
+ 
++	//Qing: subarray buffer energy
++	cout << "- Subarray Buf R/W Energy = " << TO_JOULE(bank->mat.subarray.subarrayBuffer.readDynamicEnergy) << endl;
++	cout << "- Subarray Buf XOR Energy = " << TO_JOULE(bank->mat.subarray.subarrayBuffer.xorDynamicEnergy) << endl;
++	//Qing.
++	
+ 	cout << " - Leakage Power = " << TO_WATT(bank->leakage) << endl;
+ 	if (inputParameter->routingMode == h_tree)
+ 		cout << " |--- H-Tree Leakage Power = " << TO_WATT(bank->leakage - bank->mat.leakage
+@@ -552,7 +570,7 @@
+ 
+ 
+ void Result::printAsCache(Result &tagResult, CacheAccessMode cacheAccessMode) {
+-	if (bank->memoryType != data || tagResult.bank->memoryType != tag) {
++	if (bank->memoryType != dataT || tagResult.bank->memoryType != tag) {
+ 		cout << "This is not a valid cache configuration." << endl;
+ 		return;
+ 	} else {
+@@ -806,7 +824,7 @@
+ }
+ 
+ void Result::printAsCacheToCsvFile(Result &tagResult, CacheAccessMode cacheAccessMode, ofstream &outputFile) {
+-	if (bank->memoryType != data || tagResult.bank->memoryType != tag) {
++	if (bank->memoryType != dataT || tagResult.bank->memoryType != tag) {
+ 		cout << "This is not a valid cache configuration." << endl;
+ 		return;
+ 	} else {
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/RowDecoder.cpp nvsim_merged/RowDecoder.cpp
+--- upstream_nvsim/RowDecoder.cpp	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/RowDecoder.cpp	2026-09-15 23:03:18.235100758 +0300
+@@ -130,7 +130,7 @@
+ 		if (numNandInput == 0) {	/* no circuit needed, use predecoder outputs directly */
+ 			capNandInput = capNandOutput = 0;
+ 		} else {
+-			CalculateGateCapacitance(NAND, numNandInput, widthNandN, widthNandP, tech->featureSize * MAX_TRANSISTOR_HEIGHT, *tech, &capNandInput, &capNandOutput);
++            CalculateGateCapacitance(NAND, numNandInput, widthNandN, widthNandP, tech->featureSize * MAX_TRANSISTOR_HEIGHT, *tech, &capNandInput, &capNandOutput);
+ 		}
+ 	}
+ }
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/SenseAmp.cpp nvsim_merged/SenseAmp.cpp
+--- upstream_nvsim/SenseAmp.cpp	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/SenseAmp.cpp	2026-09-15 23:03:18.235100758 +0300
+@@ -49,7 +49,7 @@
+ 	// TODO Auto-generated destructor stub
+ }
+ 
+-void SenseAmp::Initialize(long long _numColumn, bool _currentSense, double _senseVoltage, double _pitchSenseAmp) {
++void SenseAmp::Initialize(long long _numColumn, bool _currentSense, double _senseVoltage, double _pitchSenseAmp, bool _mlc, double _numLvl, int _numF) {
+ 	if (initialized)
+ 		cout << "[Sense Amp] Warning: Already initialized!" << endl;
+ 
+@@ -57,6 +57,9 @@
+ 	currentSense = _currentSense;
+ 	senseVoltage = _senseVoltage;
+ 	pitchSenseAmp = _pitchSenseAmp;
++        mlc = _mlc;
++        numLvl = _numLvl;
++        numF = _numF;
+ 
+ 	if (pitchSenseAmp <= tech->featureSize * 2) {
+ 		/* too small, cannot do the layout */
+@@ -73,44 +76,66 @@
+ 		height = width = area = 1e41;
+ 	} else {
+ 		height = width = area = 0;
+-		if (currentSense) {	/* current-sensing needs IV converter */
+-			area += IV_CONVERTER_AREA * tech->featureSize * tech->featureSize;
+-		}
+-		/* the following codes are transformed from CACTI 6.5 */
+ 		double tempHeight = 0;
+ 		double tempWidth = 0;
+ 
+-		CalculateGateArea(INV, 1, 0, W_SENSE_P * tech->featureSize,
+-				pitchSenseAmp, *tech, &tempWidth, &tempHeight);	/* exchange width and height for senseamp layout */
+-		width = MAX(width, tempWidth);
+-		height += 2 * tempHeight;
+-		CalculateGateArea(INV, 1, 0, W_SENSE_ISO * tech->featureSize,
+-				pitchSenseAmp, *tech, &tempWidth, &tempHeight);	/* exchange width and height for senseamp layout */
++		CalculateGateArea(INV, 1, 0, W_SA_TOP * tech->featureSize,
++				pitchSenseAmp, *tech, &tempWidth, &tempHeight);
+ 		width = MAX(width, tempWidth);
+ 		height += tempHeight;
+-		height += 2 * MIN_GAP_BET_SAME_TYPE_DIFFS * tech->featureSize;
+-
+-		CalculateGateArea(INV, 1, W_SENSE_N * tech->featureSize, 0,
+-				pitchSenseAmp, *tech, &tempWidth, &tempHeight);	/* exchange width and height for senseamp layout */
++		
++		CalculateGateArea(INV, 1, 0, W_SA_P * tech->featureSize,
++				pitchSenseAmp, *tech, &tempWidth, &tempHeight);
+ 		width = MAX(width, tempWidth);
+ 		height += 2 * tempHeight;
+-		CalculateGateArea(INV, 1, W_SENSE_EN * tech->featureSize, 0,
+-				pitchSenseAmp, *tech, &tempWidth, &tempHeight);	/* exchange width and height for senseamp layout */
++		
++		CalculateGateArea(INV, 1, W_SA_N * tech->featureSize, 0,
++				pitchSenseAmp, *tech, &tempWidth, &tempHeight);
+ 		width = MAX(width, tempWidth);
+-		height += tempHeight;
+-		height += 2 * MIN_GAP_BET_SAME_TYPE_DIFFS * tech->featureSize;
+-
+-		height += MIN_GAP_BET_P_AND_N_DIFFS * tech->featureSize;
+-
++		height += 2 * tempHeight;
++		
++		CalculateGateArea(INV, 1, W_SA_BOT * tech->featureSize, 0,
++				pitchSenseAmp, *tech, &tempWidth, &tempHeight);
++		width = MAX(width, tempWidth);
++		height += 2 * tempHeight;
++        
++                /* Scale SA area for MLC programming, or defer to ISLPED modeled values for FeFET sensing */
++                if (mlc && (cell->memCellType == MLCCTT || cell->memCellType == MLCRRAM)) {
++                    if (numF == 8)
++                        width = 2.4E-6;
++                    else if (numF == 16)
++                        width = 3.8E-6;
++                    else if (numF == 24)
++                        width = 5.2E-6;
++                    else if (numF == 32)
++                        width = 6.8E-6;
++                    else if (numF == 40)
++                        width = 8.2E-6;
++                    else if (numF == 48)
++                        width = 9.6E-6;
++                    else if (numF == 56)
++                        width = 11E-6;
++            
++                    height = 1.4E-6;
++                    width = width * (numLvl - 1.0);
++                }
+ 		/* transformation so that width meets the pitch */
+ 		height = height * width / pitchSenseAmp;
+-		width = pitchSenseAmp;
+-
+-		/* Add additional area if IV converter exists */
+-		height += area / width;
+-		width *= numColumn;
++		width = pitchSenseAmp * numColumn;
+ 
++                /* Add additional area if IV converter exists */
++                height += area / width;
++ 
+ 		area = height * width;
++
++                /* Override area value for FeFET SAs */
++                if (cell->memCellType == FeFET) {
++                    area = numColumn*3456;
++                } else if (cell->memCellType == MLCFeFET && numLvl == 4){ // 2 bits per cell
++                    area = numColumn*41328; 
++                } else if (cell->memCellType == MLCFeFET && numLvl == 8){ // 3 bits per cell
++                    area = numColumn*113462.4; 
++                } // else, given MLC config not supported yet, stick with default SA
+ 	}
+ }
+ 
+@@ -120,11 +145,29 @@
+ 	} else if (invalid) {
+ 		readLatency = writeLatency = 1e41;
+ 	} else {
+-		capLoad = CalculateGateCap((W_SENSE_P + W_SENSE_N) * tech->featureSize, *tech)
+-				+ CalculateDrainCap(W_SENSE_N * tech->featureSize, NMOS, pitchSenseAmp, *tech)
+-				+ CalculateDrainCap(W_SENSE_P * tech->featureSize, PMOS, pitchSenseAmp, *tech)
+-				+ CalculateDrainCap(W_SENSE_ISO * tech->featureSize, PMOS, pitchSenseAmp, *tech)
+-				+ CalculateDrainCap(W_SENSE_MUX * tech->featureSize, NMOS, pitchSenseAmp, *tech);
++	    capLoad = CalculateGateCap((W_SA_P + W_SA_N) * tech->featureSize, *tech)
++				+ CalculateDrainCap(W_SA_N * tech->featureSize, NMOS, pitchSenseAmp, *tech)
++				+ CalculateDrainCap(W_SA_P * tech->featureSize, PMOS, pitchSenseAmp, *tech)
++				+ CalculateDrainCap(W_SA_TOP * tech->featureSize, PMOS, pitchSenseAmp, *tech)
++				+ CalculateDrainCap(W_SA_BOT * tech->featureSize, NMOS, pitchSenseAmp, *tech);
++            /* Scale SA capload for MLC programming, or defer to ISLPED modeled values for FeFET sensing */
++            if (mlc && (cell->memCellType == MLCCTT || cell->memCellType == MLCRRAM)) {
++                if (numF == 8)
++                    capLoad = 831E-18;
++                else if (numF == 16)
++                    capLoad = 1.092E-15;
++                else if (numF == 24)
++                    capLoad = 1.351E-15;
++                else if (numF == 32)
++                    capLoad = 1.609E-15;
++                else if (numF == 40)
++                    capLoad = 1.868E-15;
++                else if (numF == 48)
++                    capLoad = 2.125E-15;
++                else if (numF == 56)
++                    capLoad = 2.383E-15;
++                capLoad = capLoad*(numLvl - 1.0);
++            }
+ 	}
+ }
+ 
+@@ -133,7 +176,9 @@
+ 		cout << "[Sense Amp] Error: Require initialization first!" << endl;
+ 	} else {
+ 		readLatency = writeLatency = 0;
+-		if (currentSense) {	/* current-sensing needs IV converter */
++		
++		//Qing: re-model the current S/A
++		if (currentSense) {
+ 			/* all the following values achieved from HSPICE */
+ 			if (tech->featureSize >= 119e-9)
+ 				readLatency += 0.49e-9;		/* 120nm */
+@@ -146,14 +191,46 @@
+ 			else if (tech->featureSize >= 31e-9)
+ 				readLatency += 1.07e-9;		/* 32nm */
+ 			else
+-				readLatency += 1.45e-9;     /* below 22nm */
++			    //use new S/A number
++				//readLatency += 1.45e-9;     /* below 22nm */
++				readLatency += 1.0e-10;     /* below 22nm */
+ 		}
+-
+-		/* Voltage sense amplifier */
+-		double gm = CalculateTransconductance(W_SENSE_N * tech->featureSize, NMOS, *tech)
++		else {
++		    /* Voltage sense amplifier */
++		    double gm = CalculateTransconductance(W_SENSE_N * tech->featureSize, NMOS, *tech)
+ 				+ CalculateTransconductance(W_SENSE_P * tech->featureSize, PMOS, *tech);
+-		double tau = capLoad / gm;
+-		readLatency += tau * log(tech->vdd / senseVoltage);
++                    /* Scale gm for MLC programming, or defer to ISLPED modeled values for FeFET sensing */
++                    if (mlc && (cell->memCellType == MLCCTT || cell->memCellType == MLCRRAM)) { 
++                        if (numF == 8)     
++                            gm = 240.3E-6;
++                        else if (numF == 16)
++                            gm = 340.5E-6; 
++                        else if (numF == 24)
++                            gm = 385.9E-6;
++                        else if (numF == 32)
++                            gm = 408.7E-6;
++                        else if (numF == 40)
++                            gm = 421.7E-6;
++                        else if (numF == 48)
++                            gm = 430.0E-6;
++                        else if (numF == 56)
++                            gm = 435.8E-6;
++                    }
++	            double tau = capLoad / gm;
++                    /* Since this value is going to depend on the sensing voltage 
++                     * we can either characterize for all sensing references or 
++                     * take an average/pessimistic value: current value is vin = vdd/2 */
++	            readLatency += tau * log(tech->vdd / senseVoltage);
++		}
++
++                /* Override latency value for FeFET SAs */
++                if (cell->memCellType == FeFET) {
++                    readLatency = 1.2e-10;
++                } else if (cell->memCellType == MLCFeFET && numLvl == 4){ // 2 bits per cell
++                    readLatency = 4.5e-10;
++                } else if (cell->memCellType == MLCFeFET && numLvl == 8){ // 3 bits per cell
++                    readLatency = 7.0e-10;
++                } // else, given MLC config not supported yet, stick with default SLC SA
+ 	}
+ }
+ 
+@@ -165,7 +242,9 @@
+ 	} else {
+ 		readDynamicEnergy = writeDynamicEnergy = 0;
+ 		leakage = 0;
+-		if (currentSense) {	/* current-sensing needs IV converter */
++		
++		//Qing: re-model the current S/A
++		if (currentSense) {
+ 			/* all the following values achieved from HSPICE */
+ 			if (tech->featureSize >= 119e-9) {			/* 120nm */
+ 				readDynamicEnergy += 8.52e-14;	/* Unit: J */
+@@ -182,18 +261,34 @@
+ 			} else if (tech->featureSize >= 31e-9) {	/* 32nm */
+ 				readDynamicEnergy += 12.56e-14;
+ 				leakage += 12.54e-8;
+-			} else {                                    /* TO-DO, need calibration below 22nm */
+-				readDynamicEnergy += 15e-14;
+-				leakage += 15e-8;
++			} else {    /* TO-DO, need calibration below 22nm */
++			    //Qing: use new S/A numbers
++				//readDynamicEnergy += 15e-14;
++				readDynamicEnergy += 8e-15;
++				//leakage += 15e-8;
++				leakage += 0;
+ 			}
+ 		}
+-
+-		/* Voltage sense amplifier */
+-		readDynamicEnergy += capLoad * tech->vdd * tech->vdd;
+-		double idleCurrent =  CalculateGateLeakage(INV, 1, W_SENSE_EN * tech->featureSize, 0,
++		else {
++		    /* Voltage sense amplifier */
++		    readDynamicEnergy += capLoad * tech->vdd * tech->vdd;
++		    double idleCurrent =  CalculateGateLeakage(INV, 1, W_SENSE_EN * tech->featureSize, 0,
+ 				inputParameter->temperature, *tech) * tech->vdd;
+-		leakage += idleCurrent * tech->vdd;
++		    if (mlc)
++                        idleCurrent = 1.35E-11 * (numLvl - 1.0);
++                    leakage += idleCurrent * tech->vdd;
++
++		}
+ 
++                /* Override energy value for FeFET SAs */
++                if (cell->memCellType == FeFET) {
++                    readDynamicEnergy = 7.3e-16;
++                } else if (cell->memCellType == MLCFeFET && numLvl == 4){ // 2 bits per cell
++                    readDynamicEnergy = 1.092e-14;
++                } else if (cell->memCellType == MLCFeFET && numLvl == 8){ // 3 bits per cell
++                    readDynamicEnergy = 3.823e-14;
++                } // else, given MLC config not supported yet, stick with default SLC SA
++		
+ 		readDynamicEnergy *= numColumn;
+ 		leakage *= numColumn;
+ 	}
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/SenseAmp.h nvsim_merged/SenseAmp.h
+--- upstream_nvsim/SenseAmp.h	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/SenseAmp.h	2026-09-15 23:03:18.235100758 +0300
+@@ -47,7 +47,7 @@
+ 
+ 	/* Functions */
+ 	void PrintProperty();
+-	void Initialize(long long _numColumn, bool _currentSense, double _senseVoltage /* Unit: V */, double _pitchSenseAmp);
++        void Initialize(long long _numColumn, bool _currentSense, double _senseVoltage /* Unit: V */, double _pitchSenseAmp, bool _mlc, double _numLvl, int _numF);
+ 	void CalculateArea();
+ 	void CalculateRC();
+ 	void CalculateLatency(double _rampInput);
+@@ -62,6 +62,9 @@
+ 	double senseVoltage;	/* Minimum sensible voltage */
+ 	double capLoad;		/* Load capacitance of sense amplifier */
+ 	double pitchSenseAmp;	/* The maximum width allowed for one sense amplifier layout */
++        bool mlc;              /* Is this a Multi-Level Cell? */
++        double numLvl;         /* If MLC, how many levels / cell */
++        int numF;              /* If MLC CTT, what is num input fingers to calculate SA area/latency */
+ };
+ 
+ #endif /* SENSEAMP_H_ */
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/SubArray.cpp nvsim_merged/SubArray.cpp
+--- upstream_nvsim/SubArray.cpp	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/SubArray.cpp	2026-09-15 23:03:18.235100758 +0300
+@@ -104,7 +104,7 @@
+ 		}
+ 	}
+ 
+-	if (cell->memCellType == memristor || cell->memCellType == FBRAM) {
++	if (cell->memCellType == memristor || cell->memCellType == FBRAM || cell->memCellType == FeFET || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM) {
+ 		if (internalSenseAmp && muxSenseAmp < 2) {
+ 			/* There is no way to put the sense amp */
+ 			invalid = true;
+@@ -123,7 +123,7 @@
+ 		maxBitlineCurrent = MAX(cell->resetCurrent, cell->setCurrent) + cell->leakageCurrentAccessDevice * (numRow - 1);
+ 	}
+ 
+-	if (cell->memCellType == MRAM || cell->memCellType == PCRAM || cell->memCellType == memristor) {
++	if (cell->memCellType == MRAM || cell->memCellType == PCRAM || cell->memCellType == memristor || cell->memCellType == FeFET || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM) {
+ 		if (cell->accessType == CMOS_access){
+ 			if (tech->currentOnNmos[inputParameter->temperature - 300]
+ 									/ tech->currentOffNmos[inputParameter->temperature - 300] < numRow / BITLINE_LEAKAGE_TOLERANCE) {
+@@ -192,7 +192,7 @@
+ 		if (cell->memCellType == SRAM || cell->memCellType == DRAM || cell->memCellType == eDRAM) {
+ 			/* SRAM, DRAM, and eDRAM all use voltage sensing */
+ 			voltageSense = true;
+-		} else if (cell->memCellType == MRAM || cell->memCellType == PCRAM || cell->memCellType == memristor || cell->memCellType == FBRAM) {
++		} else if (cell->memCellType == MRAM || cell->memCellType == PCRAM || cell->memCellType == memristor || cell->memCellType == FBRAM || cell->memCellType == CTT || cell->memCellType == MLCCTT || cell->memCellType == FeFET || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM)  {
+ 			voltageSense = cell->readMode;
+ 		} else {/* NAND flash */
+ 			voltageSense = true;
+@@ -232,6 +232,14 @@
+ 		/* Two select transistor including contacts have total length of 5F */
+ 		lenBitline += (numRow / pageCount) * 5 * tech->featureSize;
+ 	}
++
++    // Add access transistor for CTT and MLCCTT 
++    if ((cell->memCellType == CTT || cell->memCellType == MLCCTT)) {
++        lenBitline += 5 * tech->featureSize;
++    }
++
++
++
+ 	/* Calculate wire resistance/capacitance */
+ 	capWordline = lenWordline * localWire->capWirePerUnit;
+ 	resWordline = lenWordline * localWire->resWirePerUnit;
+@@ -292,12 +300,16 @@
+ 				}
+ 			}
+ 		}
+-	} else if (cell->memCellType == MRAM || cell->memCellType == PCRAM || cell->memCellType == memristor) {
++	} else if (cell->memCellType == MRAM || cell->memCellType == PCRAM || cell->memCellType == memristor || cell->memCellType == FeFET || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM) {
+ 		/* MRAM, PCRAM, and memristor have three types of access devices: CMOS, BJT, and diode */
+ 		if (cell->accessType == CMOS_access) {
+ 			resCellAccess = CalculateOnResistance(cell->widthAccessCMOS * tech->featureSize, NMOS, inputParameter->temperature, *tech);
+ 			capCellAccess = CalculateDrainCap(cell->widthAccessCMOS * tech->featureSize, NMOS, cell->widthInFeatureSize * tech->featureSize, *tech);
+-			capWordline += CalculateGateCap(cell->widthAccessCMOS * tech->featureSize, *tech) * numColumn;
++                        if (cell->memCellType == FeFET || cell->memCellType == MLCFeFET){			
++                            capWordline += CalculateFeFETGateCap(cell->widthAccessCMOS * tech->featureSize, *tech) * numColumn;
++                        } else {
++			    capWordline += CalculateGateCap(cell->widthAccessCMOS * tech->featureSize, *tech) * numColumn;
++                        }
+ 			capBitline  += capCellAccess * numRow / 2;	/* Due to shared contact */
+ 		} else if (cell->accessType == BJT_access) {
+ 			// TO-DO
+@@ -360,7 +372,14 @@
+ 		capWordline += CalculateGateCap(tech->featureSize, *tech) * numColumn * cell->gateCouplingRatio / (cell->gateCouplingRatio + 1);
+ 		capBitline  += capCellAccess * (numRow / pageCount) / 2;	/* 2 is due to shared contact and the effective row count is numRow/pageCount */
+ 		voltagePrecharge = tech->vdd * 0.6;	/* SLC NAND flash bitline precharge voltage is assumed to 0.6Vdd */
+-	} else {	/* MLC NAND flash */
++        } else if (cell->memCellType == CTT || cell->memCellType == MLCCTT) {
++		resCellAccess = CalculateOnResistance(tech->featureSize, NMOS, inputParameter->temperature, *tech);
++		capCellAccess = CalculateDrainCap(tech->featureSize, NMOS, cell->widthInFeatureSize * tech->featureSize, *tech);		
++                capWordline += CalculateGateCap(tech->featureSize, *tech) * numColumn;
++		capBitline  += capCellAccess * numRow;	/* 2 is due to shared contact and the effective row count is numRow/pageCount */
++		voltagePrecharge = tech->vdd * 0.5;	/* SLC NAND flash bitline precharge voltage is assumed to 0.6Vdd */ 
++
++        } else {	/* MLC NAND flash */
+ 		// TO-DO
+ 	}
+ 
+@@ -406,10 +425,13 @@
+ 	senseAmpMuxLev1.Initialize(muxOutputLev1, numColumn / muxSenseAmp / muxOutputLev1,
+ 			senseAmpMuxLev2.capForPreviousDelayCalculation, senseAmpMuxLev2.capForPreviousPowerCalculation, maxBitlineCurrent);
+ 	senseAmpMuxLev1.CalculateRC();
+-
++    bool mlc = false;
+ 	if (internalSenseAmp) {
++        if (cell->memCellType == MLCCTT || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM) {
++            mlc = true;
++        }
+ 		if (!invalid) {
+-			senseAmp.Initialize(numSenseAmp, !voltageSense, senseVoltage, lenWordline / numColumn * muxSenseAmp);
++			senseAmp.Initialize(numSenseAmp, !voltageSense, senseVoltage, lenWordline / numColumn * muxSenseAmp, mlc, cell->nLvl, cell->nFingers);
+ 			if (senseAmp.invalid)
+ 				invalid = true;
+ 			else
+@@ -428,6 +450,14 @@
+ 	if (!invalid) {
+ 		bitlineMux.CalculateRC();
+ 	}
++	
++	//Qing: initialize subarray buffer,
++	//do not consider buffering control signals for now
++	subarrayBuffer.Initialize(1, numColumn);
++	subarrayBuffer.CalculateArea();
++	subarrayBuffer.CalculateLatency();
++	subarrayBuffer.CalculatePower();
++	//Qing.
+ 
+ 	initialized = true;
+ }
+@@ -470,7 +500,9 @@
+ 				/* should never happen */
+ 				cout << "[ERROR] Sense Amplifier area calculation is wrong!" << endl;
+ 			} else {
++                //cout << addHeight*1E6 << " -> ";
+ 				addHeight += senseAmp.height;
++                //cout << addHeight*1E6 << endl;
+ 			}
+ 		}
+ 
+@@ -487,6 +519,11 @@
+ 		senseAmpMuxLev2Decoder.CalculateArea();
+ 		addWidth = MAX(addWidth, senseAmpMuxLev2Decoder.width);
+ 
++		//Qing: add subarray buffer's height
++		//assume the buffer has the same width as the subarray
++		addHeight += subarrayBuffer.height;
++		//Qing.
++		
+ 		width += addWidth;
+ 		height += addHeight;
+ 		area = width * height;
+@@ -553,7 +590,7 @@
+ 					+ senseAmpMuxLev1.readLatency + senseAmpMuxLev2.readLatency;
+ 			/* assume symmetric read/write for DRAM/eDRAM bitline delay */
+ 			writeLatency = readLatency;
+-		} else if (cell->memCellType == MRAM || cell->memCellType == PCRAM || cell->memCellType == memristor || cell->memCellType == FBRAM) {
++		} else if (cell->memCellType == MRAM || cell->memCellType == PCRAM || cell->memCellType == memristor || cell->memCellType == FBRAM || cell->memCellType == FeFET || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM) {
+ 			double bitlineRamp = 0;
+ 			if (cell->readMode == false) {	/* current-sensing */
+ 				/* Use ICCAD 2009 model */
+@@ -605,7 +642,7 @@
+ 				resetLatency = writeLatency + cell->resetPulse;
+ 				setLatency = writeLatency + cell->setPulse;
+ 				writeLatency += MAX(cell->resetPulse, cell->setPulse);
+-			} else { //memristor and MRAM
++			} else { //memristor and MRAM and FeFET
+ 				if (cell->accessType == diode_access || cell->accessType == none_access) {
+ 					if (inputParameter->writeScheme == erase_before_reset || inputParameter->writeScheme == erase_before_set)
+ 						writeLatency = MAX(rowDecoder.writeLatency, chargeLatency);
+@@ -654,7 +691,39 @@
+ 			setLatency = MAX(rowDecoder.readLatency, columnDecoderLatency + chargeLatency) + cell->flashProgramTime;
+ 			/* use the programming latency as the write latency for SLC NAND*/
+ 			writeLatency = setLatency;
+-		} else {	/* MLC NAND */
++		
++                } else if (cell->memCellType == CTT || cell->memCellType == MLCCTT) {
++                        /* Calculate the NAND flash string length, which is the page count per block plus 2 (two select transistors) */
++			double resPullDown = CalculateOnResistance(tech->featureSize, NMOS, inputParameter->temperature, *tech) * 2;
++			double tau = resPullDown * (capCellAccess + capBitline + bitlineMux.capForPreviousDelayCalculation)
++					+ resBitline * (bitlineMux.capForPreviousDelayCalculation + capBitline / 2);
++			/* in one case the bitline is unchanged, and in the other case the bitline drops from 0.6V to 0.4V */
++			tau *= log((voltagePrecharge)/ (voltagePrecharge - senseVoltage));
++			double gm = CalculateTransconductance(tech->featureSize, NMOS, *tech);	/* minimum size transistor */
++			double beta = 1 / (resPullDown * gm);
++			double bitlineRamp = 0;
++			bitlineDelay = horowitz(tau, beta, rowDecoder.rampOutput, &bitlineRamp);
++			/* to correct unnecessary horowitz calculation, TO-DO: need to revisit */
++			bitlineDelay = MAX(bitlineDelay, tau * 20);
++			bitlineMux.CalculateLatency(bitlineRamp);
++			if (internalSenseAmp) {
++				senseAmp.CalculateLatency(bitlineMuxDecoder.rampOutput);
++				senseAmpMuxLev1.CalculateLatency(1e20);
++				senseAmpMuxLev2.CalculateLatency(senseAmpMuxLev1.rampOutput);
++			} else {
++				senseAmpMuxLev1.CalculateLatency(bitlineMux.rampOutput);
++				senseAmpMuxLev2.CalculateLatency(senseAmpMuxLev1.rampOutput);
++			}
++			readLatency = decoderLatency + bitlineDelay + bitlineMux.readLatency + senseAmp.readLatency
++					+ senseAmpMuxLev1.readLatency + senseAmpMuxLev2.readLatency;
++			/* calculate the erase time, a.k.a. reset here */
++			resetLatency = MAX(rowDecoder.readLatency, columnDecoderLatency + chargeLatency);
++			/* calculate the programming time, a.k.a. set here */
++			setLatency = MAX(rowDecoder.readLatency, columnDecoderLatency + chargeLatency);
++			/* use the programming latency as the write latency for SLC NAND*/
++			writeLatency = setLatency;
++        
++        } else {	/* MLC NAND */
+ 			/* TO-DO */
+ 		}
+ 	}
+@@ -696,7 +765,7 @@
+ 			double writeVoltage = cell->resetVoltage;	/* should also equal to setVoltage, for DRAM, it is Vdd */
+ 			writeDynamicEnergy = (capBitline + bitlineMux.capForPreviousPowerCalculation) * writeVoltage * writeVoltage * numColumn;
+ 			leakage = readDynamicEnergy / DRAM_REFRESH_PERIOD * numRow;
+-		} else if (cell->memCellType == MRAM || cell->memCellType == PCRAM || cell->memCellType == memristor || cell->memCellType == FBRAM) {
++		} else if (cell->memCellType == MRAM || cell->memCellType == PCRAM || cell->memCellType == memristor || cell->memCellType == FBRAM || cell->memCellType == FeFET || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM) {
+ 			if (cell->readMode == false) {	/* current-sensing */
+ 				/* Use ICCAD 2009 model */
+ 				double resBitlineMux = bitlineMux.resNMOSPassTransistor;
+@@ -868,7 +937,9 @@
+ 		}
+ 		leakage += rowDecoder.leakage + bitlineMuxDecoder.leakage + senseAmpMuxLev1Decoder.leakage
+ 				+ senseAmpMuxLev2Decoder.leakage + precharger.leakage + bitlineMux.leakage
+-				+ senseAmp.leakage + senseAmpMuxLev1.leakage + senseAmpMuxLev2.leakage;
++				+ senseAmp.leakage + senseAmpMuxLev1.leakage + senseAmpMuxLev2.leakage
++				//Qing: subarray buffer leakage
++				+ subarrayBuffer.leakage + subarrayBuffer.xorLeakage;
+ 	}
+ }
+ 
+@@ -878,7 +949,7 @@
+ 	cout << "numRow:" << numRow << " numColumn:" << numColumn << endl;
+ 	cout << "lenWordline * lenBitline = " << lenWordline*1e6 << "um * " << lenBitline*1e6 << "um = " << lenWordline * lenBitline * 1e6 << "mm^2" << endl;
+ 	cout << "Row Decoder Area:" << rowDecoder.height*1e6 << "um x " << rowDecoder.width*1e6 << "um = " << rowDecoder.area*1e6 << "mm^2" << endl;
+-	cout << "Sense Amplifier Area:" << senseAmp.height*1e6 << "um x " << senseAmp.width*1e6 << "um = " << senseAmp.area*1e6 << "mm^2" << endl;
++	cout << "Sense Amplifier Area:" << std::scientific << senseAmp.height*1e6 << "um x " << senseAmp.width*1e6 << "um = " << senseAmp.area*1e6 << "mm^2" << std::fixed << endl;
+ 	cout << "Subarray Area Efficiency = " << lenWordline * lenBitline / area * 100 <<"%" << endl;
+ 	cout << "bitlineDelay: " << bitlineDelay*1e12 << "ps" << endl;
+ 	cout << "chargeLatency: " << chargeLatency*1e12 << "ps" << endl;
+@@ -943,6 +1014,8 @@
+ 	senseAmpMuxLev2 = rhs.senseAmpMuxLev2;
+ 	precharger = rhs.precharger;
+ 	senseAmp = rhs.senseAmp;
++	//Qing
++	subarrayBuffer = rhs.subarrayBuffer;
+ 
+ 	return *this;
+ }
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/SubArray.h nvsim_merged/SubArray.h
+--- upstream_nvsim/SubArray.h	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/SubArray.h	2026-09-15 23:03:18.235100758 +0300
+@@ -43,6 +43,7 @@
+ #include "Precharger.h"
+ #include "SenseAmp.h"
+ #include "Mux.h"
++#include "Buffer.h"    //Qing
+ #include "typedef.h"
+ 
+ class SubArray: public FunctionUnit {
+@@ -99,15 +100,17 @@
+ 	double bitlineDelayOn;  /* Bitline delay of LRS, Unit: s */
+ 	double bitlineDelayOff; /* Bitline delay of HRS, Unit: s */
+ 
+-	RowDecoder	rowDecoder;
+-	RowDecoder	bitlineMuxDecoder;
+-	Mux			bitlineMux;
+-	RowDecoder	senseAmpMuxLev1Decoder;
+-	Mux			senseAmpMuxLev1;
+-	RowDecoder	senseAmpMuxLev2Decoder;
+-	Mux			senseAmpMuxLev2;
+-	Precharger	precharger;
+-	SenseAmp	senseAmp;
++	RowDecoder    rowDecoder;
++	RowDecoder    bitlineMuxDecoder;
++	Mux           bitlineMux;
++	RowDecoder    senseAmpMuxLev1Decoder;
++	Mux           senseAmpMuxLev1;
++	RowDecoder    senseAmpMuxLev2Decoder;
++	Mux           senseAmpMuxLev2;
++	Precharger    precharger;
++	SenseAmp      senseAmp;
++	//Qing: subarray buffer for differential write
++	Buffer        subarrayBuffer;
+ };
+ 
+ #endif /* SUBARRAY_H_ */
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/Technology.cpp nvsim_merged/Technology.cpp
+--- upstream_nvsim/Technology.cpp	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/Technology.cpp	2026-09-15 23:03:18.235100758 +0300
+@@ -47,13 +47,14 @@
+ 	// TODO Auto-generated destructor stub
+ }
+ 
+-void Technology::Initialize(int _featureSizeInNano, DeviceRoadmap _deviceRoadmap) {
++void Technology::Initialize(int _featureSizeInNano, DeviceRoadmap _deviceRoadmap, bool _is_FeFET) {
+ 	if (initialized)
+ 		cout << "Warning: Already initialized!" << endl;
+ 
+ 	featureSizeInNano = _featureSizeInNano;
+ 	featureSize = _featureSizeInNano * 1e-9;
+ 	deviceRoadmap = _deviceRoadmap;
++        is_FeFET = _is_FeFET;
+ 
+ 	if (_featureSizeInNano >= 200) { //TO-DO : only for test
+ 		if (_deviceRoadmap == HP) {
+@@ -1270,6 +1271,11 @@
+ 			currentOffPmos[100] = currentOffNmos[100];
+ 		}
+ 	}
++        // If FeFET, we scale ideal gate capacitance by standard factor across all tech nodes
++        if (is_FeFET == true){
++	    cout << "Modify capIdealGate for FeFET:" << endl;
++            capIdealGateFeFET = capIdealGate * 1.73;
++        }
+ 
+ 	capOverlap = capIdealGate * 0.2;
+ 	//capSidewall = 2.5e-10;	/* Unit: F/m, this value is from CACTI, PTM model shows the value is 5e-10 */
+@@ -1336,6 +1342,9 @@
+ 		vth = (1 - _alpha) * vth + _alpha * rhs.vth;
+ 		phyGateLength = (1 - _alpha) * phyGateLength + _alpha * rhs.phyGateLength;
+ 		capIdealGate = (1 - _alpha) * capIdealGate + _alpha * rhs.capIdealGate;
++                if (is_FeFET){
++		    capIdealGateFeFET = (1 - _alpha) * capIdealGateFeFET + _alpha * rhs.capIdealGate;
++                }
+ 		capFringe = (1 - _alpha) * capFringe + _alpha * rhs.capFringe;
+ 		capJunction = (1 - _alpha) * capJunction + _alpha * rhs.capJunction;
+ 		capOx = (1 - _alpha) * capOx + _alpha * rhs.capOx;
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/Technology.h nvsim_merged/Technology.h
+--- upstream_nvsim/Technology.h	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/Technology.h	2026-09-15 23:03:18.235100758 +0300
+@@ -50,12 +50,13 @@
+ 
+ 	/* Functions */
+ 	void PrintProperty();
+-	void Initialize(int _featureSizeInNano, DeviceRoadmap _deviceRoadmap);
++	void Initialize(int _featureSizeInNano, DeviceRoadmap _deviceRoadmap, bool _is_FeFET);
+ 	void InterpolateWith(Technology rhs, double _alpha);
+ 
+ 	/* Properties */
+ 	bool initialized;	/* Initialization flag */
+ 	int featureSizeInNano; /*Process feature size, Unit: nm */
++        bool is_FeFET; /*flag for whether gate cap needs to be scaled */
+ 	double featureSize;	/* Process feature size, Unit: m */
+ 	DeviceRoadmap deviceRoadmap;	/* HP, LSTP, or LOP */
+ 	double vdd;			/* Supply voltage, Unit: V */
+@@ -64,6 +65,7 @@
+ 	double vdsatPmos;		/* Velocity saturation voltage, Unit: V */
+ 	double phyGateLength;	/* Physical gate length, Unit: m */
+ 	double capIdealGate;	/* Ideal gate capacitance, Unit: F/m */
++	double capIdealGateFeFET;	/* Ideal gate capacitance just for FeFET memory cells, Unit: F/m */
+ 	double capFringe;		/* Fringe capacitance, Unit: F/m */
+ 	double capJunction;		/* Junction bottom capacitance, Cj0, Unit: F/m^2 */
+ 	double capOverlap;		/* Overlap capacitance, Cover in MASTAR, Unit: F/m */
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/Wire.cpp nvsim_merged/Wire.cpp
+--- upstream_nvsim/Wire.cpp	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/Wire.cpp	2026-09-15 23:03:18.235100758 +0300
+@@ -625,7 +625,11 @@
+ 				*(leakagePower) *= 2;
+ 
+ 				senseAmp = new SenseAmp;
+-				senseAmp->Initialize(1, false, cell->minSenseVoltage, 1 /* for test */);
++				bool mlc = false;
++                                if (cell->memCellType == MLCCTT || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM) {
++                                    mlc = true;
++                                }
++                                senseAmp->Initialize(1, false, cell->minSenseVoltage, 1 /* for test */, mlc, cell->nLvl, cell->nFingers);
+ 				senseAmp->CalculateRC();
+ 
+ 				/* nmos *(delay) + wire *(delay) */
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/constant.h nvsim_merged/constant.h
+--- upstream_nvsim/constant.h	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/constant.h	2026-09-15 23:03:18.235100758 +0300
+@@ -71,11 +71,17 @@
+ #define AVG_RATIO_LEAK_2INPUT_NOR  0.95
+ #define AVG_RATIO_LEAK_3INPUT_NOR  0.62
+ 
+-#define W_SENSE_P		7.5
+-#define W_SENSE_N		3.75
+-#define W_SENSE_ISO		12.5
+-#define W_SENSE_EN		5.0
+-#define W_SENSE_MUX		9.0
++#define W_SENSE_P       7.5
++#define W_SENSE_N       3.75
++#define W_SENSE_ISO     12.5
++#define W_SENSE_EN      5.0
++#define W_SENSE_MUX     9.0
++//Qing: new S/A numbers
++#define W_SA_TOP        40
++#define W_SA_P          2
++#define W_SA_N          2
++#define W_SA_BOT        20
++//Qing.
+ #define VBITSENSEMIN	0.08
+ #define IV_CONVERTER_AREA 50000 /*TO-DO: technology and design dependent parameter, 649606 is used in PCRAMSim*/
+ 
+@@ -96,7 +102,7 @@
+ #define RES_ADJ 8.6
+ #define VOL_SWING .1
+ 
+-#define CONSTRAINT_ASPECT_RATIO_BANK	10	
++#define CONSTRAINT_ASPECT_RATIO_BANK	3
+ 
+ #define BITLINE_LEAKAGE_TOLERANCE	1
+ #define IR_DROP_TOLERANCE 			0.2
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/formula.cpp nvsim_merged/formula.cpp
+--- upstream_nvsim/formula.cpp	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/formula.cpp	2026-09-15 23:03:18.235100758 +0300
+@@ -55,6 +55,12 @@
+ 			+ tech.phyGateLength * tech.capPolywire;
+ }
+ 
++// To calculate FeFET cell gate cap, use scaled capIdealGateFeFET value
++double CalculateFeFETGateCap(double width, Technology tech) {
++	return (tech.capIdealGateFeFET + tech.capOverlap + 3 * tech.capFringe) * width
++			+ tech.phyGateLength * tech.capPolywire;
++}
++
+ double CalculateFBRAMDrainCap(double width, Technology tech) {
+ 	return (3 * tech.capSidewall + tech.capDrainToChannel) * width;
+ }
+@@ -152,7 +158,7 @@
+ 	/* TO-DO: most parts of this function is the same of CalculateGateArea,
+ 	 * perhaps they will be combined in future
+ 	 */
+-	double	ratio = widthPMOS / (widthPMOS + widthNMOS);
++    double	ratio = widthPMOS / (widthPMOS + widthNMOS);
+ 
+ 	double maxWidthPMOS = 0, maxWidthNMOS = 0;
+ 	double unitWidthDrainP = 0, unitWidthDrainN = 0;
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/formula.h nvsim_merged/formula.h
+--- upstream_nvsim/formula.h	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/formula.h	2026-09-15 23:03:18.235100758 +0300
+@@ -56,6 +56,9 @@
+ 		double heightTransistorRegion, Technology tech,
+ 		double *height, double *width);
+ 
++/* calculate date capacitance for FeFET cells */
++double CalculateFeFETGateCap(double width, Technology tech);
++
+ /* calculate the capacitance of a gate */
+ void CalculateGateCapacitance(
+ 		int gateType, int numInput,
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/main.cpp nvsim_merged/main.cpp
+--- upstream_nvsim/main.cpp	2026-09-15 23:03:16.677169165 +0300
++++ nvsim_merged/main.cpp	2026-09-15 23:03:18.235100758 +0300
+@@ -91,30 +91,38 @@
+ 	RESTORE_SEARCH_SIZE;
+ 	inputParameter->ReadInputParameterFromFile(inputFileName);
+ 
++	cell = new MemCell();
++	cell->ReadCellFromFile(inputParameter->fileMemCell);
++//	cell->CellScaling(inputParameter->processNode);
++        bool is_FeFET = false;
++        if (cell->memCellType == FeFET || cell->memCellType == MLCFeFET){
++            is_FeFET = true; // flag for FeFET cell type, used to scale gate capacitance as appropriate
++        }
++
+ 	tech = new Technology();
+-	tech->Initialize(inputParameter->processNode, inputParameter->deviceRoadmap);
++	tech->Initialize(inputParameter->processNode, inputParameter->deviceRoadmap, is_FeFET);
+ 
+ 	Technology techHigh;
+ 	double alpha = 0;
+ 	if (inputParameter->processNode > 200){
+ 		// TO-DO: technology node > 200 nm
+ 	} else if (inputParameter->processNode > 120) { // 120 nm < technology node <= 200 nm
+-		techHigh.Initialize(200, inputParameter->deviceRoadmap);
++		techHigh.Initialize(200, inputParameter->deviceRoadmap, is_FeFET);
+ 		alpha = (inputParameter->processNode - 120.0) / 60;
+ 	} else if (inputParameter->processNode > 90) { // 90 nm < technology node <= 120 nm
+-		techHigh.Initialize(120, inputParameter->deviceRoadmap);
++		techHigh.Initialize(120, inputParameter->deviceRoadmap, is_FeFET);
+ 		alpha = (inputParameter->processNode - 90.0) / 30;
+ 	} else if (inputParameter->processNode > 65) { // 65 nm < technology node <= 90 nm
+-		techHigh.Initialize(90, inputParameter->deviceRoadmap);
++		techHigh.Initialize(90, inputParameter->deviceRoadmap, is_FeFET);
+ 		alpha = (inputParameter->processNode - 65.0) / 25;
+ 	} else if (inputParameter->processNode > 45) { // 45 nm < technology node <= 65 nm
+-		techHigh.Initialize(65, inputParameter->deviceRoadmap);
++		techHigh.Initialize(65, inputParameter->deviceRoadmap, is_FeFET);
+ 		alpha = (inputParameter->processNode - 45.0) / 20;
+ 	} else if (inputParameter->processNode >= 32) { // 32 nm < technology node <= 45 nm
+-		techHigh.Initialize(45, inputParameter->deviceRoadmap);
++		techHigh.Initialize(45, inputParameter->deviceRoadmap, is_FeFET);
+ 		alpha = (inputParameter->processNode - 32.0) / 13;
+ 	} else if (inputParameter->processNode >= 22) { // 22 nm < technology node <= 32 nm
+-		techHigh.Initialize(32, inputParameter->deviceRoadmap);
++		techHigh.Initialize(32, inputParameter->deviceRoadmap, is_FeFET);
+ 		alpha = (inputParameter->processNode - 22.0) / 10;
+ 	} else {
+ 		//TO-DO: technology node < 22 nm
+@@ -122,9 +130,6 @@
+ 
+ 	tech->InterpolateWith(techHigh, alpha);
+ 
+-	cell = new MemCell();
+-	cell->ReadCellFromFile(inputParameter->fileMemCell);
+-//	cell->CellScaling(inputParameter->processNode);
+ 
+ 	ofstream outputFile;
+ 	string outputFileName;
+@@ -257,6 +262,13 @@
+ 	capacity = (long long)inputParameter->capacity * 8;
+ 	blockSize = inputParameter->wordWidth;
+ 	associativity = inputParameter->associativity;
++        //if (cell->memCellType == MLCCTT || cell->memCellType == MLCFeFET || cell->memCellType == MLCRRAM) {
++        //    cout << capacity << endl;
++        //    capacity = (int)(pow(2.0, ceil(log2(capacity/log2(cell->nLvl)))));
++        //    blockSize = (int)(ceil(blockSize/log2(cell->nLvl)));    
++        //    cout << capacity << endl;
++        //}
++
+ 	if (inputParameter->designTarget == cache) {
+ 		switch (inputParameter->cacheAccessMode) {
+ 		case sequential_access_mode:
+@@ -288,7 +300,7 @@
+ 			/* To aggressive partitioning */
+ 			continue;
+ 		}
+-		CALCULATE(dataBank, data);
++		CALCULATE(dataBank, dataT);
+ 		if (!dataBank->invalid) {
+ 			Result tempResult;
+ 			VERIFY_DATA_CAPACITY;
+@@ -311,7 +323,7 @@
+ 					(bool)isLocalWireLowSwing);
+ 			for (int i = 0; i < (int)full_exploration; i++) {
+ 				LOAD_GLOBAL_WIRE(bestDataResults[i]);
+-				TRY_AND_UPDATE(bestDataResults[i], data);
++				TRY_AND_UPDATE(bestDataResults[i], dataT);
+ 			}
+ 			if (inputParameter->optimizationTarget == full_exploration && !inputParameter->isPruningEnabled) {
+ 				OUTPUT_TO_FILE;
+@@ -324,7 +336,7 @@
+ 					(bool)isGlobalWireLowSwing);
+ 			for (int i = 0; i < (int)full_exploration; i++) {
+ 				LOAD_LOCAL_WIRE(bestDataResults[i]);
+-				TRY_AND_UPDATE(bestDataResults[i], data);
++				TRY_AND_UPDATE(bestDataResults[i], dataT);
+ 			}
+ 			if (inputParameter->optimizationTarget == full_exploration && !inputParameter->isPruningEnabled) {
+ 				OUTPUT_TO_FILE;
+@@ -425,7 +437,7 @@
+ 				/* To aggressive partitioning */
+ 				continue;
+ 			}
+-			CALCULATE(dataBank, data);
++			CALCULATE(dataBank, dataT);
+ 			if (!dataBank->invalid && dataBank->readLatency <= allowedDataReadLatency && dataBank->writeLatency <= allowedDataWriteLatency
+ 					&& dataBank->readDynamicEnergy <= allowedDataReadDynamicEnergy && dataBank->writeDynamicEnergy <= allowedDataWriteDynamicEnergy
+ 					&& dataBank->leakage <= allowedDataLeakage && dataBank->area <= allowedDataArea
+diff -u -x .git -x '*.o' -x nvsim -x build.log -x 'sample*' -x README -x Makefile.dep -x .gitignore -x nvsim.cfg -x SRAM.cell upstream_nvsim/typedef.h nvsim_merged/typedef.h
+--- upstream_nvsim/typedef.h	2026-09-15 23:03:16.681103335 +0300
++++ nvsim_merged/typedef.h	2026-09-15 23:03:18.246903270 +0300
+@@ -48,7 +48,12 @@
+ 	memristor,
+ 	FBRAM,
+ 	SLCNAND,
+-	MLCNAND
++	MLCNAND,
++        CTT,
++        MLCCTT,
++        FeFET,
++        MLCFeFET,
++        MLCRRAM
+ };
+ enum CellAccessType
+ {
+@@ -97,7 +102,7 @@
+ 
+ enum MemoryType
+ {
+-	data,
++	dataT,
+ 	tag,
+ 	CAM
+ };

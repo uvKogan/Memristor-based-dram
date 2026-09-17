@@ -1,0 +1,74 @@
+{
+ "trace": "/home/yuvalk/MBMM/benchmarks/alexnet_layer1_ofmap.nvt",
+ "cutoff": 250000000,
+ "stopped_at_cutoff": false,
+ "records": 13543,
+ "reads": 0,
+ "writes": 13543,
+ "first_cycle": 8729,
+ "last_cycle": 22271,
+ "first_write_cycle": 8729,
+ "last_write_cycle": 22271,
+ "write_addr_mod64_top": [
+  [
+   48,
+   230
+  ],
+  [
+   4,
+   229
+  ],
+  [
+   24,
+   228
+  ],
+  [
+   58,
+   228
+  ],
+  [
+   14,
+   227
+  ],
+  [
+   28,
+   226
+  ],
+  [
+   34,
+   224
+  ],
+  [
+   44,
+   224
+  ]
+ ],
+ "data_field_lengths": {
+  "128": 13543
+ },
+ "writes_with_nonzero_data": 0,
+ "skew_64B_lines": {
+  "distinct": 1469,
+  "total": 13543,
+  "max": 14,
+  "mean": 9.219196732471069,
+  "median": 12,
+  "top1pct_units": 14,
+  "top1pct_share": 0.014472421176991804,
+  "top10_share": 0.010337443697851289,
+  "max_over_mean": 1.5185704792143542
+ },
+ "skew_4KB_pages": {
+  "distinct": 34,
+  "total": 13543,
+  "max": 441,
+  "mean": 398.3235294117647,
+  "median": 405,
+  "top1pct_units": 1,
+  "top1pct_share": 0.03256294764823156,
+  "top10_share": 0.3197962046813852,
+  "max_over_mean": 1.107140220039873
+ },
+ "write_span_bytes_64B": 94016,
+ "runtime_s": 0.018564224243164062
+}

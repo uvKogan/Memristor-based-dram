@@ -1,0 +1,46 @@
+{
+ "trace": "/home/yuvalk/MBMM/benchmarks/stream.nvt",
+ "cutoff": 250000000,
+ "stopped_at_cutoff": false,
+ "records": 200000,
+ "reads": 100000,
+ "writes": 100000,
+ "first_cycle": 0,
+ "last_cycle": 999995,
+ "first_write_cycle": 5,
+ "last_write_cycle": 999995,
+ "write_addr_mod64_top": [
+  [
+   0,
+   100000
+  ]
+ ],
+ "data_field_lengths": {
+  "128": 100000
+ },
+ "writes_with_nonzero_data": 0,
+ "skew_64B_lines": {
+  "distinct": 100000,
+  "total": 100000,
+  "max": 1,
+  "mean": 1.0,
+  "median": 1,
+  "top1pct_units": 1000,
+  "top1pct_share": 0.01,
+  "top10_share": 0.0001,
+  "max_over_mean": 1.0
+ },
+ "skew_4KB_pages": {
+  "distinct": 1563,
+  "total": 100000,
+  "max": 64,
+  "mean": 63.97952655150352,
+  "median": 64,
+  "top1pct_units": 15,
+  "top1pct_share": 0.0096,
+  "top10_share": 0.0064,
+  "max_over_mean": 1.00032
+ },
+ "write_span_bytes_64B": 6400000,
+ "runtime_s": 0.19428753852844238
+}

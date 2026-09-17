@@ -1,0 +1,28 @@
+User-defined configuration file (documents/MBMM_Book_Typst/research_notes/calibration_runs/targetA/forced/oursorg.cfg) is loaded
+
+Memory Cell: RRAM (Memristor)
+Cell Area (F^2)    : 53.000 (8.797Fx6.025F)
+Cell Aspect Ratio  : 1.460
+Cell Turned-On Resistance : 1.000Mohm
+Cell Turned-Off Resistance: 10.000Mohm
+Read Mode: Current-Sensing
+  - Read Voltage: 0.400V
+Reset Mode: Voltage
+  - Reset Voltage: 2.000V
+  - Reset Pulse: 10.000ns
+Set Mode: Voltage
+  - Set Voltage: 2.000V
+  - Set Pulse: 10.000ns
+Access Type: CMOS
+
+====================
+DESIGN SPECIFICATION
+====================
+Design Target: Random Access Memory
+Capacity   : 1MB
+Data Width : 64Bits (8Bytes)
+
+Searching for the best solution that is optimized for read energy-delay-product ...
+No valid solutions.
+
+Finished!

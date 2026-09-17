@@ -1,0 +1,46 @@
+{
+ "trace": "/home/yuvalk/MBMM/benchmarks/lbm_spec2017.nvt",
+ "cutoff": 250000000,
+ "stopped_at_cutoff": true,
+ "records": 16447102,
+ "reads": 9481309,
+ "writes": 6965793,
+ "first_cycle": 0,
+ "last_cycle": 249999974,
+ "first_write_cycle": 335266,
+ "last_write_cycle": 154503725,
+ "write_addr_mod64_top": [
+  [
+   0,
+   6965793
+  ]
+ ],
+ "data_field_lengths": {
+  "128": 6965793
+ },
+ "writes_with_nonzero_data": 0,
+ "skew_64B_lines": {
+  "distinct": 6700637,
+  "total": 6965793,
+  "max": 7,
+  "mean": 1.0395717601177321,
+  "median": 1,
+  "top1pct_units": 67006,
+  "top1pct_share": 0.01924217386304761,
+  "top10_share": 5.598788249952303e-06,
+  "max_over_mean": 6.733541895373578
+ },
+ "skew_4KB_pages": {
+  "distinct": 104716,
+  "total": 6965793,
+  "max": 90,
+  "mean": 66.52080866343252,
+  "median": 64,
+  "top1pct_units": 1047,
+  "top1pct_share": 0.013527533763923218,
+  "top10_share": 0.00012920280576813006,
+  "max_over_mean": 1.3529601008815508
+ },
+ "write_span_bytes_64B": 428840768,
+ "runtime_s": 14.369081497192383
+}

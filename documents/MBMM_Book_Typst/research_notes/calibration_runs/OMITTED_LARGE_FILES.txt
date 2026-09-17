@@ -1,0 +1,3 @@
+430455685	targetA/out/ours_ar1.txt
+426982098	targetA/out/ours.txt
+317455898	drift/out/ours_sample_STTRAM_cache.txt
