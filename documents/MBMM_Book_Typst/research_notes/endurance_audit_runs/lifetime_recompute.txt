@@ -1,0 +1,36 @@
+1T1R SLC  lbm_spec2017           W=3,257,597 ch=1 rate=  39,091,164/s  8GB=1.09  16GB=2.18  64GB=8.71  128GB=17.4
+1T1R SLC  gcc_spec2017           W=  170,800 ch=1 rate=   2,049,600/s  8GB=20.8  16GB=41.5  64GB=166  128GB=332
+1T1R SLC  stream                 W=  100,000 ch=1 rate=   1,200,000/s  8GB=35.5  16GB=70.9  64GB=284  128GB=567
+1T1R SLC  alexnet_layer1_ofmap   W=   13,542 ch=1 rate=     162,504/s  8GB=262  16GB=524  64GB=2,095  128GB=4,190
+1T1R SLC  alexnet_layer1_ifmap   W=        0 ch=1 rate=           0/s  8GB=inf  16GB=inf  64GB=inf  128GB=inf
+1T1R SLC  gpt2_ifmap             W=        0 ch=1 rate=           0/s  8GB=inf  16GB=inf  64GB=inf  128GB=inf
+1T1R MLC  lbm_spec2017           W=1,825,508 ch=1 rate=  21,906,096/s  8GB=0.194  16GB=0.389  64GB=1.55  128GB=3.11
+1T1R MLC  gcc_spec2017           W=  170,800 ch=1 rate=   2,049,600/s  8GB=2.08  16GB=4.15  64GB=16.6  128GB=33.2
+1T1R MLC  stream                 W=  100,000 ch=1 rate=   1,200,000/s  8GB=3.55  16GB=7.09  64GB=28.4  128GB=56.7
+1T1R MLC  alexnet_layer1_ofmap   W=   13,542 ch=1 rate=     162,504/s  8GB=26.2  16GB=52.4  64GB=210  128GB=419
+1T1R MLC  alexnet_layer1_ifmap   W=        0 ch=1 rate=           0/s  8GB=inf  16GB=inf  64GB=inf  128GB=inf
+1T1R MLC  gpt2_ifmap             W=        0 ch=1 rate=           0/s  8GB=inf  16GB=inf  64GB=inf  128GB=inf
+1S1R SLC  lbm_spec2017           W=2,288,852 ch=1 rate=  27,466,224/s  8GB=1.55  16GB=3.1  64GB=12.4  128GB=24.8
+1S1R SLC  gcc_spec2017           W=  170,800 ch=1 rate=   2,049,600/s  8GB=20.8  16GB=41.5  64GB=166  128GB=332
+1S1R SLC  stream                 W=  100,000 ch=1 rate=   1,200,000/s  8GB=35.5  16GB=70.9  64GB=284  128GB=567
+1S1R SLC  alexnet_layer1_ofmap   W=   13,542 ch=1 rate=     162,504/s  8GB=262  16GB=524  64GB=2,095  128GB=4,190
+1S1R SLC  alexnet_layer1_ifmap   W=        0 ch=1 rate=           0/s  8GB=inf  16GB=inf  64GB=inf  128GB=inf
+1S1R SLC  gpt2_ifmap             W=        0 ch=1 rate=           0/s  8GB=inf  16GB=inf  64GB=inf  128GB=inf
+1S1R MLC  lbm_spec2017           W=1,090,968 ch=1 rate=  13,091,616/s  8GB=0.325  16GB=0.65  64GB=2.6  128GB=5.2
+1S1R MLC  gcc_spec2017           W=  170,800 ch=1 rate=   2,049,600/s  8GB=2.08  16GB=4.15  64GB=16.6  128GB=33.2
+1S1R MLC  stream                 W=  100,000 ch=1 rate=   1,200,000/s  8GB=3.55  16GB=7.09  64GB=28.4  128GB=56.7
+1S1R MLC  alexnet_layer1_ofmap   W=   13,542 ch=1 rate=     162,504/s  8GB=26.2  16GB=52.4  64GB=210  128GB=419
+1S1R MLC  alexnet_layer1_ifmap   W=        0 ch=1 rate=           0/s  8GB=inf  16GB=inf  64GB=inf  128GB=inf
+1S1R MLC  gpt2_ifmap             W=        0 ch=1 rate=           0/s  8GB=inf  16GB=inf  64GB=inf  128GB=inf
+--- code check
+{'trace': 'lbm_spec2017', 'code_writes': 3257597, 'raw_writes': 3257597, 'match': True, 'code_8': 1.088741239686159, 'code_64': 8.709929917489273, 'code_128': 17.419859834978546}
+{'trace': 'gcc_spec2017', 'code_writes': 170800, 'raw_writes': 170800, 'match': True, 'code_8': 20.76510653499949, 'code_64': 166.12085227999592, 'code_128': 332.24170455999183}
+{'trace': 'stream', 'code_writes': 100000, 'raw_writes': 100000, 'match': True, 'code_8': 35.46680196177913, 'code_64': 283.73441569423306, 'code_128': 567.4688313884661}
+{'trace': 'alexnet_layer1_ofmap', 'code_writes': 13542, 'raw_writes': 13542, 'match': True, 'code_8': 261.9022445855792, 'code_64': 2095.2179566846335, 'code_128': 4190.435913369267}
+--- LBM alternatives
+a_reram_completed_stats(3,257,597)               W=3,257,597 win=0.08333s rate=  39,091,164/s  SLC: 8GB=1.09 16GB=2.18 64GB=8.71 128GB=17.4  MLC: 8GB=0.109 16GB=0.218 64GB=0.871 128GB=1.74
+a2_reram_cycle8_table(3,269,479)                 W=3,269,479 win=0.08333s rate=  39,233,748/s  SLC: 8GB=1.08 16GB=2.17 64GB=8.68 128GB=17.4  MLC: 8GB=0.108 16GB=0.217 64GB=0.868 128GB=1.74
+b_ddr5_admitted=trace_writes_in_250M             W=6,965,793 win=0.08333s rate=  83,589,516/s  SLC: 8GB=0.509 16GB=1.02 64GB=4.07 128GB=8.15  MLC: 8GB=0.0509 16GB=0.102 64GB=0.407 128GB=0.815
+c_trace_write_span_335266..154503725_at_3GHz     W=6,965,793 win=0.05139s rate= 135,548,991/s  SLC: 8GB=0.314 16GB=0.628 64GB=2.51 128GB=5.02  MLC: 8GB=0.0314 16GB=0.0628 64GB=0.251 128GB=0.502
+d_trace_cycles_as_gem5_ns(tick//1000)_250ms      W=6,965,793 win=0.25000s rate=  27,863,172/s  SLC: 8GB=1.53 16GB=3.05 64GB=12.2 128GB=24.4  MLC: 8GB=0.153 16GB=0.305 64GB=1.22 128GB=2.44
+e_reram_completed_at_gem5_ns_basis               W=3,257,597 win=0.25000s rate=  13,030,388/s  SLC: 8GB=3.27 16GB=6.53 64GB=26.1 128GB=52.3  MLC: 8GB=0.327 16GB=0.653 64GB=2.61 128GB=5.23

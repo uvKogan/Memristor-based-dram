@@ -1,0 +1,120 @@
+{
+ "bases": [
+  {
+   "basis": "ReRAM completed, book (3,257,597 / 83.33 ms)",
+   "writes_per_s": 39091164.0,
+   "SLC_8GB_y": 1.088741239686159,
+   "SLC_16GB_y": 2.177482479372318,
+   "SLC_64GB_y": 8.709929917489273,
+   "SLC_128GB_y": 17.419859834978546,
+   "MLC_16GB_y": 0.21774824793723183
+  },
+  {
+   "basis": "Same 3,257,597 writes at their own trace time (22.59M cycles, 3 GHz)",
+   "writes_per_s": 432675791.96903265,
+   "SLC_8GB_y": 0.09836501866779056,
+   "SLC_16GB_y": 0.19673003733558111,
+   "SLC_64GB_y": 0.7869201493423245,
+   "SLC_128GB_y": 1.573840298684649,
+   "MLC_16GB_y": 0.019673003733558108
+  },
+  {
+   "basis": "DDR5 admitted = trace writes in 250M cycles (6,965,793 / 83.33 ms)",
+   "writes_per_s": 83589516.0,
+   "SLC_8GB_y": 0.5091567027871648,
+   "SLC_16GB_y": 1.0183134055743297,
+   "SLC_64GB_y": 4.073253622297319,
+   "SLC_128GB_y": 8.146507244594638,
+   "MLC_16GB_y": 0.10183134055743297
+  },
+  {
+   "basis": "Trace write-active span in window (335,266..154,503,725, 3 GHz)",
+   "writes_per_s": 135548990.60124874,
+   "SLC_8GB_y": 0.3139836170328728,
+   "SLC_16GB_y": 0.6279672340657456,
+   "SLC_64GB_y": 2.5118689362629825,
+   "SLC_128GB_y": 5.023737872525965,
+   "MLC_16GB_y": 0.06279672340657455
+  },
+  {
+   "basis": "LBM steady-state bins 275-525M cycles (3 GHz)",
+   "writes_per_s": 50751000.00000001,
+   "SLC_8GB_y": 0.8386073644683839,
+   "SLC_16GB_y": 1.6772147289367678,
+   "SLC_64GB_y": 6.708858915747071,
+   "SLC_128GB_y": 13.417717831494143,
+   "MLC_16GB_y": 0.16772147289367678
+  },
+  {
+   "basis": "LBM post-init long-run 50M-553M cycles (3 GHz)",
+   "writes_per_s": 28589929.403236493,
+   "SLC_8GB_y": 1.4886417435265502,
+   "SLC_16GB_y": 2.9772834870531004,
+   "SLC_64GB_y": 11.909133948212402,
+   "SLC_128GB_y": 23.818267896424803,
+   "MLC_16GB_y": 0.29772834870531006
+  },
+  {
+   "basis": "LBM whole trace 0-553M cycles (3 GHz)",
+   "writes_per_s": 62183108.979474574,
+   "SLC_8GB_y": 0.6844328476432923,
+   "SLC_16GB_y": 1.3688656952865845,
+   "SLC_64GB_y": 5.475462781146338,
+   "SLC_128GB_y": 10.950925562292676,
+   "MLC_16GB_y": 0.13688656952865844
+  },
+  {
+   "basis": "Book window, trace cycle = 1 gem5 ns (6,965,793 / 250 ms)",
+   "writes_per_s": 27863172.0,
+   "SLC_8GB_y": 1.5274701083614945,
+   "SLC_16GB_y": 3.054940216722989,
+   "SLC_64GB_y": 12.219760866891956,
+   "SLC_128GB_y": 24.439521733783913,
+   "MLC_16GB_y": 0.30549402167229883
+  },
+  {
+   "basis": "LBM steady-state, trace cycle = 1 gem5 ns",
+   "writes_per_s": 16917000.0,
+   "SLC_8GB_y": 2.515822093405152,
+   "SLC_16GB_y": 5.031644186810304,
+   "SLC_64GB_y": 20.126576747241216,
+   "SLC_128GB_y": 40.25315349448243,
+   "MLC_16GB_y": 0.5031644186810303
+  },
+  {
+   "basis": "LBM post-init long-run, trace cycle = 1 gem5 ns",
+   "writes_per_s": 9529976.467745498,
+   "SLC_8GB_y": 4.465925230579651,
+   "SLC_16GB_y": 8.931850461159302,
+   "SLC_64GB_y": 35.72740184463721,
+   "SLC_128GB_y": 71.45480368927441,
+   "MLC_16GB_y": 0.8931850461159301
+  }
+ ],
+ "no_wear_leveling": {
+  "lbm": {
+   "trace_seconds_3GHz": 0.18432605233333332,
+   "footprint_MB": 408.9744873046875,
+   "hottest_line_writes": 8,
+   "hottest_line_rate": 43.401352650535166,
+   "hottest_line_life_days": 2.666754229359568,
+   "mean_touched_line_rate": 9.280177347212993,
+   "mean_touched_line_life_days": 12.471824234641357,
+   "leveled_over_footprint_life_days": 12.471824234641357,
+   "leveled_over_8GB_life_years": 0.6844328476432923,
+   "footprint_fraction_of_8GB": 0.049923643469810486
+  },
+  "gcc": {
+   "trace_seconds_3GHz": 0.20367970633333332,
+   "footprint_MB": 27.60186767578125,
+   "hottest_line_writes": 13,
+   "hottest_line_rate": 63.8257008222742,
+   "hottest_line_life_days": 1.813387698836657,
+   "mean_touched_line_rate": 5.171259067431109,
+   "mean_touched_line_life_days": 22.38153982067591,
+   "leveled_over_footprint_life_days": 22.38153982067591,
+   "leveled_over_8GB_life_years": 18.199043864657664,
+   "footprint_fraction_of_8GB": 0.003369368612766266
+  }
+ }
+}

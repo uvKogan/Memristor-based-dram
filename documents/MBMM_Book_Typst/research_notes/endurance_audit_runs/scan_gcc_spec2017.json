@@ -1,0 +1,46 @@
+{
+ "trace": "/home/yuvalk/MBMM/benchmarks/gcc_spec2017.nvt",
+ "cutoff": 250000000,
+ "stopped_at_cutoff": true,
+ "records": 407363,
+ "reads": 236563,
+ "writes": 170800,
+ "first_cycle": 0,
+ "last_cycle": 249996667,
+ "first_write_cycle": 638333,
+ "last_write_cycle": 249996667,
+ "write_addr_mod64_top": [
+  [
+   0,
+   170800
+  ]
+ ],
+ "data_field_lengths": {
+  "128": 170800
+ },
+ "writes_with_nonzero_data": 0,
+ "skew_64B_lines": {
+  "distinct": 164665,
+  "total": 170800,
+  "max": 6,
+  "mean": 1.0372574621200619,
+  "median": 1,
+  "top1pct_units": 1646,
+  "top1pct_share": 0.02387002341920375,
+  "top10_share": 0.00029859484777517564,
+  "max_over_mean": 5.784484777517565
+ },
+ "skew_4KB_pages": {
+  "distinct": 2992,
+  "total": 170800,
+  "max": 188,
+  "mean": 57.0855614973262,
+  "median": 64,
+  "top1pct_units": 29,
+  "top1pct_share": 0.021680327868852458,
+  "top10_share": 0.00885831381733021,
+  "max_over_mean": 3.293302107728337
+ },
+ "write_span_bytes_64B": 10538560,
+ "runtime_s": 0.3918275833129883
+}

@@ -1,0 +1,37 @@
+Demand rates (M writes/s):
+  LBM start-up window (0-250M ns, book population): 27.86
+  LBM steady FF after init (50M-517M ns): 9.53
+  LBM O3 region, deduplicated (517M-553M ns): 9.54
+  GCC start-up window (0-250M ns): 0.68
+  GCC O3 region, deduplicated (574M-611M ns): 0.90
+Device write caps (M writes/s): {'1T1R SLC': 39.09, '1S1R SLC': 27.47, '1T1R MLC': 21.91, '1S1R MLC': 13.09}
+
+1T1R SLC, wear-leveling efficiency 0.97 (randomized Start-Gap). Years.
+basis | E | 8GB | 64GB | 128GB | 64GB w/ DCW 4.5x
+LBM start-up window (0-250M ns, book population) | 1e+04 | 0.00148 | 0.0119 | 0.0237 | 0.0533
+LBM start-up window (0-250M ns, book population) | 1e+06 | 0.148 | 1.19 | 2.37 | 5.33
+LBM start-up window (0-250M ns, book population) | 1e+07 | 1.48 | 11.9 | 23.7 | 53.3
+LBM steady FF after init (50M-517M ns) | 1e+04 | 0.00433 | 0.0347 | 0.0693 | 0.156
+LBM steady FF after init (50M-517M ns) | 1e+06 | 0.433 | 3.47 | 6.93 | 15.6
+LBM steady FF after init (50M-517M ns) | 1e+07 | 4.33 | 34.7 | 69.3 | 156
+LBM O3 region, deduplicated (517M-553M ns) | 1e+04 | 0.00433 | 0.0346 | 0.0692 | 0.156
+LBM O3 region, deduplicated (517M-553M ns) | 1e+06 | 0.433 | 3.46 | 6.92 | 15.6
+LBM O3 region, deduplicated (517M-553M ns) | 1e+07 | 4.33 | 34.6 | 69.2 | 156
+GCC start-up window (0-250M ns) | 1e+04 | 0.0604 | 0.483 | 0.967 | 2.18
+GCC start-up window (0-250M ns) | 1e+06 | 6.04 | 48.3 | 96.7 | 218
+GCC start-up window (0-250M ns) | 1e+07 | 60.4 | 483 | 967 | 2.18e+03
+GCC O3 region, deduplicated (574M-611M ns) | 1e+04 | 0.0458 | 0.367 | 0.733 | 1.65
+GCC O3 region, deduplicated (574M-611M ns) | 1e+06 | 4.58 | 36.7 | 73.3 | 165
+GCC O3 region, deduplicated (574M-611M ns) | 1e+07 | 45.8 | 367 | 733 | 1.65e+03
+
+All tracks, LBM steady state, 64 GB SLC / 128 GB MLC, WL 0.97, no DCW. MLC E = SLC E x {1, 0.1}. Years.
+E=1e+04 | 1T1R SLC: 0.0347 | 1S1R SLC: 0.0347 | 1T1R MLC: 0.0693 (x1) / 0.00693 (x0.1) | 1S1R MLC: 0.0693 (x1) / 0.00693 (x0.1)
+E=1e+06 | 1T1R SLC: 3.47 | 1S1R SLC: 3.47 | 1T1R MLC: 6.93 (x1) / 0.693 (x0.1) | 1S1R MLC: 6.93 (x1) / 0.693 (x0.1)
+E=1e+07 | 1T1R SLC: 34.7 | 1S1R SLC: 34.7 | 1T1R MLC: 69.3 (x1) / 6.93 (x0.1) | 1S1R MLC: 69.3 (x1) / 6.93 (x0.1)
+
+Shahar's template: endurance required for 10 yr, 64 GiB, ideal leveling, whole line per write.
+  LBM start-up window (0-250M ns, book population): 8.18e+06 cycles
+  LBM steady FF after init (50M-517M ns): 2.8e+06 cycles
+  LBM O3 region, deduplicated (517M-553M ns): 2.8e+06 cycles
+  GCC start-up window (0-250M ns): 2.01e+05 cycles
+  GCC O3 region, deduplicated (574M-611M ns): 2.64e+05 cycles

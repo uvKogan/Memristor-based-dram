@@ -1,0 +1,12 @@
+ReRAM completed, book (3,257,597 / 83.33 ms)                                39.09 M/s  SLC 8GB=1.09y 16GB=2.18y 64GB=8.71y 128GB=17.4y  MLC16GB(1e6)=0.218y
+Same 3,257,597 writes at their own trace time (22.59M cycles, 3 GHz)       432.68 M/s  SLC 8GB=0.0984y 16GB=0.197y 64GB=0.787y 128GB=1.57y  MLC16GB(1e6)=0.0197y
+DDR5 admitted = trace writes in 250M cycles (6,965,793 / 83.33 ms)          83.59 M/s  SLC 8GB=0.509y 16GB=1.02y 64GB=4.07y 128GB=8.15y  MLC16GB(1e6)=0.102y
+Trace write-active span in window (335,266..154,503,725, 3 GHz)            135.55 M/s  SLC 8GB=0.314y 16GB=0.628y 64GB=2.51y 128GB=5.02y  MLC16GB(1e6)=0.0628y
+LBM steady-state bins 275-525M cycles (3 GHz)                               50.75 M/s  SLC 8GB=0.839y 16GB=1.68y 64GB=6.71y 128GB=13.4y  MLC16GB(1e6)=0.168y
+LBM post-init long-run 50M-553M cycles (3 GHz)                              28.59 M/s  SLC 8GB=1.49y 16GB=2.98y 64GB=11.9y 128GB=23.8y  MLC16GB(1e6)=0.298y
+LBM whole trace 0-553M cycles (3 GHz)                                       62.18 M/s  SLC 8GB=0.684y 16GB=1.37y 64GB=5.48y 128GB=11y  MLC16GB(1e6)=0.137y
+Book window, trace cycle = 1 gem5 ns (6,965,793 / 250 ms)                   27.86 M/s  SLC 8GB=1.53y 16GB=3.05y 64GB=12.2y 128GB=24.4y  MLC16GB(1e6)=0.305y
+LBM steady-state, trace cycle = 1 gem5 ns                                   16.92 M/s  SLC 8GB=2.52y 16GB=5.03y 64GB=20.1y 128GB=40.3y  MLC16GB(1e6)=0.503y
+LBM post-init long-run, trace cycle = 1 gem5 ns                              9.53 M/s  SLC 8GB=4.47y 16GB=8.93y 64GB=35.7y 128GB=71.5y  MLC16GB(1e6)=0.893y
+lbm {"trace_seconds_3GHz": 0.18432605233333332, "footprint_MB": 408.9744873046875, "hottest_line_writes": 8, "hottest_line_rate": 43.401352650535166, "hottest_line_life_days": 2.666754229359568, "mean_touched_line_rate": 9.280177347212993, "mean_touched_line_life_days": 12.471824234641357, "leveled_over_footprint_life_days": 12.471824234641357, "leveled_over_8GB_life_years": 0.6844328476432923, "footprint_fraction_of_8GB": 0.049923643469810486}
+gcc {"trace_seconds_3GHz": 0.20367970633333332, "footprint_MB": 27.60186767578125, "hottest_line_writes": 13, "hottest_line_rate": 63.8257008222742, "hottest_line_life_days": 1.813387698836657, "mean_touched_line_rate": 5.171259067431109, "mean_touched_line_life_days": 22.38153982067591, "leveled_over_footprint_life_days": 22.38153982067591, "leveled_over_8GB_life_years": 18.199043864657664, "footprint_fraction_of_8GB": 0.003369368612766266}
