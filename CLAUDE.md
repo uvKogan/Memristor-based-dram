@@ -12,6 +12,8 @@
       - This exception does not relax guardrail 2 below - `mbmm_master.py` verification still applies to any change the loop makes that the pipeline would normally verify.
 2. **THE GATE-KEEPER**: Never assume a Python modification is successful until you have verified it through our master orchestration script: `mbmm_master.py`. 
 
+3. **SPEC2017 QUARANTINE - narrow exception, granted 2026-09-18 by the Lead Researcher**: the parent `/home/yuvalk/CLAUDE.md` forbids reading, indexing, searching or modifying anything under `/home/yuvalk/spec2017/`. For the trace-regeneration task of the 2026-09 revision only, you may `cd` into a SPEC run directory and launch gem5 on the benchmark binary with its reference input, reading only the files that run requires. Still forbidden: indexing or searching the suite, reading its sources or documentation, copying its contents into this repo, and modifying anything inside it. The exception ends when the regenerated traces are accepted.
+
 ## 📂 TOKEN STRATEGY & DIRECTORY NAVIGATION
 Do not read files outside your immediate task scope. Rely on the local `CLAUDE.md` files in subdirectories for specific domain knowledge:
 * `/simulators/nvsim/CLAUDE.md` -> NVSim C++ patching history, parser rules, and 22nm LOP parameters.
