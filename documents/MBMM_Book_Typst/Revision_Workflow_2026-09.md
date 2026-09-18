@@ -177,7 +177,7 @@ Expected: `PASS` for all three configs, exit 0.
 **Interfaces:**
 - Produces: statistics `averageEndToEndLatency` (memory cycles, same unit as `averageTotalLatency`), `measuredEndToEndLatencies`, `unstampedRequests` on every `MemoryController` (`i0.defaultMemory.channelN.<CTL>.averageEndToEndLatency`). `process_metrics.py` (T2.5) reads them.
 
-- [ ] **Step 1: Apply the preserved diff**
+- [x] **Step 1: Apply the preserved diff**
 
 Run: `cd /home/yuvalk/MBMM/simulators/nvmain && git apply --check ../../documents/MBMM_Book_Typst/research_notes/nvmain_patches/partA_e2e_latency.diff && git apply ../../documents/MBMM_Book_Typst/research_notes/nvmain_patches/partA_e2e_latency.diff`
 Expected: no output from `--check`; files modified. If `--check` fails (line drift), apply by hand using the content below.
@@ -225,18 +225,18 @@ if( request->type == READ || request->type == READ_PRECHARGE
 }
 ```
 
-- [ ] **Step 2: Build and run the regression**
+- [x] **Step 2: Build and run the regression**
 
 Run: `cd /home/yuvalk/MBMM && tools/nvmain_regress.sh`
 Expected: `PASS` x3 (the harness filters the new stats out of the comparison).
 
-- [ ] **Step 3: Verify the new statistic on the reference and on the sparse trace**
+- [x] **Step 3: Verify the new statistic on the reference and on the sparse trace**
 
 Run: `cd /home/yuvalk/MBMM/simulators/nvmain && ./nvmain.fast Config/reram_22nm_1t1r_slc_full_dimm.config ../../benchmarks/gpt2_ifmap.nvt 20000 | grep -E 'averageTotalLatency|averageEndToEndLatency|unstampedRequests'`
 Expected: `averageTotalLatency 364.146`, `averageEndToEndLatency` about `9709.69`, `unstampedRequests 0`.
 Run the same with `../../documents/MBMM_Book_Typst/research_notes/nvmain_patches/sparse.nvt`: the two averages differ by under 0.5 cycles.
 
-- [ ] **Step 4: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add simulators/nvmain/include/NVMainRequest.h simulators/nvmain/src/MemoryController.h simulators/nvmain/src/MemoryController.cpp simulators/nvmain/traceSim/traceMain.cpp && git commit -m "[T1.2] NVMain: end-to-end latency statistic from trace timestamp to completion"`
+- [x] **Step 4: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add simulators/nvmain/include/NVMainRequest.h simulators/nvmain/src/MemoryController.h simulators/nvmain/src/MemoryController.cpp simulators/nvmain/traceSim/traceMain.cpp && git commit -m "[T1.2] NVMain: end-to-end latency statistic from trace timestamp to completion"`
 
 ### Task T1.3: Per-location wear counter (patch B)
 
@@ -247,7 +247,7 @@ Run the same with `../../documents/MBMM_Book_Typst/research_notes/nvmain_patches
 - Produces per subarray: `wearLocations`, `wearTotalWrites`, `wearMaxWrites`, `wearMeanWrites`, `wearHotSpotFactor`, `wearHisto` (log2 buckets, PyDict format), `wearTopLocations` (top 16). Consumed by `tools/aggregate_wear.py` (T5.3).
 - Config keys used: `EnduranceModel RowModel` (default for the re-run), `EnduranceDist Uniform`, `EnduranceDistMean 1000000` (T2.2 writes them; the Uniform value is irrelevant to the counter).
 
-- [ ] **Step 1: Apply the preserved diff** (`git apply --check` first, as in T1.2). Substance:
+- [x] **Step 1: Apply the preserved diff** (`git apply --check` first, as in T1.2). Substance:
 
 ```cpp
 // src/EnduranceModel.h
@@ -270,14 +270,14 @@ if( !endrModel->NeedsOldData( ) )
 ```
 (If the exact `Write` call signature in this tree differs, use the one `UpdateEndurance` already calls a few lines below; the point is to skip `SimInterface::SetDataAtAddress` for models that never read old data.)
 
-- [ ] **Step 2: Regression**: `tools/nvmain_regress.sh` expected `PASS` x3.
-- [ ] **Step 3: Verify on the skew trace** with a scratch copy of the 1T1R full-DIMM config plus `EnduranceModel WordModel` / `EnduranceDist Uniform` / `EnduranceDistMean 1000000` appended:
+- [x] **Step 2: Regression**: `tools/nvmain_regress.sh` expected `PASS` x3.
+- [x] **Step 3: Verify on the skew trace** with a scratch copy of the 1T1R full-DIMM config plus `EnduranceModel WordModel` / `EnduranceDist Uniform` / `EnduranceDistMean 1000000` appended:
 
 Run: `grep -E 'wearMaxWrites|wearHotSpotFactor|wearTotalWrites' <out> | sort -t' ' -k2 -n | tail -3`
 Expected: one subarray with `wearMaxWrites 16014`, `wearHotSpotFactor` about `220`; sum of `wearTotalWrites` equals 19,999.
 Also run with `RowModel` and confirm `wearTotalWrites` sums equal the trace's write count, and RSS (`/usr/bin/time -v`) within 1 MB of the NullModel run.
 
-- [ ] **Step 4: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add simulators/nvmain/src/EnduranceModel.h simulators/nvmain/src/EnduranceModel.cpp simulators/nvmain/src/SubArray.h simulators/nvmain/src/SubArray.cpp simulators/nvmain/Endurance/RowModel.h simulators/nvmain/Endurance/WordModel.h && git commit -m "[T1.3] NVMain: per-location wear counter and hot-spot statistics"`
+- [x] **Step 4: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add simulators/nvmain/src/EnduranceModel.h simulators/nvmain/src/EnduranceModel.cpp simulators/nvmain/src/SubArray.h simulators/nvmain/src/SubArray.cpp simulators/nvmain/Endurance/RowModel.h simulators/nvmain/Endurance/WordModel.h && git commit -m "[T1.3] NVMain: per-location wear counter and hot-spot statistics"`
 
 ### Task T1.4: Start-Gap wear-leveling decoder
 
@@ -289,7 +289,7 @@ Also run with `RowModel` and confirm `wearTotalWrites` sums equal the trace's wr
 - Config: `Decoder StartGap`, `StartGapInterval 100` (writes per gap move; Qureshi 2009 uses 100), `StartGapRegionBytes` (default: the channel capacity). Stats: `startGapMoves`, `startGapWrites`.
 - Property: `Translate` applies `PA' = (PA + gap*64) mod (N+1)*64` on 64-byte units before the base translation; `ReverseTranslate` applies the exact inverse. All decoder instances share one static gap state (the factory creates a decoder at six hierarchy levels).
 
-- [ ] **Step 1: Write the header**
+- [x] **Step 1: Write the header**
 
 ```cpp
 // Decoders/StartGap/StartGap.h
@@ -325,7 +325,7 @@ class StartGap : public AddressTranslator
 #endif
 ```
 
-- [ ] **Step 2: Write the implementation**
+- [x] **Step 2: Write the implementation**
 
 ```cpp
 // Decoders/StartGap/StartGap.cpp
@@ -379,11 +379,11 @@ void StartGap::RegisterStats( ) { AddStat(moves); AddStat(writes); }
 ```
 Note: the real Start-Gap moves one line per gap move (a read plus a write of one line). Model that data movement as one extra WRITE request injected by the controller only if time allows (T5.2 sensitivity); the first version counts moves and applies the remap, and the book states the omission.
 
-- [ ] **Step 3: Wire the write hook and the factory.** In `src/MemoryController.cpp` `IssueCommand` path where a WRITE request is accepted (the FRFCFS `IssueCommand` at `MemControl/FRFCFS/FRFCFS.cpp:145-163` is the simplest single site): add `if( req->type == WRITE || req->type == WRITE_PRECHARGE ) StartGap::NoteWrite( );` guarded by an `#include` and a config check `p->KeyExists("Decoder") && value == "StartGap"` cached in a bool at `SetConfig`. In `Decoders/DecoderFactory.cpp:49` add `else if( decoder == "StartGap" ) at = new StartGap( );` with the include. Add the SConscript so the new directory builds.
+- [x] **Step 3: Wire the write hook and the factory.** In `src/MemoryController.cpp` `IssueCommand` path where a WRITE request is accepted (the FRFCFS `IssueCommand` at `MemControl/FRFCFS/FRFCFS.cpp:145-163` is the simplest single site): add `if( req->type == WRITE || req->type == WRITE_PRECHARGE ) StartGap::NoteWrite( );` guarded by an `#include` and a config check `p->KeyExists("Decoder") && value == "StartGap"` cached in a bool at `SetConfig`. In `Decoders/DecoderFactory.cpp:49` add `else if( decoder == "StartGap" ) at = new StartGap( );` with the include. Add the SConscript so the new directory builds.
 
-- [ ] **Step 4: Build; regression** (`tools/nvmain_regress.sh`: PASS x3, since no config uses the decoder yet).
+- [x] **Step 4: Build; regression** (`tools/nvmain_regress.sh`: PASS x3, since no config uses the decoder yet).
 
-- [ ] **Step 5: Verify the remap is a bijection and lowers hot-spot factor.** Run the skew trace (T1.3 config plus `Decoder StartGap`, `StartGapInterval 100`) and compare `wearHotSpotFactor`:
+- [x] **Step 5: Verify the remap is a bijection and lowers hot-spot factor.** Run the skew trace (T1.3 config plus `Decoder StartGap`, `StartGapInterval 100`) and compare `wearHotSpotFactor`:
 Expected: DIMM-wide max writes to one location falls from 16,014 toward about `16014 * 100 / lines`-scale values (the exact number depends on region size; it must fall by more than 10x), `wearTotalWrites` sum unchanged at 19,999, `startGapMoves` = 19,999 / 100. Also run gpt2 with and without the decoder: `mem_reads`, `mem_writes` and `totalReadRequests` identical (the remap must not lose requests).
 
 - [ ] **Step 6: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add simulators/nvmain/Decoders simulators/nvmain/MemControl/FRFCFS/FRFCFS.cpp simulators/nvmain/src && git commit -m "[T1.4] NVMain: Start-Gap wear-leveling decoder with shared gap state"`
@@ -393,7 +393,7 @@ Expected: DIMM-wide max writes to one location falls from 16,014 toward about `1
 **Files:**
 - Modify: `simulators/nvmain/CLAUDE.md` (append items 4-6 under APPLIED REPAIRS: end-to-end stat, wear counter, StartGap; each with files, config keys, and the regression command), `simulators/nvsim/CLAUDE.md` (item 2: remove the claim that `InputParameter.cpp` was patched; it was not, per the 2026-09-15 calibration; note the `Mat.cpp` debug prints and that the "128x128 Mats" skeleton keys are unparsed)
 
-- [ ] **Step 1: Edit both files** in the existing numbered-list style.
+- [x] **Step 1: Edit both files** in the existing numbered-list style.
 - [ ] **Step 2: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add simulators/nvmain/CLAUDE.md simulators/nvsim/CLAUDE.md && git commit -m "[T1.5] Patch logs: NVMain revision patches; correct NVSim patch history"`
 
 ---
@@ -822,3 +822,4 @@ Book figures 1-17, 25, 27 and Tables 2-7 of the 3 September version came from `r
 ## Session log
 
 2026-09-18: plan approved; Phase 0 started.
+2026-09-18: T1.4 Start-Gap decoder done (faithful Qureshi 2009 mapping after the plan's remap was found non-bijective; boundary-alias stat added on review); T1.5 NVSim patch log corrected. Phase 1 complete; commits for T1.4/T1.5 handed to the Lead. Phase 2 starts with T2.1/T2.2.
