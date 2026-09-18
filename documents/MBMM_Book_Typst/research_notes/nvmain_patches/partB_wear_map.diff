@@ -1,0 +1,199 @@
+--- /home/yuvalk/MBMM/simulators/nvmain/src/EnduranceModel.h	2026-02-15 23:40:04.903364791 +0200
++++ nvmain_probe/src/EnduranceModel.h	2026-09-18 00:07:17.495600909 +0300
+@@ -65,13 +65,30 @@
+     uint64_t GetWorstLife( );
+     uint64_t GetAverageLife( );
+ 
++    /*
++     *  Raw per-location write counts, keyed the same way the concrete model
++     *  keys its life map (row for RowModel, row*COLS+col for WordModel, ...).
++     *  Unlike the life map this is a plain counter, so it is independent of
++     *  the (possibly random) EnduranceDist draw and of the first-write
++     *  off-by-one in DecrementLife.
++     */
++    const std::map<uint64_t, uint64_t>& GetWriteCounts( ) const { return writeCounts; }
++
+     virtual void PrintStats( ) { }
+ 
++    /*
++     *  True only for models that compare old vs new data (Bit/Byte). When
++     *  false, SubArray::UpdateEndurance can skip the SimInterface data
++     *  shadow entirely, which is ~250 bytes per unique cacheline written.
++     */
++    virtual bool NeedsOldData( ) const { return true; }
++
+     void Cycle( ncycle_t steps );
+ 
+   protected:
+     EnduranceDistribution *enduranceDist;
+     std::map<uint64_t, uint64_t> life;
++    std::map<uint64_t, uint64_t> writeCounts;
+     
+     bool DecrementLife( uint64_t addr );
+     bool IsDead( uint64_t addr );
+--- /home/yuvalk/MBMM/simulators/nvmain/src/EnduranceModel.cpp	2026-02-15 23:40:04.903364791 +0200
++++ nvmain_probe/src/EnduranceModel.cpp	2026-09-18 00:02:14.144488080 +0300
+@@ -42,6 +42,7 @@
+ EnduranceModel::EnduranceModel( )
+ {
+     life.clear( );
++    writeCounts.clear( );
+ 
+     granularity = 0;
+ }
+@@ -98,6 +99,9 @@
+     std::map<uint64_t, uint64_t>::iterator i = life.find( addr );
+     bool rv = true;
+ 
++    /* Per-location wear counter (see GetWriteCounts). */
++    writeCounts[addr]++;
++
+     if( i == life.end( ) )
+     {
+           /* Generate a random number using the specified distribution */
+--- /home/yuvalk/MBMM/simulators/nvmain/src/SubArray.h	2026-02-15 23:40:04.903364791 +0200
++++ nvmain_probe/src/SubArray.h	2026-09-18 00:02:32.314047901 +0300
+@@ -183,6 +183,10 @@
+     double refreshEnergy;
+ 
+     uint64_t worstCaseEndurance, averageEndurance;
++    /* Measured per-location write skew (see CalculateStats). */
++    uint64_t wearLocations, wearTotalWrites, wearMaxWrites;
++    double wearMeanWrites, wearHotSpotFactor;
++    std::string wearHisto, wearTopLocations;
+ 
+     ncounter_t reads, writes, activates, precharges, refreshes;
+     ncounter_t idleTimer;
+--- /home/yuvalk/MBMM/simulators/nvmain/src/SubArray.cpp	2026-08-16 23:42:09.076116530 +0300
++++ nvmain_probe/src/SubArray.cpp	2026-09-18 00:07:17.495600909 +0300
+@@ -45,6 +45,9 @@
+ #include <cassert>
+ #include <iostream>
+ #include <limits>
++#include <algorithm>
++#include <vector>
++#include <sstream>
+ 
+ /*
+  * Using -O3 in gcc causes the popcount methods to return incorrect values.
+@@ -249,6 +252,13 @@
+     {
+         AddStat(worstCaseEndurance);
+         AddStat(averageEndurance);
++        AddStat(wearLocations);
++        AddStat(wearTotalWrites);
++        AddStat(wearMaxWrites);
++        AddStat(wearMeanWrites);
++        AddStat(wearHotSpotFactor);
++        AddStat(wearHisto);
++        AddStat(wearTopLocations);
+     }
+ 
+     AddStat(actWaits);
+@@ -1388,6 +1398,25 @@
+ 
+         NVMDataBlock oldData;
+ 
++        if( !endrModel->NeedsOldData( ) )
++        {
++            /*
++             *  RowModel/WordModel never look at oldData, so skip the
++             *  SimInterface data shadow (a full NVMDataBlock per unique
++             *  cacheline) entirely.
++             */
++            ncycles_t extraLatency = endrModel->Write( request, oldData );
++            if( extraLatency < 0 )
++            {
++                extraLatency = -extraLatency;
++                extraLatency--;
++                std::cout << "WARNING: Write to 0x" << std::hex
++                    << request->address.GetPhysicalAddress( )
++                    << std::dec << " resulted in a hard error! " << std::endl;
++            }
++            return static_cast<ncycle_t>(extraLatency);
++        }
++
+         if( conf->GetSimInterface( ) != NULL )
+         {
+             /* If the old data is not there, we will assume the data is 0.*/
+@@ -1480,6 +1509,58 @@
+     worstCaseEndurance = endrModel->GetWorstLife( );
+     averageEndurance = endrModel->GetAverageLife( );
+ 
++    /*
++     *  Measured per-location write skew. Keys are whatever the configured
++     *  EnduranceModel uses (row for RowModel, row*COLS+col for WordModel).
++     *  wearHotSpotFactor = max writes to any one location / mean writes per
++     *  touched location. This is the number that replaces the "ideal uniform
++     *  wear leveling" assumption.
++     */
++    {
++        const std::map<uint64_t, uint64_t>& wc = endrModel->GetWriteCounts( );
++        std::map<uint64_t, uint64_t> histo;
++        std::vector< std::pair<uint64_t, uint64_t> > byCount;
++
++        wearLocations = static_cast<uint64_t>( wc.size( ) );
++        wearTotalWrites = 0;
++        wearMaxWrites = 0;
++
++        for( std::map<uint64_t, uint64_t>::const_iterator it = wc.begin( );
++             it != wc.end( ); ++it )
++        {
++            wearTotalWrites += it->second;
++            if( it->second > wearMaxWrites ) wearMaxWrites = it->second;
++
++            /* Log2 bucket so the histogram stays small for huge maps. */
++            uint64_t bucket = 0, v = it->second;
++            while( v > 1 ) { v >>= 1; bucket++; }
++            histo[bucket]++;
++
++            byCount.push_back( std::make_pair( it->second, it->first ) );
++        }
++
++        wearMeanWrites = ( wearLocations == 0 ) ? 0.0
++            : static_cast<double>(wearTotalWrites) / static_cast<double>(wearLocations);
++        wearHotSpotFactor = ( wearMeanWrites == 0.0 ) ? 0.0
++            : static_cast<double>(wearMaxWrites) / wearMeanWrites;
++
++        wearHisto = PyDictHistogram<uint64_t, uint64_t>( histo );
++
++        /* Top-N hottest locations as a python dict {key: writes}. */
++        const size_t topN = 16;
++        std::sort( byCount.begin( ), byCount.end( ),
++                   std::greater< std::pair<uint64_t, uint64_t> >( ) );
++        std::stringstream topSS;
++        topSS << "{";
++        for( size_t i = 0; i < byCount.size( ) && i < topN; i++ )
++        {
++            if( i ) topSS << ", ";
++            topSS << byCount[i].second << ": " << byCount[i].first;
++        }
++        topSS << "}";
++        wearTopLocations = topSS.str( );
++    }
++
+     actWaitAverage = static_cast<double>(actWaitTotal) / static_cast<double>(actWaits);
+ 
+     /* Print a histogram as a python-style dict. */
+--- /home/yuvalk/MBMM/simulators/nvmain/Endurance/RowModel/RowModel.h	2026-02-15 23:40:04.799364672 +0200
++++ nvmain_probe/Endurance/RowModel/RowModel.h	2026-09-18 00:07:17.495600909 +0300
+@@ -46,6 +46,8 @@
+ 
+     void SetConfig( Config *conf, bool createChildren = true );
+ 
++    bool NeedsOldData( ) const { return false; }
++
+     ncycles_t Read( NVMainRequest *request );
+     ncycles_t Write( NVMainRequest *request, NVMDataBlock& oldData );
+ };
+--- /home/yuvalk/MBMM/simulators/nvmain/Endurance/WordModel/WordModel.h	2026-02-15 23:40:04.803364677 +0200
++++ nvmain_probe/Endurance/WordModel/WordModel.h	2026-09-18 00:07:17.495600909 +0300
+@@ -46,6 +46,8 @@
+ 
+     void SetConfig( Config *conf, bool createChildren = true );
+ 
++    bool NeedsOldData( ) const { return false; }
++
+     ncycles_t Read( NVMainRequest *request );
+     ncycles_t Write( NVMainRequest *request, NVMDataBlock& oldData );
+ };

@@ -51,3 +51,6 @@ run.log
 
 # Oversized reference PDF (142 MB, exceeds GitHub limits)
 documents/reference_validation_papers/Liu et al., JSSC 2014 Fackenthal et al., ISSCC 2014, paper 19.7 978-3-030-79827-7.pdf
+
+# SDD workspace scratch
+.superpowers/
