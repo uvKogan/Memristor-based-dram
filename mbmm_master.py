@@ -4,6 +4,7 @@ import os
 import argparse
 import sys
 import logging
+import importlib.util
 from pathlib import Path
 from datetime import datetime
 
@@ -90,6 +91,73 @@ execution_summary = {
 
 def get_project_root():
     return Path(__file__).parent.absolute()
+
+def silicon_models():
+    """T2.8 sys-model names for the microsecond-silicon sensitivity configs.
+
+    Read from 3_gen_nvmain_config.py's SILICON_TIMINGS table (via its
+    silicon_model_names() helper), loaded with importlib.util.spec_from_file_location
+    -- the same pattern tests/test_gen_nvmain_config.py uses to import this
+    digit-prefixed script -- instead of duplicating the model-name list here.
+    """
+    root = get_project_root()
+    spec = importlib.util.spec_from_file_location(
+        "gen_nvmain_config_for_master", root / "3_gen_nvmain_config.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.silicon_model_names()
+
+def cycles_for(model_name, window_ns, config_dir=None):
+    """Per-model CLK-cycle budget for a matched window_ns trace window.
+
+    NVMain's traceSim/traceMain.cpp (lines ~195-196) scales the --cycles
+    argument by CPUFreq/CLK internally, so the value handed to
+    4_execute_simulation.py's --cycles must already be expressed in the
+    model's own memory-clock (CLK) cycles, not wall time. A window of
+    window_ns nanoseconds is therefore:
+
+        ceil(window_ns * CLK_MHz / 1000)
+
+    computed with exact integer ceiling division (no float rounding).
+    CLK is read from the "CLK <n>" line of the model's NVMain config
+    (simulators/nvmain/Config/<model_name>.config by default) and must be an
+    integer MHz value. Every model then admits the identical trace window
+    regardless of its own CLK.
+    """
+    if config_dir is None:
+        config_dir = get_project_root() / "simulators" / "nvmain" / "Config"
+    config_dir = Path(config_dir)
+    config_path = config_dir / f"{model_name}.config"
+
+    if not config_path.exists():
+        raise FileNotFoundError(
+            f"cycles_for: no config found for model '{model_name}' at {config_path}"
+        )
+
+    clk_mhz = None
+    with open(config_path) as f:
+        for line in f:
+            parts = line.split()
+            if parts and parts[0] == "CLK":
+                if len(parts) < 2:
+                    raise ValueError(
+                        f"cycles_for: malformed 'CLK' line in {config_path}: {line.strip()!r}"
+                    )
+                clk_str = parts[1]
+                try:
+                    clk_mhz = int(clk_str)
+                except ValueError:
+                    raise ValueError(
+                        f"cycles_for: CLK value in {config_path} is not an integer: {clk_str!r}"
+                    )
+                break
+
+    if clk_mhz is None:
+        raise ValueError(
+            f"cycles_for: no 'CLK' line found in {config_path}"
+        )
+
+    return -(-int(window_ns) * clk_mhz // 1000)
 
 def setup_logging():
     """Setup logging to file (overwrites on each run)."""
@@ -200,7 +268,16 @@ def setup_args():
     parser.add_argument("--models", nargs="+", help="Run the full pipeline for specific model names.")
     parser.add_argument("--all", action="store_true", help="Run the full pipeline for all models in configs/.")
     parser.add_argument("--trace", nargs="+", default=["test_reram.nvt"], help="Trace file(s) to use for simulation.")
-    parser.add_argument("--cycles", type=int, default=50000, help="Simulation cycles.")
+    parser.add_argument("--cycles", type=int, default=None,
+                        help="Override: use this exact CLK-cycle count for every model instead "
+                             "of a --window-ns-derived per-model budget. Since CLK differs by "
+                             "model, this means models then see different trace time windows "
+                             "(a warning is printed when this is set).")
+    parser.add_argument("--window-ns", type=int, default=250000000,
+                        help="Matched simulation window in nanoseconds, converted per model "
+                             "into a CLK-cycle budget via cycles_for() so every model admits "
+                             "the identical trace window (default: 250000000). Ignored if "
+                             "--cycles is set.")
     parser.add_argument("--readme", action="store_true", help="Print status and history.")
     parser.add_argument("--sims", action="store_true", help="Detailed info on simulators.")
     parser.add_argument("--extended_help", action="store_true", help="Describe every sub-script.")
@@ -208,11 +285,40 @@ def setup_args():
     parser.add_argument("--queue-size", type=int, default=32,
                         help="FRFCFS controller QueueSize passthrough to 3_gen_nvmain_config.py "
                              "(default: 32, NVMain's own hardcoded fallback).")
+    parser.add_argument("--channels", type=int, choices=[1, 2], default=1,
+                        help="Passthrough to 3_gen_nvmain_config.py --channels (default: 1).")
+    parser.add_argument("--decoder", choices=["Default", "StartGap"], default="Default",
+                        help="Passthrough to 3_gen_nvmain_config.py --decoder (default: Default).")
+    parser.add_argument("--endurance-model", choices=["RowModel", "WordModel", "NullModel"],
+                        default="RowModel",
+                        help="Passthrough to 3_gen_nvmain_config.py --endurance-model "
+                             "(default: RowModel).")
+    parser.add_argument("--ddr5-model", choices=["DDR5_4800_DRAM_subchannel", "DDR5_4800_DRAM_64B"],
+                        default="DDR5_4800_DRAM_subchannel",
+                        help="DDR5 config to run natively (default: DDR5_4800_DRAM_subchannel). "
+                             "Falls back to DDR5_4800_DRAM with a logged note until T2.4 "
+                             "generates the DDR5_4800_DRAM_subchannel/_64B configs.")
+    parser.add_argument("--silicon", action="store_true",
+                        help="Also generate and run the T2.8 microsecond-silicon sensitivity "
+                             "full-DIMM configs (3_gen_nvmain_config.py --silicon; model names "
+                             "from its SILICON_TIMINGS table) through the same simulation call, "
+                             "for every trace.")
     return parser.parse_args()
 
-def run_pipeline(models, freq, trace, cycles, queue_size=32):
-    """Executes the pipeline with conditional logic for MLC/DRAM tracks."""
+def run_pipeline(models, freq, trace, cycles, queue_size=32, window_ns=250000000,
+                  channels=1, decoder="Default", endurance_model="RowModel"):
+    """Executes the pipeline with conditional logic for MLC/DRAM tracks.
+
+    `cycles`, if not None, overrides the --window-ns-derived per-model
+    budget for every model (with a printed warning, since models with
+    different CLK then see different trace time windows).
+    """
     root = get_project_root()
+
+    if cycles is not None:
+        print(f"[WARNING] --cycles override set to {cycles}: every model uses this exact "
+              f"CLK-cycle count instead of a matched --window-ns budget, so models with "
+              f"different CLK values will see different trace time windows.")
     
     for model in models:
         print(f"\n\n{'#'*80}")
@@ -237,29 +343,38 @@ def run_pipeline(models, freq, trace, cycles, queue_size=32):
             subprocess.run([sys.executable, "2_extract_hardware_metrics.py"], check=True)
             
             # Stage 3: Config Generation
-            subprocess.run([sys.executable, "3_gen_nvmain_config.py", "--freq", str(freq), "--queue-size", str(queue_size)], check=True)
-            
+            subprocess.run([
+                sys.executable, "3_gen_nvmain_config.py",
+                "--freq", str(freq), "--queue-size", str(queue_size),
+                "--channels", str(channels), "--decoder", decoder,
+                "--endurance-model", endurance_model, "--window-ns", str(window_ns)
+            ], check=True)
+
             # --- THE PATCH: ARCHITECTURE LOOP ---
             # Define the 4 architectures generated by Step 3
             architectures = ["single", "8chip", "16chip", "full_dimm"]
-            
+
             for arch in architectures:
                 # Construct the specific system model name generated by Step 3
                 sys_model = f"{model}_{arch}"
                 print(f"\n>>> PROCESSING SYSTEM VARIANT: {sys_model}")
-                
+
                 # Verify the config exists before attempting simulation
                 config_path = root / "simulators" / "nvmain" / "Config" / f"{sys_model}.config"
                 if not config_path.exists():
                     print(f"    [!] Skipping {sys_model}: Config not found.")
                     continue
-                
+
+                # Per-model CLK-cycle budget for the matched window_ns trace window,
+                # unless the caller passed an explicit cycles override.
+                model_cycles = cycles if cycles is not None else cycles_for(sys_model, window_ns)
+
                 # Stage 4: System Simulation (Iterates for all 4 architectures)
                 subprocess.run([
-                    sys.executable, "4_execute_simulation.py", 
+                    sys.executable, "4_execute_simulation.py",
                     "--models", sys_model,  # Use the architecture-specific name here
                     "--trace", trace,
-                    "--cycles", str(cycles)
+                    "--cycles", str(model_cycles)
                 ], check=True)
             
             # Stage 5: Report Generation
@@ -332,10 +447,32 @@ def main():
         root = get_project_root()
         
         reram_bases = ["reram_22nm_1t1r_slc", "reram_22nm_selector_slc"]
-        dram_models = ["2D_DRAM_example", "3D_DRAM_example", "DDR5_4800_DRAM"]
-        
-        log_event(f"Starting pipeline execution with {len(args.trace)} trace(s): {', '.join(args.trace)}, cycles: {args.cycles}")
-        
+
+        # DDR5: T2.4 generates the subchannel/64B configs; fall back to the
+        # existing DDR5_4800_DRAM config until they exist. The 2D/3D DRAM
+        # example configs are dropped from the default list (excluded from
+        # every figure already); PCM stays.
+        ddr5_config_path = root / "simulators" / "nvmain" / "Config" / f"{args.ddr5_model}.config"
+        if ddr5_config_path.exists():
+            ddr5_model_name = args.ddr5_model
+        else:
+            log_event(f"--ddr5-model config not found ({ddr5_config_path.name}); T2.4 has not "
+                       f"generated it yet, falling back to DDR5_4800_DRAM", "WARNING")
+            ddr5_model_name = "DDR5_4800_DRAM"
+        dram_models = [ddr5_model_name, "pcm_microsoft_2009"]
+
+        if args.cycles is not None:
+            log_event(f"--cycles override set to {args.cycles}: every model uses this exact "
+                       f"CLK-cycle count instead of a matched --window-ns budget, so models "
+                       f"with different CLK values will see different trace time windows.",
+                       "WARNING")
+            log_event(f"Starting pipeline execution with {len(args.trace)} trace(s): "
+                       f"{', '.join(args.trace)}, cycles (override): {args.cycles}")
+        else:
+            log_event(f"Starting pipeline execution with {len(args.trace)} trace(s): "
+                       f"{', '.join(args.trace)}, window_ns: {args.window_ns} "
+                       f"(per-model CLK-cycle budgets)")
+
         try:
             log_event("=" * 80)
             log_event("STAGE 1 & 2: RERAM HARDWARE EXTRACTION (SLC & MLC)")
@@ -352,8 +489,34 @@ def main():
             log_event("STAGE 3: ARCHITECTURE FACTORY (RERAM ONLY)")
             log_event("=" * 80)
             execution_summary["stages_run"].append("Stage 3: Architecture Factory")
-            run_subprocess([sys.executable, "3_gen_nvmain_config.py", "--freq", str(args.freq), "--queue-size", str(args.queue_size)], "Architecture Factory")
+            gen_config_cmd = [
+                sys.executable, "3_gen_nvmain_config.py",
+                "--freq", str(args.freq), "--queue-size", str(args.queue_size),
+                "--channels", str(args.channels), "--decoder", args.decoder,
+                "--endurance-model", args.endurance_model, "--window-ns", str(args.window_ns)
+            ]
+            if args.silicon:
+                gen_config_cmd.append("--silicon")
+            run_subprocess(gen_config_cmd, "Architecture Factory")
             
+            # STAGE 4: fail fast if the tracked configs/*.config files and the
+            # live simulators/nvmain/Config/ copies have diverged (T2.4) --
+            # every simulation below reads the live copy, so a silent
+            # divergence there would simulate something other than what's
+            # tracked/reviewed. Checked once, before any Stage 4 simulation
+            # call, not per-trace.
+            log_event("=" * 80)
+            log_event("STAGE 4: LIVE-CONFIG DIVERGENCE CHECK")
+            log_event("=" * 80)
+            if not run_subprocess([sys.executable, "tools/check_live_configs.py"],
+                                   "Live-config divergence check"):
+                log_event("Tracked configs/*.config and simulators/nvmain/Config/ have "
+                           "diverged; aborting before any Stage 4 simulation (fail fast). "
+                           "Re-run tools/check_live_configs.py directly for the full diff, "
+                           "or with --sync to repair.", "ERROR")
+                print("\n[CRITICAL] Live-config divergence check failed; aborting.")
+                return 1
+
             # STAGE 4: LOOP THROUGH EACH TRACE
             for trace_file in args.trace:
                 log_event("=" * 80)
@@ -378,33 +541,87 @@ def main():
                             arch_cfg = root / "configs" / f"{sys_model}.cfg"
                             if base_cfg.exists() and not arch_cfg.exists():
                                 shutil.copy(base_cfg, arch_cfg)
-                        
-                        log_event(f"Running RERAM variant: {sys_model} with {trace_file}")
+
+                        if args.cycles is not None:
+                            model_cycles = args.cycles
+                        else:
+                            try:
+                                model_cycles = cycles_for(sys_model, args.window_ns)
+                            except (FileNotFoundError, ValueError) as e:
+                                log_event(str(e), "ERROR")
+                                execution_summary["models_failed"] += 1
+                                continue
+
+                        log_event(f"Running RERAM variant: {sys_model} with {trace_file} "
+                                   f"(cycles={model_cycles})")
                         success = run_subprocess([
-                            sys.executable, "4_execute_simulation.py", 
-                            "--models", sys_model, "--trace", trace_file, "--cycles", str(args.cycles)
+                            sys.executable, "4_execute_simulation.py",
+                            "--models", sys_model, "--trace", trace_file, "--cycles", str(model_cycles)
                         ], f"System Simulation: {sys_model} ({trace_file})")
-                        
+
                         if success:
                             execution_summary["models_completed"] += 1
                         else:
                             execution_summary["models_failed"] += 1
                             log_event(f"FAILED: {sys_model} ({trace_file})", "ERROR")
-                            
-                # Run DRAM natively for this trace
+
+                # Run DRAM (and PCM) natively for this trace
                 for dram in dram_models:
-                    log_event(f"Running NATIVE DRAM: {dram} with {trace_file}")
+                    if args.cycles is not None:
+                        model_cycles = args.cycles
+                    else:
+                        try:
+                            model_cycles = cycles_for(dram, args.window_ns)
+                        except (FileNotFoundError, ValueError) as e:
+                            log_event(str(e), "ERROR")
+                            execution_summary["models_failed"] += 1
+                            continue
+
+                    log_event(f"Running NATIVE DRAM: {dram} with {trace_file} "
+                               f"(cycles={model_cycles})")
                     success = run_subprocess([
-                        sys.executable, "4_execute_simulation.py", 
-                        "--models", dram, "--trace", trace_file, "--cycles", str(args.cycles)
+                        sys.executable, "4_execute_simulation.py",
+                        "--models", dram, "--trace", trace_file, "--cycles", str(model_cycles)
                     ], f"System Simulation: {dram} ({trace_file})")
-                    
+
                     if success:
                         execution_summary["models_completed"] += 1
                     else:
                         execution_summary["models_failed"] += 1
                         log_event(f"FAILED: {dram} ({trace_file})", "ERROR")
-            
+
+                # Silicon sensitivity configs (T2.8), only when --silicon is set.
+                # Model names come from 3_gen_nvmain_config.py's SILICON_TIMINGS
+                # table (silicon_models(), above) -- 3_gen_nvmain_config.py
+                # --silicon (passed through above) writes them straight into
+                # simulators/nvmain/Config/, the default cycles_for()/
+                # 4_execute_simulation.py config directory, so no separate
+                # configs/silicon/ glob or config_dir override is needed.
+                if args.silicon:
+                    for sys_model in silicon_models():
+                        if args.cycles is not None:
+                            model_cycles = args.cycles
+                        else:
+                            try:
+                                model_cycles = cycles_for(sys_model, args.window_ns)
+                            except (FileNotFoundError, ValueError) as e:
+                                log_event(str(e), "ERROR")
+                                execution_summary["models_failed"] += 1
+                                continue
+
+                        log_event(f"Running SILICON variant: {sys_model} with {trace_file} "
+                                   f"(cycles={model_cycles})")
+                        success = run_subprocess([
+                            sys.executable, "4_execute_simulation.py",
+                            "--models", sys_model, "--trace", trace_file, "--cycles", str(model_cycles)
+                        ], f"System Simulation: {sys_model} ({trace_file})")
+
+                        if success:
+                            execution_summary["models_completed"] += 1
+                        else:
+                            execution_summary["models_failed"] += 1
+                            log_event(f"FAILED: {sys_model} ({trace_file})", "ERROR")
+
             archive_old_graphs()
 
             log_event("=" * 80)
@@ -481,8 +698,15 @@ def main():
             print(f"  {i}. {error}")
     else:
         print(f"\n✓ No errors encountered")
-    
+
     print("="*80 + "\n")
 
+    # Do not swallow failures: any logged ERROR (a failed subprocess, a model that
+    # failed simulation, a cycles_for lookup failure, etc.) makes the master exit
+    # non-zero, so CI/callers can tell a partially-failed run from a clean one.
+    if execution_errors:
+        return 1
+    return 0
+
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

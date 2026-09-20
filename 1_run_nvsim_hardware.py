@@ -4,6 +4,13 @@ import sys
 import argparse
 from pathlib import Path
 
+# T2.6 fix round 1: the debug-line filter and the organization gate are
+# shared with 4_execute_simulation.py's own NVSim call site; both live in
+# nvsim_common.py so the logic is defined once. Re-imported here under their
+# original names so the rest of this file (and any external caller) is
+# unchanged.
+from nvsim_common import strip_debug_lines, expected_organization, check_forced_organization
+
 def get_project_root():
     """Dynamically finds the MBMM project root directory."""
     return Path(__file__).parent.absolute()
@@ -82,25 +89,41 @@ def run_nvsim_hardware():
         sys.exit(0)
 
     # 4. Run Research Track Validation
+    any_failure = False
     for cfg in target_configs:
         if not cfg.exists():
             print(f"\n[!] Missing .cfg file at: {cfg}")
+            any_failure = True
             continue
 
         print(f"\n>>> Step 2: Simulating Hardware: {cfg.name}")
         
         # Executing NVSim
         process = subprocess.run([str(nvsim_exe), str(cfg.absolute())], cwd=nvsim_dir, capture_output=True, text=True)
-        
-        # We define success as having produced a result table in stdout
-        if "RESULT" in process.stdout and "Area:" in process.stdout:
+
+        # Strip Mat.cpp's '>>> [' debug prints immediately: they are never
+        # stored or parsed, and everything below (the gate, the saved file)
+        # works only off the cleaned text.
+        clean_stdout = strip_debug_lines(process.stdout)
+
+        # We define success as having produced a result table in stdout AND
+        # having honored the forced organization (T2.6 gate): a run that
+        # exits 0 but silently explored its own organization (or hit a
+        # missing/unparsed -Force* key) must not be treated as a success.
+        org_ok, org_message = check_forced_organization(clean_stdout, cfg)
+        if "RESULT" in clean_stdout and "Area:" in clean_stdout and org_ok:
             output_filename = hw_results_dir / f"{cfg.stem}_results.txt"
             with open(output_filename, "w") as f:
-                f.write(process.stdout)
+                f.write(clean_stdout)
             print(f"--- SUCCESS: Results saved to {output_filename.name} ---")
+            print(f"    {org_message}")
         else:
+            any_failure = True
             print(f"!!! RESEARCH TRACK FAILED: {cfg.name} !!!")
-            print("REASON: Output does not contain a valid RESULT table.")
+            if not org_ok:
+                print(f"REASON: {org_message}")
+            else:
+                print("REASON: Output does not contain a valid RESULT table.")
             if process.stderr:
                 print(f"DEBUG STDERR: {process.stderr}")
 
@@ -108,5 +131,7 @@ def run_nvsim_hardware():
     print("STEP 1 COMPLETE")
     print("=" * 60)
 
+    return 1 if any_failure else 0
+
 if __name__ == "__main__":
-    run_nvsim_hardware()
+    sys.exit(run_nvsim_hardware())
