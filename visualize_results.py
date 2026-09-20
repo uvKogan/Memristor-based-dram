@@ -43,8 +43,9 @@ METRICS_FILE = "/home/yuvalk/MBMM/results/processed_bar_chart_metrics.csv"
 # Pareto, whose existing single-line footnote was measured to already fit within
 # its axes bounds (924px vs 1380px) and so was left untouched per the v3 scope.
 STANDARD_FOOTNOTE = (
-    'Full-DIMM module sums; 83.33 ms matched-host window. DDR5 idle-gating savings are real.\n'
-    'ReRAM power-down energy: no-savings placeholder. PCM: no power-down activity. NVSim→NVMain.'
+    'Full-DIMM sums; 250 ms matched window (1 trace cycle = 1/3 ns); 2048x2048 subarrays, '
+    'mux 64; DDR5 two 32-bit subchannels, 64 B per access; Start-Gap wear leveling; '
+    'NVSim to NVMain.'
 )
 
 # Technology order for the v3 two-panel power breakdown chart only (groups SLC/MLC
@@ -60,11 +61,29 @@ TECHNOLOGY_COLORS = {
     '1T1R_SLC': '#32CD32',               # Forest Green
     '1S1R_SLC': '#00FF00',               # Neon Green
     '1T1R_MLC': '#8A2BE2',               # Dark Violet
-    '1S1R_MLC': '#FF00FF'                # Magenta
+    '1S1R_MLC': '#FF00FF',               # Magenta
+    # Secondary/cross-check technologies (T2.4/T2.8): known, but never shown
+    # on the primary bar charts -- see PRIMARY_TECHNOLOGIES/SECONDARY_TECHNOLOGIES.
+    'DDR5_4800_64B': '#00AACC',          # Teal (distinct from primary DDR5 blue)
+    '1T1R_SILICON': '#556B2F',           # Dark Olive (distinct from primary 1T1R violet)
+    '1S1R_SILICON': '#CC7722',           # Ochre (distinct from primary 1S1R magenta)
 }
 
 # Generic DRAM examples dropped — narrative focuses on literature-backed baselines only
 EXCLUDED_TECHNOLOGIES = {'2D_DRAM_example', '3D_DRAM_example'}
+
+# The primary bar charts show exactly these six -- the four ReRAM tracks plus
+# the two baselines (item 3 of T5.4). DDR5_4800_64B/1T1R_SILICON/1S1R_SILICON
+# are real, known technologies (process_metrics.py produces them) but belong
+# to separate cross-check/sensitivity figures, not the primary set; they are
+# filtered out here explicitly rather than left to fall out of an incidental
+# "isin(TECHNOLOGY_COLORS)" filter, so a genuinely unknown label still raises.
+PRIMARY_TECHNOLOGIES = {
+    'DDR5_4800', 'pcm_microsoft_2009',
+    '1T1R_SLC', '1T1R_MLC', '1S1R_SLC', '1S1R_MLC',
+}
+SECONDARY_TECHNOLOGIES = {'DDR5_4800_64B', '1T1R_SILICON', '1S1R_SILICON'}
+KNOWN_TECHNOLOGIES = PRIMARY_TECHNOLOGIES | SECONDARY_TECHNOLOGIES | EXCLUDED_TECHNOLOGIES
 
 
 # ============================================================================
@@ -120,6 +139,15 @@ def load_bar_chart_metrics():
         return None
     
     df = pd.read_csv(METRICS_FILE)
+
+    unknown = sorted(set(df['Technology'].unique()) - KNOWN_TECHNOLOGIES)
+    if unknown:
+        raise ValueError(
+            f"{METRICS_FILE}: unknown Technology label(s) {unknown} -- "
+            f"add them to PRIMARY_TECHNOLOGIES/SECONDARY_TECHNOLOGIES/"
+            f"EXCLUDED_TECHNOLOGIES in visualize_results.py before plotting."
+        )
+
     df = df[~df['Technology'].isin(EXCLUDED_TECHNOLOGIES)]
     logger.info(f"Loaded {len(df)} data points (2D/3D DRAM examples excluded)")
     logger.info(f"Benchmarks: {sorted(df['Benchmark'].unique().tolist())}")
@@ -167,19 +195,32 @@ def format_benchmark_name(benchmark):
     return ' '.join(part.capitalize() for part in parts)
 
 
+TECH_LABELS = {
+    'DDR5_4800':          'DDR5-4800',
+    '2D_DRAM_example':    '2D DRAM',
+    '3D_DRAM_example':    '3D DRAM',
+    'pcm_microsoft_2009': 'PCM',
+    '1T1R_SLC':           '1T1R SLC',
+    '1T1R_MLC':           '1T1R MLC',
+    '1S1R_SLC':           '1S1R SLC',
+    '1S1R_MLC':           '1S1R MLC',
+    'DDR5_4800_64B':      'DDR5-4800 (64 B cross-check)',
+    '1T1R_SILICON':       '1T1R silicon timings (Micron 16 Gb)',
+    '1S1R_SILICON':       '1S1R silicon timings (SanDisk 32 Gb)',
+}
+
+
 def format_tech_name(tech):
     """Convert internal technology key to a clean x-axis label."""
-    TECH_LABELS = {
-        'DDR5_4800':          'DDR5-4800',
-        '2D_DRAM_example':    '2D DRAM',
-        '3D_DRAM_example':    '3D DRAM',
-        'pcm_microsoft_2009': 'PCM',
-        '1T1R_SLC':           '1T1R SLC',
-        '1T1R_MLC':           '1T1R MLC',
-        '1S1R_SLC':           '1S1R SLC',
-        '1S1R_MLC':           '1S1R MLC',
-    }
     return TECH_LABELS.get(tech, tech.replace('_', ' '))
+
+
+def primary_tech_order():
+    """Canonical technology display order, restricted to the primary set --
+    drops known secondary technologies (DDR5_4800_64B/1T1R_SILICON/
+    1S1R_SILICON) explicitly, rather than leaving them to fall out of an
+    incidental TECHNOLOGY_COLORS-membership filter."""
+    return [t for t in TECHNOLOGY_COLORS.keys() if t in PRIMARY_TECHNOLOGIES]
 
 
 # ============================================================================
@@ -213,8 +254,10 @@ def generate_bar_charts(df):
             logger.warning(f"  No full_dimm data for {benchmark}, skipping")
             continue
 
-        # Enforce canonical technology order; discard any tech not in TECHNOLOGY_COLORS
-        tech_order = list(TECHNOLOGY_COLORS.keys())
+        # Enforce canonical technology order; keep only the primary set (secondary/
+        # cross-check technologies like DDR5_4800_64B and the SILICON rows are
+        # known but explicitly excluded from these figures, see PRIMARY_TECHNOLOGIES).
+        tech_order = primary_tech_order()
         bench_df = bench_df[bench_df['Technology'].isin(tech_order)].copy()
         bench_df['Technology'] = pd.Categorical(
             bench_df['Technology'],

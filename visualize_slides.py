@@ -11,10 +11,11 @@ about), larger fonts, no dense report footnotes.
 Two chart groups here have no equivalent report script because the report
 never plots them as figures (they're prose/table-only in the book):
   - Endurance (Table 5): lifetime = per-cell endurance rating x cell count
-    / measured write rate. Write rates are taken from
-    results/cycle8_matched_host_report.md's endurance-counters table
-    (module-summed, 83.33 ms window) - the same inputs the book's Table 5
-    used - not re-simulated here.
+    / measured write rate. Write rates are read directly from this run's own
+    1T1R_SLC full_dimm stats files (totalWriteRequests, divided by that same
+    file's own elapsed time from its "Exiting at cycle" line -- not a fixed
+    assumed window; the 2026-09 revision's matched window is 250 ms, not the
+    83.33 ms the pre-revision pipeline used).
   - Density projection (Table 7): projected = measured 22nm
     Area_Density_Ratio (processed_hero_metrics.csv) x (22/F)^2, with the
     2x/4x deck-stacking multipliers applied only to the selector (1S1R)
@@ -30,6 +31,7 @@ results/final_graphs*, which the book's embedded figures depend on).
 
 import argparse
 import os
+import re
 from pathlib import Path
 
 import numpy as np
@@ -38,6 +40,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
 from logging_config import setup_logging
+from process_metrics import RERAM_KEY_PREFIX, CPUFREQ_MHZ
 
 logger = setup_logging("visualize_slides")
 
@@ -45,7 +48,15 @@ logger = setup_logging("visualize_slides")
 # CONFIGURATION
 # ============================================================================
 
-DATA_DIR = "/home/yuvalk/MBMM/results/system_v6"
+# DATA_DIR holds the raw NVMain stats_*.out files (this revision's primary
+# run, analogous to results/system/ for the old pipeline -- see
+# --data-dir). CSV_DIR holds the processed_*.csv files and hardware_metrics.json
+# process_metrics.py writes at its OUTPUT_DIR (see --csv-dir). These are two
+# different directories in the current pipeline layout (results/ for CSVs,
+# results/system_rev2026-09_primary/ for stats), so they are overridable
+# independently rather than sharing one DATA_DIR the way this script used to.
+DATA_DIR = "/home/yuvalk/MBMM/results/system_rev2026-09_primary"
+CSV_DIR = "/home/yuvalk/MBMM/results"
 HARDWARE_METRICS_FILE = "/home/yuvalk/MBMM/results/hardware_metrics.json"
 OUTPUT_DIR = "/home/yuvalk/MBMM/results/slide_graphs"
 
@@ -56,6 +67,12 @@ TECH_COLORS = {
     '1S1R_SLC': '#00FF00',
     '1T1R_MLC': '#8A2BE2',
     '1S1R_MLC': '#FF00FF',
+    # Secondary/cross-check technologies (T2.4/T2.8): known, but not used by
+    # any slide chart's fixed technology list today -- kept here so every
+    # technology process_metrics.py can produce has a label/color entry.
+    'DDR5_4800_64B': '#00AACC',
+    '1T1R_SILICON': '#556B2F',
+    '1S1R_SILICON': '#CC7722',
 }
 TECH_LABELS = {
     'DDR5_4800': 'DDR5-4800',
@@ -64,7 +81,42 @@ TECH_LABELS = {
     '1T1R_MLC': '1T1R MLC',
     '1S1R_SLC': '1S1R SLC',
     '1S1R_MLC': '1S1R MLC',
+    'DDR5_4800_64B': 'DDR5-4800 (64 B cross-check)',
+    '1T1R_SILICON': '1T1R silicon timings (Micron 16 Gb)',
+    '1S1R_SILICON': '1S1R silicon timings (SanDisk 32 Gb)',
 }
+
+# The slide charts only ever plot a small, explicitly-listed subset of
+# technologies (see each slide_* function below), never "every technology in
+# the CSV" -- so there is no risk of a secondary/cross-check row silently
+# appearing on a slide. PRIMARY_TECHNOLOGIES/filter_primary_technologies()
+# exist for the same explicit-handling contract as the other three scripts
+# (and are exercised directly by tests/test_visualize_labels.py): a genuinely
+# unknown Technology label must raise loudly, and a known-but-secondary label
+# must be dropped from "primary" data, never silently plotted.
+PRIMARY_TECHNOLOGIES = {
+    'DDR5_4800', 'pcm_microsoft_2009',
+    '1T1R_SLC', '1T1R_MLC', '1S1R_SLC', '1S1R_MLC',
+}
+SECONDARY_TECHNOLOGIES = {'DDR5_4800_64B', '1T1R_SILICON', '1S1R_SILICON'}
+KNOWN_TECHNOLOGIES = PRIMARY_TECHNOLOGIES | SECONDARY_TECHNOLOGIES
+
+
+def _check_known_technologies(techs, source):
+    unknown = sorted(set(techs) - KNOWN_TECHNOLOGIES)
+    if unknown:
+        raise ValueError(
+            f"{source}: unknown Technology label(s) {unknown} -- add them to "
+            f"PRIMARY_TECHNOLOGIES/SECONDARY_TECHNOLOGIES in visualize_slides.py "
+            f"before plotting."
+        )
+
+
+def filter_primary_technologies(df, column='Technology'):
+    """Keep only PRIMARY_TECHNOLOGIES rows; raises loudly first if df holds a
+    Technology label that is neither primary nor a known secondary one."""
+    _check_known_technologies(df[column].unique(), column)
+    return df[df[column].isin(PRIMARY_TECHNOLOGIES)]
 
 # Slide-scale typography (report scripts use 9-15pt; slides need to read from
 # the back of a room).
@@ -112,15 +164,16 @@ def _save(fig, name, footnote=None):
 # ============================================================================
 
 def load_bar_chart_metrics():
-    return pd.read_csv(os.path.join(DATA_DIR, "processed_bar_chart_metrics.csv"))
+    return pd.read_csv(os.path.join(CSV_DIR, "processed_bar_chart_metrics.csv"))
 
 
 def load_hero_metrics():
-    return pd.read_csv(os.path.join(DATA_DIR, "processed_hero_metrics.csv"))
+    return pd.read_csv(os.path.join(CSV_DIR, "processed_hero_metrics.csv"))
 
 
 def load_geometric_means():
-    df = pd.read_csv(os.path.join(DATA_DIR, "processed_geometric_means.csv"))
+    df = pd.read_csv(os.path.join(CSV_DIR, "processed_geometric_means.csv"))
+    _check_known_technologies(df['Technology'].unique(), "processed_geometric_means.csv")
     return dict(zip(df['Technology'], df['Geometric_Mean_PDP']))
 
 
@@ -134,6 +187,55 @@ def bench_row(df, benchmark, tech, arch='full_dimm'):
     row = df[(df['Benchmark'] == benchmark) & (df['Technology'] == tech)
              & (df['Architecture'] == arch)]
     return row.iloc[0] if not row.empty else None
+
+
+def _stats_path(technology, arch, benchmark):
+    """Path to this run's raw NVMain stats file for (technology, arch,
+    benchmark), under DATA_DIR (see --data-dir). Reuses process_metrics.py's
+    own RERAM_KEY_PREFIX table so the filename convention can't drift from
+    the parser that produces the processed CSVs."""
+    # RERAM_KEY_PREFIX maps the SILICON labels onto the SLC hardware key (for
+    # area lookups); their stats files are named differently, so resolving
+    # them here would silently return the SLC run.
+    if technology.endswith('_SILICON'):
+        raise ValueError(
+            f"{technology!r} stats files do not follow the RERAM_KEY_PREFIX "
+            f"naming; _stats_path() would return the SLC run instead."
+        )
+    prefix = RERAM_KEY_PREFIX.get(technology)
+    if prefix is None:
+        raise ValueError(
+            f"No stats-file prefix known for technology {technology!r} -- "
+            f"add it to RERAM_KEY_PREFIX in process_metrics.py."
+        )
+    path = os.path.join(DATA_DIR, f"stats_{prefix}_{arch}_{benchmark}.out")
+    if not os.path.isfile(path):
+        raise FileNotFoundError(
+            f"Missing stats file for {technology}/{arch}/{benchmark}: {path}"
+        )
+    return path
+
+
+def _extract_total_write_requests(content, path):
+    """Sum of every 'totalWriteRequests' value in a stats file (normally a
+    single DIMM-wide aggregate line, defaultMemory.totalWriteRequests)."""
+    matches = re.findall(r'totalWriteRequests\s+(\d+)', content)
+    if not matches:
+        raise ValueError(f"{path}: no 'totalWriteRequests' stat found")
+    return sum(int(m) for m in matches)
+
+
+def _extract_elapsed_seconds(content, path, cpufreq_mhz=CPUFREQ_MHZ):
+    """This run's own elapsed simulated time, from NVMain's 'Exiting at
+    cycle <n>' line (GLOBAL/CPUFreq clock domain) -- never assume a fixed
+    matched-window duration, since it can legitimately differ per run."""
+    m = re.search(r'Exiting at cycle\s+(\d+)', content)
+    if not m:
+        raise ValueError(f"{path}: no 'Exiting at cycle' line found")
+    cycles = int(m.group(1))
+    if cycles <= 0:
+        raise ValueError(f"{path}: non-positive elapsed cycle count ({cycles})")
+    return cycles * (1000.0 / cpufreq_mhz) * 1e-9
 
 
 # ============================================================================
@@ -155,6 +257,36 @@ def slide_latency_gcc(df):
     _save(fig, "15_latency_gcc.png")
 
 
+def _lbm_completion_pct(df, techs, arch='full_dimm', benchmark='lbm_spec2017'):
+    """Completion percentage for each of `techs` against the identical LBM
+    admission, read from Completed_Requests in the already-loaded bar-chart
+    CSV. Fails loudly (file/key named) if a tech/arch/benchmark row or its
+    Completed_Requests value is missing."""
+    completed = {}
+    for t in techs:
+        row = bench_row(df, benchmark, t, arch)
+        if row is None:
+            raise ValueError(
+                f"processed_bar_chart_metrics.csv: no row for "
+                f"Technology={t!r}, Architecture={arch!r}, Benchmark={benchmark!r}"
+            )
+        value = row.get('Completed_Requests')
+        if value is None or pd.isna(value):
+            raise ValueError(
+                f"processed_bar_chart_metrics.csv: missing Completed_Requests for "
+                f"Technology={t!r}, Architecture={arch!r}, Benchmark={benchmark!r}"
+            )
+        completed[t] = value
+
+    total_admitted = max(completed.values())
+    if total_admitted <= 0:
+        raise ValueError(
+            f"processed_bar_chart_metrics.csv: Completed_Requests for "
+            f"Benchmark={benchmark!r} are all zero across {techs}"
+        )
+    return {t: 100.0 * completed[t] / total_admitted for t in techs}
+
+
 # ============================================================================
 # 2. STREAMING — honest view: latency + completion %  [Slide 16]
 # ============================================================================
@@ -166,20 +298,14 @@ def slide_streaming_honest(df):
     stream_techs = ['DDR5_4800', '1T1R_SLC', '1S1R_SLC']
     stream_vals = [bench_row(df, 'stream', t)['Latency_ns'] for t in stream_techs]
 
-    # Right panel: LBM completion % out of the identical 16,447,102-request
-    # admission (Project_Book.typ Section 3.1.1 / 3.1.6 item 11). Completed =
-    # mem_reads + mem_writes summed over every channel in
-    # results/system/stats_*_lbm_spec2017.out (idle-gating-restored re-run,
-    # 2026-09-05). Hardcoded here because it is a raw completion count, not a
-    # column in any processed_*.csv.
-    completion_pct = {
-        'DDR5_4800': 100.00,
-        '1T1R_SLC': 39.83,
-        '1S1R_SLC': 28.05,
-        '1T1R_MLC': 22.41,
-        '1S1R_MLC': 13.48,
-        'pcm_microsoft_2009': 3.90,
-    }
+    # Right panel: LBM completion % out of the identical admission (every
+    # config sees the same trace). Completed_Requests is a real column in
+    # processed_bar_chart_metrics.csv (process_metrics.py's
+    # extract_completed_requests_and_bandwidth: mem_reads + mem_writes summed
+    # over every channel); the denominator is the largest Completed_Requests
+    # figure among this chart's own technologies at full_dimm, i.e. whichever
+    # technology drained the identical admitted population furthest.
+    completion_pct = _lbm_completion_pct(df, techs)
     comp_vals = [completion_pct[t] for t in techs]
 
     fig, (axL, axR) = plt.subplots(1, 2, figsize=(16, 6.5))
@@ -459,28 +585,46 @@ def slide_density_projection(hero_df):
 # 12. ENDURANCE (Table 5) — NEW  [Slide 26]
 # ============================================================================
 
+def _endurance_write_rates(technology='1T1R_SLC', arch='full_dimm'):
+    """Writes/second for the endurance table's four workloads, read from each
+    benchmark's own stats file: totalWriteRequests divided by that same
+    file's own elapsed time (its 'Exiting at cycle' line) -- not a fixed
+    assumed window, since different benchmarks can drain at different
+    simulated times. Fails loudly (file/key named) if a stats file is
+    missing or malformed."""
+    benchmarks = {
+        'LBM\n(worst case)': 'lbm_spec2017',
+        'GCC': 'gcc_spec2017',
+        'STREAM': 'stream',
+        'AlexNet\nOFMAP': 'alexnet_layer1_ofmap',
+    }
+    rates = {}
+    for label, benchmark in benchmarks.items():
+        path = _stats_path(technology, arch, benchmark)
+        with open(path) as f:
+            content = f.read()
+        writes = _extract_total_write_requests(content, path)
+        elapsed_s = _extract_elapsed_seconds(content, path)
+        rates[label] = writes / elapsed_s
+    return rates
+
+
 def slide_endurance():
     """Reproduces Project_Book.typ Table 5 exactly. Lifetime = (64-byte line
-    locations x rated SLC cycles) / (writes per 83.33 ms matched-host window,
-    annualized at 31,536,000 s/yr), 1T1R SLC full DIMM, uniform wear leveling.
-    Write counts: mem_writes summed over every channel in
-    results/system/stats_reram_22nm_1t1r_slc_full_dimm_*.out (idle-gating-
-    restored re-run, 2026-09-05)."""
+    locations x rated SLC cycles) / (writes per second, annualized at
+    31,536,000 s/yr), 1T1R SLC full DIMM, uniform wear leveling. Write rates:
+    totalWriteRequests / this run's own elapsed time, from
+    DATA_DIR/stats_reram_22nm_1t1r_slc_full_dimm_<benchmark>.out (see
+    _endurance_write_rates)."""
     SECONDS_PER_YEAR = 365 * 24 * 3600
     SLC_ENDURANCE = 1e7
     LINES_8GB = 8 * 2**30 // 64  # 134,217,728 line locations (Section 3.1.4)
-    WINDOW_S = 0.25 / 3  # 250M trace cycles at a 3 GHz host = 83.33 ms
 
-    workloads = {  # writes completed per matched-host window
-        'LBM\n(worst case)': 3_257_597,
-        'GCC': 170_800,
-        'STREAM': 100_000,
-        'AlexNet\nOFMAP': 13_542,
-    }
+    workloads = _endurance_write_rates()  # writes/second, per benchmark
 
-    def lifetime_years(writes, capacity_gb=8):
+    def lifetime_years(writes_per_s, capacity_gb=8):
         lines = LINES_8GB * (capacity_gb / 8)
-        return (SLC_ENDURANCE * lines) / (writes / WINDOW_S) / SECONDS_PER_YEAR
+        return (SLC_ENDURANCE * lines) / writes_per_s / SECONDS_PER_YEAR
 
     def fmt(v):
         return f'{v:.2f}y' if v < 2 else (f'{v:.1f}y' if v < 100 else f'{v:,.0f}y')
@@ -521,25 +665,31 @@ def slide_endurance():
 # ============================================================================
 
 def main():
-    global OUTPUT_DIR, DATA_DIR
+    global OUTPUT_DIR, DATA_DIR, CSV_DIR, HARDWARE_METRICS_FILE
 
     parser = argparse.ArgumentParser(description="MBMM slide-deck chart generation")
     parser.add_argument("--data-dir", default=DATA_DIR,
-                        help="Directory holding processed_*.csv (default: results/system_v6, the book's source dataset).")
+                        help="Directory holding stats_*.out (default: results/system_rev2026-09_primary).")
+    parser.add_argument("--csv-dir", default=CSV_DIR,
+                        help="Directory holding processed_*.csv and hardware_metrics.json (default: results/).")
     parser.add_argument("--output-dir", default=OUTPUT_DIR,
                         help="Output directory for slide PNGs (default: results/slide_graphs, never final_graphs*).")
     args = parser.parse_args()
     DATA_DIR = args.data_dir
+    CSV_DIR = args.csv_dir
     OUTPUT_DIR = args.output_dir
+    HARDWARE_METRICS_FILE = os.path.join(CSV_DIR, "hardware_metrics.json")
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    logger.info(f"Reading data from: {DATA_DIR}")
+    logger.info(f"Reading stats from: {DATA_DIR}")
+    logger.info(f"Reading CSVs from: {CSV_DIR}")
     logger.info(f"Writing slides to: {OUTPUT_DIR}\n")
 
-    bar_df = load_bar_chart_metrics()
-    hero_df = load_hero_metrics()
+    bar_df = filter_primary_technologies(load_bar_chart_metrics())
+    hero_df = filter_primary_technologies(load_hero_metrics())
     geomeans = load_geometric_means()
-    pareto_df = pd.read_csv(os.path.join(DATA_DIR, "processed_pareto_metrics.csv"))
+    pareto_df = filter_primary_technologies(
+        pd.read_csv(os.path.join(CSV_DIR, "processed_pareto_metrics.csv")))
     hw = load_hardware_metrics()
 
     slide_latency_gcc(bar_df)

@@ -40,8 +40,9 @@ except ImportError:
 METRICS_FILE = "/home/yuvalk/MBMM/results/processed_pareto_metrics.csv"
 OUTPUT_DIR = "/home/yuvalk/MBMM/results/final_graphs/pareto"
 
-UNGATED_CAVEAT = ('Ungated static power (NVMain power-down disabled); module-sum '
-                   'semantics; real per-technology leakage (see fidelity audit).')
+UNGATED_CAVEAT = ('DDR5 idle gating is live (JEDEC power-down); ReRAM takes no gating '
+                   'credit (power-down modeled at standby leakage); module-sum semantics; '
+                   'NVSim per-chip leakage.')
 
 # Technology marker configurations (exact hex codes matching bar charts)
 TECHNOLOGY_CONFIGS = {
@@ -86,6 +87,23 @@ TECHNOLOGY_CONFIGS = {
         'color': '#FF8800',
         'label': '3D DRAM',
     },
+    # Secondary/cross-check technologies (T2.4/T2.8): known, but excluded from
+    # the primary Pareto figures -- see PRIMARY_TECHNOLOGIES/SECONDARY_TECHNOLOGIES.
+    'DDR5_4800_64B': {
+        'marker': 'P',
+        'color': '#00AACC',
+        'label': 'DDR5-4800 (64 B cross-check)',
+    },
+    '1T1R_SILICON': {
+        'marker': 'X',
+        'color': '#556B2F',
+        'label': '1T1R silicon timings (Micron 16 Gb)',
+    },
+    '1S1R_SILICON': {
+        'marker': 'X',
+        'color': '#CC7722',
+        'label': '1S1R silicon timings (SanDisk 32 Gb)',
+    },
 }
 
 # Architecture scale configurations
@@ -104,6 +122,16 @@ ARCH_ORDER = ['single', '16chip', 'full_dimm']
 # Generic examples dropped — narrative focuses on literature-backed baselines
 EXCLUDED_TECHNOLOGIES = {'2D_DRAM_example', '3D_DRAM_example'}
 
+# The primary Pareto figures show exactly these six -- see visualize_results.py
+# for the identical convention (kept as a separate copy per-script, matching
+# this codebase's existing "dumb plotter, self-contained config" style).
+PRIMARY_TECHNOLOGIES = {
+    'DDR5_4800', 'pcm_microsoft_2009',
+    '1T1R_SLC', '1T1R_MLC', '1S1R_SLC', '1S1R_MLC',
+}
+SECONDARY_TECHNOLOGIES = {'DDR5_4800_64B', '1T1R_SILICON', '1S1R_SILICON'}
+KNOWN_TECHNOLOGIES = PRIMARY_TECHNOLOGIES | SECONDARY_TECHNOLOGIES | EXCLUDED_TECHNOLOGIES
+
 
 # ============================================================================
 # DATA LOADING
@@ -119,7 +147,19 @@ def load_pareto_metrics():
         return None
     
     df = pd.read_csv(METRICS_FILE)
-    df = df[~df['Technology'].isin(EXCLUDED_TECHNOLOGIES)]
+
+    unknown = sorted(set(df['Technology'].unique()) - KNOWN_TECHNOLOGIES)
+    if unknown:
+        raise ValueError(
+            f"{METRICS_FILE}: unknown Technology label(s) {unknown} -- add "
+            f"them to PRIMARY_TECHNOLOGIES/SECONDARY_TECHNOLOGIES/"
+            f"EXCLUDED_TECHNOLOGIES in visualize_pareto.py before plotting."
+        )
+
+    # Primary figures only: secondary/cross-check technologies (DDR5_4800_64B,
+    # 1T1R_SILICON, 1S1R_SILICON) are known but filtered out explicitly here,
+    # same as the generic DRAM examples.
+    df = df[df['Technology'].isin(PRIMARY_TECHNOLOGIES)]
 
     # Group by benchmark
     benchmark_data = {}
@@ -127,9 +167,9 @@ def load_pareto_metrics():
         bench_df = df[df['Benchmark'] == benchmark]
         benchmark_data[benchmark] = bench_df.to_dict('records')
 
-    logger.info(f"Loaded {len(df)} data points (2D/3D DRAM examples excluded)")
+    logger.info(f"Loaded {len(df)} data points (primary technologies only)")
     logger.info(f"Benchmarks: {sorted(benchmark_data.keys())}\n")
-    
+
     return benchmark_data
 
 

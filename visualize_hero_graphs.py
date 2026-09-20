@@ -34,8 +34,9 @@ GEOMETRIC_MEANS_FILE = "/home/yuvalk/MBMM/results/processed_geometric_means.csv"
 # see the matching fix in visualize_results.py for the pixel measurements that
 # established this bug across the power/PDP/hero-PDP figure families.
 STANDARD_FOOTNOTE = (
-    'Full-DIMM module sums; 83.33 ms matched-host window. DDR5 idle-gating savings are real.\n'
-    'ReRAM power-down energy: no-savings placeholder. PCM: no power-down activity. NVSim→NVMain.'
+    'Full-DIMM sums; 250 ms matched window (1 trace cycle = 1/3 ns); 2048x2048 subarrays, '
+    'mux 64; DDR5 two 32-bit subchannels, 64 B per access; Start-Gap wear leveling; '
+    'NVSim to NVMain.'
 )
 
 # Gold Master color palette (exact hex codes)
@@ -45,11 +46,65 @@ TECHNOLOGY_COLORS = {
     '1T1R_SLC': '#32CD32',               # Forest Green
     '1S1R_SLC': '#00FF00',               # Neon Green
     '1T1R_MLC': '#8A2BE2',               # Dark Violet
-    '1S1R_MLC': '#FF00FF'                # Magenta
+    '1S1R_MLC': '#FF00FF',               # Magenta
+    # Secondary/cross-check technologies (T2.4/T2.8): known, but excluded from
+    # the primary hero figures -- see PRIMARY_TECHNOLOGIES/SECONDARY_TECHNOLOGIES.
+    'DDR5_4800_64B': '#00AACC',          # Teal
+    '1T1R_SILICON': '#556B2F',           # Dark Olive
+    '1S1R_SILICON': '#CC7722',           # Ochre
+}
+
+TECH_LABELS = {
+    'DDR5_4800':          'DDR5-4800',
+    'pcm_microsoft_2009': 'PCM',
+    '1T1R_SLC':           '1T1R SLC',
+    '1T1R_MLC':           '1T1R MLC',
+    '1S1R_SLC':           '1S1R SLC',
+    '1S1R_MLC':           '1S1R MLC',
+    '2D_DRAM_example':    '2D DRAM',
+    '3D_DRAM_example':    '3D DRAM',
+    'DDR5_4800_64B':      'DDR5-4800 (64 B cross-check)',
+    '1T1R_SILICON':       '1T1R silicon timings (Micron 16 Gb)',
+    '1S1R_SILICON':       '1S1R silicon timings (SanDisk 32 Gb)',
 }
 
 # Generic DRAM examples dropped — narrative focuses on literature-backed baselines only
 EXCLUDED_TECHNOLOGIES = {'2D_DRAM_example', '3D_DRAM_example'}
+
+# The primary hero figures show exactly these six -- see visualize_results.py
+# for the identical convention (kept as a separate copy per-script, matching
+# this codebase's existing "dumb plotter, self-contained config" style).
+PRIMARY_TECHNOLOGIES = {
+    'DDR5_4800', 'pcm_microsoft_2009',
+    '1T1R_SLC', '1T1R_MLC', '1S1R_SLC', '1S1R_MLC',
+}
+SECONDARY_TECHNOLOGIES = {'DDR5_4800_64B', '1T1R_SILICON', '1S1R_SILICON'}
+KNOWN_TECHNOLOGIES = PRIMARY_TECHNOLOGIES | SECONDARY_TECHNOLOGIES | EXCLUDED_TECHNOLOGIES
+
+
+def primary_only(df, column='Technology'):
+    """Rows whose Technology is in PRIMARY_TECHNOLOGIES -- drops known
+    secondary technologies (DDR5_4800_64B/1T1R_SILICON/1S1R_SILICON)
+    explicitly rather than silently."""
+    return df[df[column].isin(PRIMARY_TECHNOLOGIES)]
+
+
+def primary_only_dict(d):
+    """Same as primary_only() for a {Technology: value} dict (geometric means)."""
+    return {k: v for k, v in d.items() if k in PRIMARY_TECHNOLOGIES}
+
+
+def _check_known_technologies(techs, source):
+    """Raise loudly on a genuinely unknown Technology label; known-but-
+    secondary labels (64B/SILICON) are handled by the primary-set filter in
+    each figure function, not here."""
+    unknown = sorted(set(techs) - KNOWN_TECHNOLOGIES)
+    if unknown:
+        raise ValueError(
+            f"{source}: unknown Technology label(s) {unknown} -- add them to "
+            f"PRIMARY_TECHNOLOGIES/SECONDARY_TECHNOLOGIES/EXCLUDED_TECHNOLOGIES "
+            f"in visualize_hero_graphs.py before plotting."
+        )
 
 
 # ============================================================================
@@ -66,6 +121,7 @@ def load_hero_metrics():
         return None
     
     df = pd.read_csv(HERO_METRICS_FILE)
+    _check_known_technologies(df['Technology'].unique(), HERO_METRICS_FILE)
     logger.info(f"Loaded {len(df)} data points\n")
     return df
 
@@ -80,8 +136,9 @@ def load_geometric_means():
         return None
     
     df = pd.read_csv(GEOMETRIC_MEANS_FILE)
+    _check_known_technologies(df['Technology'].unique(), GEOMETRIC_MEANS_FILE)
     geom_means = dict(zip(df['Technology'], df['Geometric_Mean_PDP']))
-    
+
     logger.info(f"Loaded geometric means for {len(geom_means)} technologies\n")
     return geom_means
 
@@ -104,10 +161,13 @@ def generate_hero_area_density(df_metrics):
     logger.info("="*80)
     
     # Get unique technologies and their area density ratios
-    # Average area density per technology (in case of multiple benchmarks/archs)
-    df_metrics = df_metrics[~df_metrics['Technology'].isin(EXCLUDED_TECHNOLOGIES)]
+    # Average area density per technology (in case of multiple benchmarks/archs).
+    # Only the primary set is shown here -- secondary/cross-check technologies
+    # (DDR5_4800_64B, 1T1R_SILICON, 1S1R_SILICON) are known but filtered out
+    # explicitly, not left to an incidental EXCLUDED_TECHNOLOGIES-only filter.
+    df_metrics = primary_only(df_metrics)
     area_by_tech = df_metrics.groupby('Technology')['Area_Density_Ratio'].mean()
-    
+
     # Sort descending — higher ratio = denser = better
     area_by_tech = area_by_tech.sort_values(ascending=False)
 
@@ -116,18 +176,7 @@ def generate_hero_area_density(df_metrics):
     colors = [TECHNOLOGY_COLORS.get(tech, '#808080') for tech in technologies]
 
     # Create display labels
-    display_labels = []
-    for tech in technologies:
-        if tech == 'DDR5_4800':
-            display_labels.append('DDR5-4800')
-        elif tech == 'pcm_microsoft_2009':
-            display_labels.append('PCM')
-        elif tech == '2D_DRAM_example':
-            display_labels.append('2D DRAM')
-        elif tech == '3D_DRAM_example':
-            display_labels.append('3D DRAM')
-        else:
-            display_labels.append(tech.replace('_', ' '))
+    display_labels = [TECH_LABELS.get(tech, tech.replace('_', ' ')) for tech in technologies]
 
     # Create figure
     fig, ax = plt.subplots(figsize=(14, 8))
@@ -177,25 +226,19 @@ def generate_hero_average_pdp(geometric_means):
     logger.info("HERO GRAPH 2: Overall System Efficiency (Geometric Mean PDP)")
     logger.info("="*80)
     
-    # Sort by EDP (ascending = better efficiency), excluding generic DRAM examples
-    geometric_means = {k: v for k, v in geometric_means.items()
-                       if k not in EXCLUDED_TECHNOLOGIES}
+    # Sort by EDP (ascending = better efficiency); only the primary set is
+    # shown (secondary/cross-check technologies filtered out explicitly, see
+    # PRIMARY_TECHNOLOGIES).
+    geometric_means = primary_only_dict(geometric_means)
     sorted_techs = sorted(geometric_means.items(), key=lambda x: x[1])
     technologies = [tech for tech, _ in sorted_techs]
     values = [edp for _, edp in sorted_techs]
-    
+
     # Get colors
     colors = [TECHNOLOGY_COLORS.get(tech, '#808080') for tech in technologies]
-    
+
     # Create display labels
-    display_labels = []
-    for tech in technologies:
-        if tech == 'DDR5_4800':
-            display_labels.append('DDR5')
-        elif tech == 'pcm_microsoft_2009':
-            display_labels.append('PCM')
-        else:
-            display_labels.append(tech.replace('_', ' '))
+    display_labels = [TECH_LABELS.get(tech, tech.replace('_', ' ')) for tech in technologies]
     
     # Create figure
     fig, ax = plt.subplots(figsize=(14, 8))
