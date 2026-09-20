@@ -1,8 +1,57 @@
 import math
 import json
 import os
+import sys
 import argparse
 from pathlib import Path
+
+# Fixed by this template for every technology and architecture: burst length in
+# columns (tBURST, and the divisor NVMain's own "capacity is ... MB" print folds
+# in alongside RATE) and the DDR-style prefetch RATE (columns transferred per
+# CLK, from "RATE 2" in the template). Used by compute_timings(), geometry() and
+# the template itself so there is exactly one place that defines them.
+BURST_CYCLES = 4
+RATE = 2
+
+# T2.8: microsecond-silicon sensitivity pair. NVSim's ReRAM latencies are
+# nanosecond-class (this project's own 22nm estimates); the only fabricated
+# Gb-class ReRAM chips report MICROSECOND latencies. Each entry keeps every
+# other NVSim-derived value (energies, leakage, area, organization, channels,
+# decoder, endurance, queue settings) from its `parent` hardware-metrics key's
+# full-DIMM config, overriding only read_latency_ns/write_latency_ns before
+# compute_timings() runs -- see generate_silicon_config(). Values verified
+# against the source PDFs in documents/reference_validation_papers/:
+#   - Zahurak et al., IEDM 2014, Table 1 (p. IEDM14-143): Read Performance
+#     Latency (uS) "Actual Demonstration" 2.3; Write Performance Latency (uS)
+#     "Actual Demonstration" 11.7.
+#   - Liu et al., JSSC 49(1) 2014, Table II "DEVICE FEATURES" (p. 149):
+#     Read Latency 40us; Write Latency 230us.
+SILICON_TIMINGS = {
+    "reram_micron16gb_1t1r": {
+        "parent": "reram_22nm_1t1r_slc",
+        "read_ns": 2300.0,
+        "write_ns": 11700.0,
+        "citation": "Zahurak et al., IEDM 2014, Table 1 (16 Gb Cu-ReRAM, 27 nm): "
+                     "read 2.3 us, write 11.7 us",
+    },
+    "reram_sandisk32gb_1s1r": {
+        "parent": "reram_22nm_selector_slc",
+        "read_ns": 40000.0,
+        "write_ns": 230000.0,
+        "citation": "Liu et al., JSSC 2014, Table II (32 Gb 2-layer cross-point, 24 nm): "
+                     "read 40 us, write 230 us",
+    },
+}
+
+
+def silicon_model_names():
+    """Sys-model names --silicon writes (full-DIMM only), in SILICON_TIMINGS order.
+
+    mbmm_master.py imports this (via importlib.util.spec_from_file_location, the
+    same pattern tests/test_gen_nvmain_config.py uses for this digit-prefixed
+    script) instead of duplicating SILICON_TIMINGS' key set."""
+    return [f"{key}_full_dimm" for key in SILICON_TIMINGS]
+
 
 def get_project_root():
     return Path(__file__).parent.absolute()
@@ -20,37 +69,180 @@ def setup_args():
                         help="Override the Config output directory (default: "
                              "simulators/nvmain/Config/). Use a separate directory for a "
                              "sensitivity sweep so it never touches the official configs.")
+    parser.add_argument("--channels", type=int, choices=[1, 2], default=1,
+                        help="Number of memory channels (default: 1). 2 splits RANKS across "
+                             "two independent channels (a channel is a set of ranks on its "
+                             "own bus; ROWS/COLS/BANKS/MATHeight are per-channel geometry and "
+                             "stay unchanged), DDR5-subchannel style. Architectures with a "
+                             "single rank (single, 8chip) cannot be split and are generated "
+                             "at 1 channel regardless, with a note in the config header.")
+    parser.add_argument("--decoder", choices=["Default", "StartGap"], default="Default",
+                        help="NVMain address-translation Decoder (default: Default). StartGap "
+                             "also writes StartGapInterval.")
+    parser.add_argument("--endurance-model", choices=["RowModel", "WordModel", "NullModel"],
+                        default="RowModel",
+                        help="NVMain EnduranceModel (default: RowModel).")
+    parser.add_argument("--window-ns", type=int, default=250000000,
+                        help="Matched simulation window in nanoseconds, recorded as a comment "
+                             "in the generated config for T2.3 to read back (default: "
+                             "250000000).")
+    parser.add_argument("--silicon", action="store_true",
+                        help="Also write the T2.8 microsecond-silicon sensitivity full-DIMM "
+                             "configs (SILICON_TIMINGS): same template/geometry/energies/"
+                             "leakage/channels/decoder/endurance/queue settings as each entry's "
+                             "parent full-DIMM config, with only read/write latency overridden "
+                             "to the cited fabricated chip's own timing.")
     return parser.parse_args()
 
-def generate_nvmain_config(base_name, hw_metrics, target_freq_mhz, output_dir, arch_type, queue_size=32):
+def compute_timings(read_ns, write_ns, freq_mhz, burst=BURST_CYCLES):
+    """Cycle counts for NVMain. The device read latency is charged once: tRCD (activate) plus
+    tCAS (column access) sum to the NVSim read latency (Section 3.1.6 correction, 2026-09).
+    Earlier versions set both tRCD and tCAS to the full read latency, charging every read
+    twice.
+
+    tRP is fixed at 1 cycle, not latency-proportional (fix round 1 ruling, 2026-09):
+    ReRAM reads are non-destructive -- there is no restore/precharge phase the way a
+    destructive-read DRAM row needs after every access -- and the device's full
+    read latency (NVSim-derived or, for the T2.8 silicon configs, the fabricated
+    chip's published figure) is already charged in full to tRCD + tCAS above. Scaling
+    tRP with read latency would double-charge that same physical read latency a
+    second time on every access."""
+    cyc = 1000.0 / freq_mhz
+    t_read = max(2, math.ceil(read_ns / cyc))
+    t_write = max(1, math.ceil(write_ns / cyc))
+    t_rcd = max(1, t_read // 2)
+    t_cas = max(1, t_read - t_rcd)
+    t_burst = burst
+    t_ccd = max(4, t_burst)                       # NVMain requires tCCD >= tBURST (segfault otherwise)
+    t_ras = max(t_read, t_rcd + t_burst)          # activate must outlast tRCD + burst
+    return {"tCAS": t_cas, "tRCD": t_rcd, "tRP": 1, "tRAS": t_ras, "tWR": t_write,
+            "tBURST": t_burst, "tCCD": t_ccd, "tCMD": 1}
+
+def validate_config(cfg):
+    v = []
+    if cfg["CLK"] > cfg["CPUFreq"]: v.append(f"CLK {cfg['CLK']} exceeds CPUFreq {cfg['CPUFreq']}: NVMain corrupts admission silently")
+    if cfg["tCCD"] < cfg["tBURST"]: v.append("tCCD below tBURST: NVMain can segfault")
+    if cfg["tRAS"] < cfg["tRCD"] + cfg["tBURST"]: v.append("tRAS below tRCD + tBURST")
+    return v
+
+def geometry(hw, arch_type, channels=1):
+    """Compute per-architecture ROWS/COLS/BANKS/RANKS/CHANNELS/MATHeight for the NVMain config.
+
+    Note on the `single` architecture: its ROWS is floored to 65536 as an address-space
+    floor so the trace footprint fits, not physical capacity; a single 1 Gb chip holds
+    128 MB (SLC). Do not quote this config's capacity print.
+
+    Fix round 1 (2026-09): channels split RANKS, never ROWS. A channel is a set of
+    ranks on its own bus -- each channel sees the full per-rank ROWS/COLS/BANKS
+    geometry, and NVMain's own capacity print is PER CHANNEL (ROWS * COLS * tBURST *
+    RATE * BusWidth * BANKS * RANKS / 8, using THIS channel's own RANKS), so the DIMM
+    total is that per-channel figure times CHANNELS. The earlier `channels > 1: rows
+    // channels` code divided ROWS instead, which for the real 2048x2048 ReRAM
+    full-DIMM capacity took ROWS below MATHeight (2048 -> 1024 < 2048) and crashed
+    generation outright at --channels 2 -- the primary matrix's setting -- since
+    every earlier gatekeeper run used the default of 1 channel and never exercised
+    this path.
+    """
+    cols, banks = 1024, 8
+    ranks, dev, width = {"single": (1, 1, 64), "8chip": (1, 8, 8), "16chip": (2, 8, 8), "full_dimm": (8, 8, 8)}.get(arch_type, (1, 1, 8))
+    bits_per_chip = hw["capacity_gb"] * 8 * 1024**3
+    rows_per_chip = int(bits_per_chip / (cols * width * banks))
+    # NVMain's own capacity print (MemoryController.cpp:457) is ROWS * COLS * tBURST *
+    # RATE * BusWidth * BANKS * RANKS / 8, so the column word is tBURST * RATE * BusWidth/8
+    # bytes and the divisor below is exactly the burst beats per column -- not a coincidence.
+    #
+    # RANKS is already a factor of that formula, so ROWS must be the per-chip row count
+    # alone -- multiplying by ranks here too (the pre-revision bug) double-counts ranks
+    # and prints a DIMM 64x too big (512 GB instead of 8 GB for the SLC full DIMM). The
+    # printed capacity was checked against the live binary: 8192 MB for the SLC full DIMM,
+    # 16384 MB for the MLC full DIMM (both at CHANNELS 1; see the channel-splitting note
+    # above for the per-channel print at CHANNELS 2).
+    rows = rows_per_chip // (BURST_CYCLES * RATE)
+    if arch_type == "single":
+        rows = max(rows, 65536)
+    final_rows = rows
+    if final_rows == 0:
+        raise ValueError(
+            f"geometry(): computed ROWS is 0 for arch_type={arch_type!r}, "
+            f"capacity_gb={hw.get('capacity_gb')!r} -- hardware capacity is too small for "
+            f"this architecture's per-chip geometry (cols={cols}, banks={banks}, width={width}).")
+
+    # Channels split RANKS, not ROWS (see docstring). Only architectures whose RANKS
+    # divides evenly by the requested channel count are actually split -- `single`
+    # (1 rank) and `8chip` (1 rank) fall back to 1 channel unconditionally, since a
+    # one-rank module cannot be split across channels; the two-channel comparison
+    # applies to the 16-chip (2 ranks) and full-DIMM (8 ranks) modules.
+    if channels > 1 and ranks % channels == 0:
+        effective_channels = channels
+    else:
+        effective_channels = 1
+    final_ranks = ranks // effective_channels
+
+    # MATHeight is NOT ROWS: it is the NVSim subarray row count for this chip's own
+    # array organization (DDR3Bank::SetConfig computes subArrayNum = ROWS / MATHeight,
+    # Banks/DDR3Bank/DDR3Bank.cpp:129), independent of how many rows the *system-level*
+    # NVMain config exposes as ROWS. NVMain's own MATHeight default is set at Params
+    # construction time from the *struct* default ROWS (65536, Params.cpp:133
+    # "MATHeight = ROWS;"), before the config file's ROWS override is applied -- so an
+    # unset MATHeight silently stays 65536 regardless of the real ROWS, which is stale
+    # and wrong either way (it isn't derived from the real per-chip NVSim organization).
+    # The mandated NVSim organization is a 2048-row subarray (T2.6 will populate a real
+    # "subarray_rows" field in hardware_metrics.json from the NVSim run; until then this
+    # is a documented placeholder default, not a measured value). MATHeight and ROWS are
+    # both per-channel geometry, unaffected by the RANKS/CHANNELS split above.
+    subarray_rows = hw.get("subarray_rows", 2048)
+    if final_rows % subarray_rows != 0:
+        raise ValueError(
+            f"geometry(): ROWS ({final_rows}) is not evenly divisible by subarray_rows/"
+            f"MATHeight ({subarray_rows}) for arch_type={arch_type!r} -- NVMain's "
+            f"subArrayNum = ROWS // MATHeight would silently truncate or misconfigure the "
+            f"bank's subarrays; adjust capacity_gb or subarray_rows so ROWS divides evenly.")
+
+    return {"ROWS": final_rows, "COLS": cols, "BANKS": banks,
+            "RANKS": final_ranks, "CHANNELS": effective_channels, "DEVICES_PER_RANK": dev,
+            "DeviceWidth": width, "MATHeight": subarray_rows}
+
+def generate_nvmain_config(base_name, hw_metrics, target_freq_mhz, output_dir, arch_type, queue_size=32,
+                            channels=1, decoder="Default", endurance_model="RowModel", window_ns=250000000,
+                            header_extra=""):
     # PROTECT DRAM: Do not generate NVMain configs for DRAM models!
     if "dram" in base_name.lower():
         return None
-    
+
     cycle_time_ns = 1000.0 / target_freq_mhz
-    tREAD = math.ceil(hw_metrics.get('read_latency_ns', 32.0) / cycle_time_ns)
-    tWRITE = math.ceil(hw_metrics.get('write_latency_ns', 32.0) / cycle_time_ns)
-    
+
+    timings = compute_timings(hw_metrics.get('read_latency_ns', 32.0),
+                               hw_metrics.get('write_latency_ns', 32.0),
+                               target_freq_mhz)
+
     # --- ARCHITECTURE FACTORY LOGIC ---
     bus_width = 64
-    banks = 8
-    cols = 1024  
-    
-    if arch_type == "single":
-        ranks = 1; devices_per_rank = 1; current_device_width = 64; mapping = "R:BK:C"
-    elif arch_type == "8chip":
-        ranks = 1; devices_per_rank = 8; current_device_width = 8; mapping = "R:BK:C"
-    elif arch_type == "16chip":
-        ranks = 2; devices_per_rank = 8; current_device_width = 8; mapping = "R:BK:RK:C"
-    elif arch_type == "full_dimm":
-        ranks = 8; devices_per_rank = 8; current_device_width = 8; mapping = "R:BK:RK:C"
-    else:
-        ranks = 1; devices_per_rank = 1; current_device_width = 8; mapping = "R:BK:C"
+    geo = geometry(hw_metrics, arch_type, channels=channels)
+    banks = geo["BANKS"]
+    cols = geo["COLS"]
+    ranks = geo["RANKS"]
+    effective_channels = geo["CHANNELS"]
+    devices_per_rank = geo["DEVICES_PER_RANK"]
+    current_device_width = geo["DeviceWidth"]
+    system_rows = geo["ROWS"]
+    mat_height = geo["MATHeight"]
 
-    cap_gb = hw_metrics.get('capacity_gb', 0.125)
-    bits_per_chip = cap_gb * 8 * 1024 * 1024 * 1024
-    rows_per_chip = int(bits_per_chip / (cols * current_device_width * banks))
-    system_rows = max(rows_per_chip * ranks, 65536)
+    if arch_type in ("single", "8chip"):
+        mapping = "R:BK:C"
+    else:
+        mapping = "R:BK:RK:C"
+
+    cfg_check = {"CLK": target_freq_mhz, "CPUFreq": 3000, "tBURST": timings["tBURST"],
+                 "tCCD": timings["tCCD"], "tRAS": timings["tRAS"], "tRCD": timings["tRCD"]}
+    violations = validate_config(cfg_check)
+    if violations:
+        # Fatal, not a warning: a config with a rejected timing relationship must never be
+        # written, since NVMain either silently corrupts admission or segfaults on it (see
+        # validate_config()'s own violation messages). Refuse before any file I/O happens.
+        print(f"    [!] Config validation FAILED for {base_name}_{arch_type}:")
+        for problem in violations:
+            print(f"        - {problem}")
+        sys.exit(2)
 
     # Static/leakage power: NVMain's NonVolatile energy model charges Eactstdby/Eprestdby
     # once per RANK per cycle (Ranks/StandardRank/StandardRank.cpp, no per-device scaling
@@ -87,9 +279,33 @@ def generate_nvmain_config(base_name, hw_metrics, target_freq_mhz, output_dir, a
 
     sys_model_name = f"{base_name}_{arch_type}"
 
+    startgap_line = f"StartGapInterval 100\n" if decoder == "StartGap" else ""
+    single_floor_line = (
+        "; ROWS floored to 65536: address-space floor so the trace footprint fits, not\n"
+        "; physical capacity; a single 1 Gb chip holds 128 MB (SLC). Do not quote this\n"
+        "; config's capacity print.\n"
+        if arch_type == "single" else "")
+
+    # Fix round 1: channels split RANKS, never ROWS (see geometry()'s docstring). A
+    # one-rank module (single, 8chip) cannot be split across channels, so geometry()
+    # silently falls back to 1 channel for those two architectures -- flagged here,
+    # both on stdout and in the generated config's own header, rather than left silent.
+    channels_note = ""
+    if channels > 1 and effective_channels == 1:
+        print(f"    [i] {base_name}_{arch_type}: generated at 1 channel (a one-rank "
+              f"module cannot be split across {channels} channels); the two-channel "
+              f"comparison applies to the 16-chip and full-DIMM modules.")
+        channels_note = (
+            "; NOTE: generated at 1 channel: a one-rank module cannot be split across\n"
+            "; channels; the two-channel comparison applies to the 16-chip and\n"
+            "; full-DIMM modules.\n"
+        )
+
     config_content = f"""
 ; --- MBMM SYSTEM ARCHITECTURE: {arch_type.upper()} ---
 ; Base Model: {base_name} | Rank Width: {bus_width}-bit
+; Matched simulation window: {window_ns} ns (WINDOW_NS, recorded for T2.3 to read back)
+{header_extra}{single_floor_line}{channels_note}
 
 ; --- Infrastructure ---
 IgnorePremappedAddresses true
@@ -99,9 +315,8 @@ PrintConfig true
 PrintAllDevices true
 EnableDebug false
 MAP_ADDRESS true
-DECODER MigratingDecoder
-INTERCONNECT OffChipBus
-STATS_OUT nvmain_stats_{sys_model_name}.out
+Decoder {decoder}
+{startgap_line}INTERCONNECT OffChipBus
 ; Cycle-8 finding #11 fix: CPUFreq is the *host* issue-rate assumption used only
 ; by traceMain.cpp to rescale the trace-timestamp admission cutoff (see
 ; results/throughput_check/throughput_mechanism_report.md) -- it is decoupled
@@ -128,17 +343,19 @@ DEVICES_PER_RANK {devices_per_rank}
 AddressMappingScheme {mapping}
 BusWidth {bus_width}
 DeviceWidth {current_device_width}
-RATE 2
+RATE {RATE}
 
 ; --- Timing Parameters (Cycles) ---
-tCAS {tREAD}
-tRCD {tREAD}
-tRP 1       
-tRAS {tREAD}
-tWR {tWRITE}
-tRTW {tREAD}
-tBus 4
-tCMD 1
+; tRCD + tCAS = NVSim read latency; earlier versions set both to the full latency
+; and charged reads twice (Section 3.1.6 correction, 2026-09).
+tCAS {timings['tCAS']}
+tRCD {timings['tRCD']}
+tRP {timings['tRP']}
+tRAS {timings['tRAS']}
+tWR {timings['tWR']}
+tBURST {timings['tBURST']}
+tCCD {timings['tCCD']}
+tCMD {timings['tCMD']}
 
 ; --- Energy and Power ---
 ; Eactstdby/Eprestdby: rank-level standby energy per cycle (nJ), derived from NVSim
@@ -167,12 +384,32 @@ Epdpf {e_standby_nj}
 Epdps {e_standby_nj}
 
 ; --- Geometry Scaling ---
+; ROWS is sized by geometry() so the NVMain "capacity is ... MB" print matches the
+; physical module (8192 MB for the SLC full DIMM, 16384 MB for the MLC full DIMM);
+; see the comment in geometry() for the derivation.
 ROWS {system_rows}
 COLS {cols}
-CHANNELS 1
+CHANNELS {effective_channels}
 RANKS {ranks}
 BANKS {banks}
 SUBARRAYS 1
+; MATHeight is the NVSim subarray row count (mandated 2048-row organization; T2.6
+; will source this from a real "subarray_rows" field in hardware_metrics.json), NOT
+; ROWS -- DDR3Bank::SetConfig computes subArrayNum = ROWS / MATHeight
+; (Banks/DDR3Bank/DDR3Bank.cpp:129), so with this value subArrayNum is 1 for SLC
+; full-DIMM and 8chip, 2 for MLC and 16chip (ranked archs scale with capacity_gb,
+; not with RANKS), and 32 for single (floored ROWS). NVMain's unset-MATHeight
+; default is stale regardless (fixed at Params construction time from the struct's
+; default ROWS=65536, before this file's ROWS is read; see geometry()'s comment) --
+; leaving it unset would truncate subArrayNum to 0 for any ROWS below 65536 and
+; segfault in NVMObject::GetChild() on the first request (empty subarray-children
+; vector). geometry() asserts ROWS is evenly divisible by MATHeight.
+MATHeight {mat_height}
+
+; --- Endurance ---
+EnduranceModel {endurance_model}
+EnduranceDist Uniform
+EnduranceDistMean 1000000
 
 ; --- NVM Specific Logic ---
 ClosePage 1
@@ -184,6 +421,57 @@ EnergyModel NonVolatile
     with open(file_path, 'w') as f:
         f.write(config_content)
     return sys_model_name
+
+def generate_silicon_config(silicon_key, timing_entry, all_metrics, target_freq_mhz, output_dir,
+                             queue_size=32, channels=1, decoder="Default",
+                             endurance_model="RowModel", window_ns=250000000):
+    """T2.8: generate one microsecond-silicon sensitivity full-DIMM config.
+
+    Same template, geometry, energies, leakage, channels, decoder, endurance and
+    queue settings as `timing_entry["parent"]`'s full-DIMM config -- only
+    read_latency_ns/write_latency_ns are overridden (to the fabricated chip's own
+    read/write latency) before compute_timings() runs inside
+    generate_nvmain_config(). Architecture is always full_dimm; T2.8 defines no
+    single/8chip/16chip silicon variants.
+
+    Raises ValueError with a clear message if timing_entry["parent"] is missing
+    from `all_metrics` (i.e. hardware_metrics.json has no entry for it -- run
+    1_run_nvsim_hardware.py / 2_extract_hardware_metrics.py for that base model
+    first).
+    """
+    parent = timing_entry["parent"]
+    if parent not in all_metrics:
+        raise ValueError(
+            f"generate_silicon_config: parent hardware-metrics key {parent!r} "
+            f"(required by silicon entry {silicon_key!r}) is missing from the "
+            f"loaded hardware metrics -- have: {sorted(all_metrics)}. Run "
+            f"1_run_nvsim_hardware.py and 2_extract_hardware_metrics.py for "
+            f"{parent} first."
+        )
+
+    hw = dict(all_metrics[parent])
+    hw["read_latency_ns"] = timing_entry["read_ns"]
+    hw["write_latency_ns"] = timing_entry["write_ns"]
+
+    header_extra = (
+        "; --- T2.8 MICROSECOND-SILICON SENSITIVITY ---\n"
+        "; Read/write timing below is sourced from a fabricated chip, NOT this\n"
+        f"; project's own NVSim run. Citation: {timing_entry['citation']}.\n"
+        "; Energies, leakage, area and organization remain NVSim's 22 nm values\n"
+        f"; from parent hardware model {parent!r} unchanged: this is a timing-only\n"
+        "; sensitivity study, not a re-simulation of the fabricated chip.\n"
+        "; tRP is fixed at 1 cycle: ReRAM reads are non-destructive (no restore/\n"
+        "; precharge phase), and the fabricated chip's read latency above is already\n"
+        "; charged in full to tRCD + tCAS -- a latency-proportional tRP would\n"
+        "; double-charge it (fix round 1 ruling, 2026-09).\n"
+    )
+
+    return generate_nvmain_config(
+        silicon_key, hw, target_freq_mhz, output_dir, "full_dimm",
+        queue_size=queue_size, channels=channels, decoder=decoder,
+        endurance_model=endurance_model, window_ns=window_ns,
+        header_extra=header_extra,
+    )
 
 def main():
     args = setup_args()
@@ -209,12 +497,26 @@ def main():
     for model_name, metrics in all_metrics.items():
         print(f"\n>>> Base Hardware: {model_name}")
         for arch in architectures:
-            sys_name = generate_nvmain_config(model_name, metrics, args.freq, output_dir, arch, args.queue_size)
+            sys_name = generate_nvmain_config(model_name, metrics, args.freq, output_dir, arch, args.queue_size,
+                                               channels=args.channels, decoder=args.decoder,
+                                               endurance_model=args.endurance_model, window_ns=args.window_ns)
             if sys_name:
                 print(f"    [OK] Generated System Model: {sys_name}")
                 generated_count += 1
             else:
                 print(f"    [SKIP] Protected native DRAM config.")
+
+    if args.silicon:
+        print("\n" + "=" * 60)
+        print("T2.8: MICROSECOND-SILICON SENSITIVITY CONFIGS")
+        print("=" * 60)
+        for silicon_key, timing_entry in SILICON_TIMINGS.items():
+            sys_name = generate_silicon_config(
+                silicon_key, timing_entry, all_metrics, args.freq, output_dir,
+                args.queue_size, channels=args.channels, decoder=args.decoder,
+                endurance_model=args.endurance_model, window_ns=args.window_ns)
+            print(f"    [OK] Generated Silicon Sensitivity Model: {sys_name}")
+            generated_count += 1
 
     print("\n" + "=" * 60)
     print(f"SUCCESS: {generated_count} system-level configurations generated.")

@@ -7,6 +7,28 @@ from pathlib import Path
 def get_project_root():
     return Path(__file__).parent.absolute()
 
+# T2.6 fix round 1: per-architecture result files that 4_execute_simulation.py
+# writes into results/hardware/ during Stage 4 (e.g.
+# "reram_22nm_1t1r_slc_full_dimm_results.txt") are re-runs of the same base
+# cfg's forced organization at a different chip count -- not independent
+# hardware base models. If they are left in results/hardware/ when this
+# script next runs (e.g. a second pipeline run in the same results directory,
+# without clearing it first), the glob below would otherwise treat each one
+# as its own base and inject stale entries into hardware_metrics.json, which
+# 3_gen_nvmain_config.py would then build double-suffixed NVMain configs
+# from (e.g. "..._full_dimm_slc_single.config"). "_1024" (the T2.6
+# sensitivity cfg) is not an architecture suffix and must NOT be excluded.
+ARCHITECTURE_SUFFIXES = ("_single", "_8chip", "_16chip", "_full_dimm")
+
+def is_architecture_suffixed_result(file_path):
+    """True if `file_path`'s stem, with a trailing "_results" removed, ends
+    in one of the per-architecture suffixes (_single/_8chip/_16chip/
+    _full_dimm). See ARCHITECTURE_SUFFIXES above for why these are skipped."""
+    stem = Path(file_path).stem
+    if stem.endswith("_results"):
+        stem = stem[: -len("_results")]
+    return stem.endswith(ARCHITECTURE_SUFFIXES)
+
 def parse_nvsim_output(file_path):
     """Extracts raw SLC hardware metrics and Capacity from NVSim output."""
     metrics = {}
@@ -52,6 +74,27 @@ def parse_nvsim_output(file_path):
             area_match = re.search(r"Total Area = .* = ([\d\.]+)mm\^2", content)
             metrics['area_mm2'] = float(area_match.group(1)) if area_match else 0.0
 
+            # --- T2.6: FORCED-ORGANIZATION FIELDS ---
+            # NVSim's "Subarray Size" line gives the forced subarray geometry
+            # (2048x2048 baseline / 1024x1024 sensitivity, T2.6).
+            subarray_match = re.search(r"(\d+) Rows x (\d+) Columns", content)
+            if subarray_match:
+                metrics['subarray_rows'] = int(subarray_match.group(1))
+                metrics['subarray_cols'] = int(subarray_match.group(2))
+
+            # "Bank Organization: A x B" is NVSim's label for the -ForceBank
+            # grid, which is actually the total mat count (A x B mats); see
+            # research_notes/leakage_47x_organization_artifact.md SS1/SS4
+            # ("Mats" column = the Bank-Organization product).
+            bank_match = re.search(r"Bank Organization:\s*(\d+)\s*x\s*(\d+)", content)
+            if bank_match:
+                metrics['mats'] = int(bank_match.group(1)) * int(bank_match.group(2))
+
+            # "Senseamp Mux" is the forced -ForceMuxSenseAmp value.
+            mux_match = re.search(r"Senseamp Mux\s*:\s*(\d+)", content)
+            if mux_match:
+                metrics['mux'] = int(mux_match.group(1))
+
         except Exception as e:
             print(f"[ERROR] Regex failed for {file_path}: {e}")
             return None
@@ -94,9 +137,14 @@ def main():
     print("MBMM STEP 2: DUAL-TRACK HARDWARE EXTRACTION (SLC + MLC)")
     print("=" * 60)
 
+    skipped_architecture_suffixed = 0
     for file_path in hw_results_dir.glob("*_results.txt"):
+        if is_architecture_suffixed_result(file_path):
+            skipped_architecture_suffixed += 1
+            continue
+
         base_name = file_path.stem.replace("_results", "").replace("_slc", "")
-        
+
         # 1. Process SLC Track
         print(f">>> Processing Baseline: {base_name}...")
         slc_metrics = parse_nvsim_output(str(file_path))
@@ -107,6 +155,10 @@ def main():
             # 2. Programmatically Generate MLC Track (Doubling Volume)
             print(f"    [GEN] Generating Analytical MLC variant for {base_name}...")
             all_data[f"{base_name}_mlc"] = apply_mlc_penalty(slc_metrics)
+
+    print(f"\n[SKIP] Ignored {skipped_architecture_suffixed} architecture-suffixed "
+          f"result file(s) (not independent hardware base models; see "
+          f"ARCHITECTURE_SUFFIXES).")
 
     if all_data:
         with open(output_path, 'w') as f:
