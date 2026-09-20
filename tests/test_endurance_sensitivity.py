@@ -996,3 +996,27 @@ def test_year_convention_printed_in_summary_and_typst(tmp_path, capsys):
     out_path = tmp_path / "conv.typ"
     es.write_typst_table(rows, out_path, endurance=1e6)
     assert "365-day year" in out_path.read_text()
+
+
+def test_main_flags_admitted_rows_of_a_burst_trace(tmp_path):
+    # T5.3 analysis run (2026-09-20): alexnet_layer1_ofmap, a 4.5 microsecond
+    # burst, had rate_is_burst=true on its offered rows but false on its
+    # admitted rows, although both rates come from the same burst.
+    import csv as csv_mod
+    z = "0" * 128
+    trace = tmp_path / "burst.nvt"
+    trace.write_text("\n".join([f"0 W 0x40 {z} 0", f"10 W 0x80 {z} 0",
+                                 f"30 W 0xc0 {z} 0"]) + "\n")
+    stats = tmp_path / "stats.out"
+    stats.write_text(
+        "NVMain: GlobalEventQueue: Added a memory subsystem running at "
+        "800MHz. My frequency is 3000MHz.\n"
+        "i0.defaultMemory.channel0.FRFCFS.mem_writes 3\n"
+        "Exiting at cycle 3000000 because simCycles 3000000 reached.\n"
+    )
+    es.main(["--trace", str(trace), "--stats", str(stats),
+             "--out-dir", str(tmp_path), "--quiet"])
+    with open(tmp_path / "endurance_table.csv") as f:
+        rows = list(csv_mod.DictReader(f))
+    assert {r["rate_basis"] for r in rows} == {"offered", "admitted"}
+    assert all(r["rate_is_burst"] == "true" for r in rows)

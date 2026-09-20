@@ -1399,7 +1399,10 @@ def main(argv=None):
     if args.stats:
         admitted = read_admitted_stats(args.stats)
         rate_by_basis["admitted"] = admitted["admitted_rate"]
-        rate_burst_info["admitted"] = (False, None)
+        # T5.3 analysis run: a burst trace's admitted rate is still derived
+        # from the burst (its few writes spread over the simulator's elapsed
+        # time), so the admitted rows carry the same burst flag.
+        rate_burst_info["admitted"] = (parsed["rate_basis"] == "burst", None)
         print(f"admitted: {admitted['admitted_writes']:,} writes over "
               f"{admitted['elapsed_s']:.6f} s = "
               f"{admitted['admitted_rate']/1e6:.3f} M writes/s "
