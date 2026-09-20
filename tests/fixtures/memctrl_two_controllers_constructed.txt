@@ -1,0 +1,4 @@
+1000: system.mem_ctrls0: recvTimingReq: request WriteReq addr 0x1000 size 64
+1000: system.mem_ctrls1: recvTimingReq: request ReadReq addr 0x2000 size 64
+1000: system.mem_ctrls0: Write queue full, not accepting
+1000: system.mem_ctrls1: Adding to read queue

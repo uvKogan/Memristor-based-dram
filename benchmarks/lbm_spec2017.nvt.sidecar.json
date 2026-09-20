@@ -1,0 +1,82 @@
+{
+  "addresses": {
+    "aligned_64b_fraction": 1.0,
+    "max": "0x186d7d40",
+    "min": "0x5340",
+    "size_histogram": {
+      "64": 10779425
+    }
+  },
+  "allow_malformed": 0,
+  "argv": [
+    "--raw",
+    "benchmarks/raw_logs/lbm/m5out/raw_trace.txt",
+    "--stdout",
+    "benchmarks/raw_logs/lbm/gem5_stdout.log",
+    "--out",
+    "benchmarks/rev2026-09_staging/lbm_spec2017.nvt",
+    "--cpufreq-mhz",
+    "3000",
+    "--region",
+    "o3",
+    "--skip-ns",
+    "10000000",
+    "--sidecar",
+    "benchmarks/rev2026-09_staging/lbm_spec2017.nvt.sidecar.json"
+  ],
+  "cpufreq_mhz": 3000,
+  "dropped_lines": {
+    "access_to": 11001952,
+    "command_for": 11001952,
+    "malformed_request": 0,
+    "non_mem_ctrl": 0,
+    "other_mem_ctrl": 99370915,
+    "queue_dump": 0,
+    "responding_to_address": 11001972,
+    "retry": 0,
+    "truncated_final_line": 0,
+    "unmatched_retry": 0,
+    "unparsed": 0
+  },
+  "lines_read": 170291013,
+  "malformed_lines_seen": 0,
+  "max_held_records": 5,
+  "parser": "parse_gem5_memctrl.py",
+  "parser_version": "1.2.0",
+  "records": {
+    "by_object": {
+      "system.mem_ctrls": {
+        "reads": 6159804,
+        "total": 10779425,
+        "writes": 4619621
+      }
+    },
+    "controller_objects": [
+      "system.mem_ctrls"
+    ],
+    "first_cycle": 0,
+    "last_cycle": 1452877788,
+    "reads": 6159804,
+    "total": 10779425,
+    "writes": 4619621
+  },
+  "region": {
+    "mode": "o3",
+    "rebase_offset_ticks": 527219351000,
+    "skip_ns": 10000000,
+    "switch_tick_ps": 517219347000
+  },
+  "region_excluded_lines": {
+    "recvAtomic": 26912250,
+    "recvTimingReq": 222547
+  },
+  "skip_ns_excluded_lines": 222547,
+  "source": {
+    "gem5_command": "/home/yuvalk/MBMM/simulators/gem5/build/X86/gem5.opt --outdir=/home/yuvalk/MBMM/benchmarks/raw_logs/lbm/m5out --debug-flags=MemCtrl --debug-file=raw_trace.txt /home/yuvalk/MBMM/simulators/gem5/configs/deprecated/example/se.py --cmd=/home/yuvalk/spec2017/benchspec/CPU/519.lbm_r/exe/lbm_r_base.mytest-m64 '--options=3000 reference.dat 0 0 100_100_130_ldc.of' --cpu-type=X86O3CPU --caches --l2cache --fast-forward=500000000 --maxinsts=300000000 --mem-size=8GB",
+    "gem5_stdout": "benchmarks/raw_logs/lbm/gem5_stdout.log",
+    "raw_log": "benchmarks/raw_logs/lbm/m5out/raw_trace.txt",
+    "raw_log_sha256_first_1mb": "88d64333085e8a0c84bdbd904832aff8680ddc1421c96b6a511159aaed950f8a",
+    "raw_log_size_bytes": 12282270889
+  },
+  "unit": "cycle = 1/3000 us (CPUFreq 3000 MHz)"
+}

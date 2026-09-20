@@ -23,6 +23,7 @@ results/
 *.out
 *.nvt
 *.csv
+!tests/fixtures/scalesim_sample.csv
 
 # Thesis source material (papers, lectures, project book) — not code
 resources/
@@ -54,3 +55,7 @@ documents/reference_validation_papers/Liu et al., JSSC 2014 Fackenthal et al., I
 
 # SDD workspace scratch
 .superpowers/
+
+# 2026-09 revision: raw gem5 MemCtrl logs (multi-GB); sidecars are tracked, raw logs are not
+benchmarks/raw_logs/
+!benchmarks/*.sidecar.json
