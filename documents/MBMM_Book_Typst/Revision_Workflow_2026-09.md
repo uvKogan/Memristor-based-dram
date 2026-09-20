@@ -386,7 +386,7 @@ Note: the real Start-Gap moves one line per gap move (a read plus a write of one
 - [x] **Step 5: Verify the remap is a bijection and lowers hot-spot factor.** Run the skew trace (T1.3 config plus `Decoder StartGap`, `StartGapInterval 100`) and compare `wearHotSpotFactor`:
 Expected: DIMM-wide max writes to one location falls from 16,014 toward about `16014 * 100 / lines`-scale values (the exact number depends on region size; it must fall by more than 10x), `wearTotalWrites` sum unchanged at 19,999, `startGapMoves` = 19,999 / 100. Also run gpt2 with and without the decoder: `mem_reads`, `mem_writes` and `totalReadRequests` identical (the remap must not lose requests).
 
-- [ ] **Step 6: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add simulators/nvmain/Decoders simulators/nvmain/MemControl/FRFCFS/FRFCFS.cpp simulators/nvmain/src && git commit -m "[T1.4] NVMain: Start-Gap wear-leveling decoder with shared gap state"`
+- [x] **Step 6: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add simulators/nvmain/Decoders simulators/nvmain/MemControl/FRFCFS/FRFCFS.cpp simulators/nvmain/src && git commit -m "[T1.4] NVMain: Start-Gap wear-leveling decoder with shared gap state"`
 
 ### Task T1.5: Patch logs
 
@@ -394,7 +394,7 @@ Expected: DIMM-wide max writes to one location falls from 16,014 toward about `1
 - Modify: `simulators/nvmain/CLAUDE.md` (append items 4-6 under APPLIED REPAIRS: end-to-end stat, wear counter, StartGap; each with files, config keys, and the regression command), `simulators/nvsim/CLAUDE.md` (item 2: remove the claim that `InputParameter.cpp` was patched; it was not, per the 2026-09-15 calibration; note the `Mat.cpp` debug prints and that the "128x128 Mats" skeleton keys are unparsed)
 
 - [x] **Step 1: Edit both files** in the existing numbered-list style.
-- [ ] **Step 2: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add simulators/nvmain/CLAUDE.md simulators/nvsim/CLAUDE.md && git commit -m "[T1.5] Patch logs: NVMain revision patches; correct NVSim patch history"`
+- [x] **Step 2: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add simulators/nvmain/CLAUDE.md simulators/nvsim/CLAUDE.md && git commit -m "[T1.5] Patch logs: NVMain revision patches; correct NVSim patch history"`
 
 ---
 
@@ -408,7 +408,7 @@ Expected: DIMM-wide max writes to one location falls from 16,014 toward about `1
 **Interfaces:**
 - Consumes (T2.2 produces): `compute_timings(read_ns, write_ns, freq_mhz) -> dict` with keys `tCAS, tRCD, tRP, tRAS, tWR, tBURST, tCCD, tCMD` (ints, cycles), and `validate_config(cfg: dict) -> list[str]` returning violations.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/conftest.py
@@ -446,7 +446,7 @@ def test_capacity_matches_physical_module():
     assert g["ROWS"] * g["COLS"] * 64 * g["BANKS"] * g["RANKS"] * g["CHANNELS"] == 8 * 2**30
 ```
 
-- [ ] **Step 2: Run to verify they fail**: `cd /home/yuvalk/MBMM && python3 -m pytest tests/test_gen_nvmain_config.py -v`
+- [x] **Step 2: Run to verify they fail**: `cd /home/yuvalk/MBMM && python3 -m pytest tests/test_gen_nvmain_config.py -v`
 Expected: 5 failures with `AttributeError: module 'gen' has no attribute 'compute_timings'` (or similar).
 
 ### Task T2.2: Generator corrections
@@ -458,7 +458,7 @@ Expected: 5 failures with `AttributeError: module 'gen' has no attribute 'comput
 - Produces: `compute_timings`, `validate_config`, `geometry` (tested in T2.1); new flags `--channels {1,2}` (default 1), `--decoder {Default,StartGap}` (default Default), `--endurance-model {RowModel,WordModel,NullModel}` (default RowModel), `--window-ns` (default 250000000: the matched window in nanoseconds, written as a comment so T2.3 can read it back).
 - Template changes: `tRCD {tRCD}` and `tCAS {tCAS}` from the split; `tRAS`, `tBURST 4`, `tCCD 4` explicit; delete `tRTW`, `tBus`, `STATS_OUT`, `DECODER MigratingDecoder`; add `Decoder {decoder}`, `EnduranceModel {model}`, `EnduranceDist Uniform`, `EnduranceDistMean 1000000`, `CHANNELS {channels}`, `StartGapInterval 100` when decoder is StartGap; ROWS from `geometry()` so capacity equals the physical module (8 GiB SLC full DIMM: with COLS 1024, BANKS 8, RANKS 8, DeviceWidth 8 the per-rank row count is `2**30*8 / (1024*8*8*8)`; keep the `max(..., 65536)` floor only for `single`).
 
-- [ ] **Step 1: Implement `compute_timings`**
+- [x] **Step 1: Implement `compute_timings`**
 
 ```python
 def compute_timings(read_ns, write_ns, freq_mhz, burst=4):
@@ -476,7 +476,7 @@ def compute_timings(read_ns, write_ns, freq_mhz, burst=4):
             "tBURST": t_burst, "tCCD": t_ccd, "tCMD": 1}
 ```
 
-- [ ] **Step 2: Implement `validate_config` and `geometry`**
+- [x] **Step 2: Implement `validate_config` and `geometry`**
 
 ```python
 def validate_config(cfg):
@@ -497,11 +497,11 @@ def geometry(hw, arch_type, channels=1):
 ```
 Check the arithmetic against NVMain's capacity print (`capacity is ... MB`) in Step 5; adjust the `rows` formula until the printed capacity equals 8192 MB for SLC full DIMM and 16384 MB for MLC.
 
-- [ ] **Step 3: Rewrite the template** using the dicts; delete the dead keys; add the endurance and decoder keys. Keep the explanatory comment blocks (lines 55-80, 144-160) and add one for the split: "tRCD + tCAS = NVSim read latency; earlier versions set both to the full latency and charged reads twice."
+- [x] **Step 3: Rewrite the template** using the dicts; delete the dead keys; add the endurance and decoder keys. Keep the explanatory comment blocks (lines 55-80, 144-160) and add one for the split: "tRCD + tCAS = NVSim read latency; earlier versions set both to the full latency and charged reads twice."
 
-- [ ] **Step 4: Run the tests**: `python3 -m pytest tests/test_gen_nvmain_config.py -v` expected 5 passed.
+- [x] **Step 4: Run the tests**: `python3 -m pytest tests/test_gen_nvmain_config.py -v` expected 5 passed.
 
-- [ ] **Step 5: Gatekeeper run.** `python3 mbmm_master.py --models reram_22nm_1t1r_slc --trace gcc_spec2017.nvt --cycles 66666667 --queue-size 32` (this still uses the old trace; the point is the pipeline runs end to end). Expected: exit 0; `results/system/stats_reram_22nm_1t1r_slc_full_dimm_gcc_spec2017.out` contains `capacity is 8192 MB`, no `Could not find Decoder` warning, no `EnduranceDist is not set`, and `wearTotalWrites` lines present. Then restore the frozen results: `cp -r results/archive_2026-09_pre_revision/system/. results/system/ && cp results/archive_2026-09_pre_revision/hardware_metrics.json results/` (the pre-revision live tree must not be overwritten before Phase 4).
+- [x] **Step 5: Gatekeeper run.** `python3 mbmm_master.py --models reram_22nm_1t1r_slc --trace gcc_spec2017.nvt --cycles 66666667 --queue-size 32` (this still uses the old trace; the point is the pipeline runs end to end). Expected: exit 0; `results/system/stats_reram_22nm_1t1r_slc_full_dimm_gcc_spec2017.out` contains `capacity is 8192 MB`, no `Could not find Decoder` warning, no `EnduranceDist is not set`, and `wearTotalWrites` lines present. Then restore the frozen results: `cp -r results/archive_2026-09_pre_revision/system/. results/system/ && cp results/archive_2026-09_pre_revision/hardware_metrics.json results/` (the pre-revision live tree must not be overwritten before Phase 4).
 
 - [ ] **Step 6: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add 3_gen_nvmain_config.py tests && git commit -m "[T2.2] Generator: charge read latency once, validate timings, match capacity to the module, endurance and decoder keys, drop dead keys"`
 
@@ -515,9 +515,9 @@ Check the arithmetic against NVMain's capacity print (`capacity is ... MB`) in S
 - Behavior: `cycles_for(model) = ceil(window_ns * CLK_MHz / 1000)` where CLK is read from the model's config (`CLK` line), replacing the single `--cycles` (kept as an override with a warning). Every model then admits the identical trace window.
 - `dram_models` becomes `[args.ddr5_model]` plus PCM; the 2D/3D DRAM examples are dropped from the default run (they are excluded from every figure already).
 
-- [ ] **Step 1: Write the failing test** in `tests/test_mbmm_master.py`: `cycles_for("reram_22nm_1t1r_slc_full_dimm", window_ns=250e6)` returns 200,000,000 when the config says CLK 800; for CLK 2400 returns 600,000,000; for CLK 400 returns 100,000,000. Run, expect failure.
-- [ ] **Step 2: Implement** `cycles_for(model_name, window_ns)` reading `simulators/nvmain/Config/{model}.config`, and replace the `--cycles` uses at the `4_execute_simulation.py` calls (lines 383-386 and 395-400). Pass `--channels/--decoder/--endurance-model` to the generator call at line 355.
-- [ ] **Step 3: Tests pass**; then gatekeeper: `python3 mbmm_master.py --models reram_22nm_1t1r_slc --trace gpt2_ifmap.nvt --window-ns 250000000`. Expected: log shows `cycles=200000000` for ReRAM, `600000000` for DDR5, `100000000` for PCM; exit 0. Restore frozen results afterwards as in T2.2 step 5.
+- [x] **Step 1: Write the failing test** in `tests/test_mbmm_master.py`: `cycles_for("reram_22nm_1t1r_slc_full_dimm", window_ns=250e6)` returns 200,000,000 when the config says CLK 800; for CLK 2400 returns 600,000,000; for CLK 400 returns 100,000,000. Run, expect failure.
+- [x] **Step 2: Implement** `cycles_for(model_name, window_ns)` reading `simulators/nvmain/Config/{model}.config`, and replace the `--cycles` uses at the `4_execute_simulation.py` calls (lines 383-386 and 395-400). Pass `--channels/--decoder/--endurance-model` to the generator call at line 355.
+- [x] **Step 3: Tests pass**; then gatekeeper: `python3 mbmm_master.py --models reram_22nm_1t1r_slc --trace gpt2_ifmap.nvt --window-ns 250000000`. Expected: log shows `cycles=200000000` for ReRAM, `600000000` for DDR5, `100000000` for PCM; exit 0. Restore frozen results afterwards as in T2.2 step 5.
 - [ ] **Step 4: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add mbmm_master.py tests/test_mbmm_master.py && git commit -m "[T2.3] Master: matched trace window in ns, per-CLK cycle budgets, config pass-through"`
 
 ### Task T2.4: DDR5 baseline: honest subchannel config, cross-check config, divergence check
@@ -527,12 +527,12 @@ Check the arithmetic against NVMain's capacity print (`capacity is ... MB`) in S
 - Delete: `configs/DDR5_4800_DRAM.config` (stale; record in `Review_Fixes_Tracker.md`)
 - Modify: `simulators/nvmain/Config/` gets copies of the two new files (the pipeline reads from there, `4_execute_simulation.py:108`); `process_metrics.py:53-63,74-84` and `visualize_*.py` label tables gain the two names (map both to technology `DDR5_4800`, with `Architecture` = `subchannel` / `64B`).
 
-- [ ] **Step 1: Write the subchannel config** from the live `simulators/nvmain/Config/DDR5_4800_DRAM.config` with these keys changed: `BusWidth 32`, `DeviceWidth 8`, `tBURST 8`, `tCCD 8`, `CHANNELS 2`, `RANKS 1`, `BANKS 32`, `ROWS 65536`, `COLS 64`, keep `CLK 2400`, `CPUFreq 3000`, `tCAS 40`, `tRCD 39`, `tRP 39`, `tRFC 708`, `tREFI 9375`, `EnergyModel current`, and remove `BurstLength` (dead key). Header comment: "Two independent 32-bit subchannels at BL16 = 64 B per access (JESD79-5); capacity 65536 x 64 x 64 B x 32 x 1 x 2 = 16 GiB."
-- [ ] **Step 2: Write the 64B cross-check config**: the live file unchanged except `tBURST 4`, `tCCD 4`, and `BurstLength` removed. Header: "Minimal correction only: same channel shape as the 3 September baseline, 64-byte access."
-- [ ] **Step 3: Write `tools/check_live_configs.py`**: for every `configs/*.config` there must be a byte-identical `simulators/nvmain/Config/<name>.config`; print differences and exit 1 otherwise. Add its invocation at the start of `mbmm_master.py` stage 4 (fail fast).
-- [ ] **Step 4: Verify capacity and timing**: run each new config on gpt2 for 20000 cycles; expected `capacity is 16384 MB` for the subchannel config, no segfault (exit 0) for both, and for the 64B config `bank0.bandwidth` about half of the old value on identical traffic.
-- [ ] **Step 5: Delete the stale file, record it**: append to `Review_Fixes_Tracker.md` change log: "2026-09: deleted `configs/DDR5_4800_DRAM.config` (34-34-34, tRFC 840, never read by the pipeline; the live file is `simulators/nvmain/Config/DDR5_4800_DRAM.config`); replaced by `DDR5_4800_DRAM_subchannel.config` (primary) and `DDR5_4800_DRAM_64B.config` (cross-check), both tracked and checked by `tools/check_live_configs.py`."
-- [ ] **Step 6: Gatekeeper**: `python3 mbmm_master.py --models reram_22nm_1t1r_slc --trace gpt2_ifmap.nvt --ddr5-model DDR5_4800_DRAM_subchannel` exit 0 and both DDR5 stats files produced. Restore frozen results.
+- [x] **Step 1: Write the subchannel config** from the live `simulators/nvmain/Config/DDR5_4800_DRAM.config` with these keys changed: `BusWidth 32`, `DeviceWidth 8`, `tBURST 8`, `tCCD 8`, `CHANNELS 2`, `RANKS 1`, `BANKS 32`, `ROWS 65536`, `COLS 64`, keep `CLK 2400`, `CPUFreq 3000`, `tCAS 40`, `tRCD 39`, `tRP 39`, `tRFC 708`, `tREFI 9375`, `EnergyModel current`, and remove `BurstLength` (dead key). Header comment: "Two independent 32-bit subchannels at BL16 = 64 B per access (JESD79-5); capacity 65536 x 64 x 64 B x 32 x 1 x 2 = 16 GiB."
+- [x] **Step 2: Write the 64B cross-check config**: the live file unchanged except `tBURST 4`, `tCCD 4`, and `BurstLength` removed. Header: "Minimal correction only: same channel shape as the 3 September baseline, 64-byte access."
+- [x] **Step 3: Write `tools/check_live_configs.py`**: for every `configs/*.config` there must be a byte-identical `simulators/nvmain/Config/<name>.config`; print differences and exit 1 otherwise. Add its invocation at the start of `mbmm_master.py` stage 4 (fail fast).
+- [x] **Step 4: Verify capacity and timing**: run each new config on gpt2 for 20000 cycles; expected `capacity is 16384 MB` for the subchannel config, no segfault (exit 0) for both, and for the 64B config `bank0.bandwidth` about half of the old value on identical traffic.
+- [x] **Step 5: Delete the stale file, record it**: append to `Review_Fixes_Tracker.md` change log: "2026-09: deleted `configs/DDR5_4800_DRAM.config` (34-34-34, tRFC 840, never read by the pipeline; the live file is `simulators/nvmain/Config/DDR5_4800_DRAM.config`); replaced by `DDR5_4800_DRAM_subchannel.config` (primary) and `DDR5_4800_DRAM_64B.config` (cross-check), both tracked and checked by `tools/check_live_configs.py`."
+- [x] **Step 6: Gatekeeper**: `python3 mbmm_master.py --models reram_22nm_1t1r_slc --trace gpt2_ifmap.nvt --ddr5-model DDR5_4800_DRAM_subchannel` exit 0 and both DDR5 stats files produced. Restore frozen results.
 - [ ] **Step 7: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add configs tools/check_live_configs.py simulators/nvmain/Config/DDR5_4800_DRAM_subchannel.config simulators/nvmain/Config/DDR5_4800_DRAM_64B.config process_metrics.py visualize_results.py visualize_hero_graphs.py visualize_pareto.py visualize_slides.py documents/MBMM_Book_Typst/Review_Fixes_Tracker.md && git rm configs/DDR5_4800_DRAM.config && git commit -m "[T2.4] DDR5 baseline: subchannel config (64 B per access), 64B cross-check, live-config divergence check; drop stale config"`
 
 ### Task T2.5: Delivered bandwidth and new statistics in the CSVs
@@ -544,9 +544,9 @@ Check the arithmetic against NVMain's capacity print (`capacity is ... MB`) in S
 - `5_summary_report.py`: column `Delivered BW (MB/s)` = `(mem_reads + mem_writes) * 64 / (simulation_cycles * 1000/CLK ns)`, summed over channels; NVMain's `bank0.bandwidth` printed as `NVMain BW (x-check)`.
 - `process_metrics.py`: new CSV columns `E2E_Latency_ns` (from `averageEndToEndLatency` x cycle time), `Delivered_BW_MBps`, `Wear_Max_Writes`, `Wear_HotSpot_Factor` (DIMM-wide: max of `wearMaxWrites` over `sum(wearTotalWrites)/touched locations`), `Completed_Requests`.
 
-- [ ] **Step 1: Failing test** `tests/test_process_metrics.py`: feed a 30-line synthetic stats text with two channels, known `mem_reads`, `CLK 800`, `simulation_cycles`, `averageEndToEndLatency`, and two subarrays with `wearMaxWrites`/`wearTotalWrites`/`wearLocations`; assert the four derived values.
-- [ ] **Step 2: Implement** the extractors next to `extract_queue_latency` (line 186) following its regex style; add columns to the two writers; extend `5_summary_report.py` patterns and the printed table.
-- [ ] **Step 3: Tests pass; gatekeeper** (`--models reram_22nm_1t1r_slc --trace gpt2_ifmap.nvt`): `results/processed_bar_chart_metrics.csv` has the new columns populated for the ReRAM rows. Restore frozen results.
+- [x] **Step 1: Failing test** `tests/test_process_metrics.py`: feed a 30-line synthetic stats text with two channels, known `mem_reads`, `CLK 800`, `simulation_cycles`, `averageEndToEndLatency`, and two subarrays with `wearMaxWrites`/`wearTotalWrites`/`wearLocations`; assert the four derived values.
+- [x] **Step 2: Implement** the extractors next to `extract_queue_latency` (line 186) following its regex style; add columns to the two writers; extend `5_summary_report.py` patterns and the printed table.
+- [x] **Step 3: Tests pass; gatekeeper** (`--models reram_22nm_1t1r_slc --trace gpt2_ifmap.nvt`): `results/processed_bar_chart_metrics.csv` has the new columns populated for the ReRAM rows. Restore frozen results.
 - [ ] **Step 4: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add 5_summary_report.py process_metrics.py tests/test_process_metrics.py && git commit -m "[T2.5] Delivered bandwidth, end-to-end latency and wear statistics in reports and CSVs"`
 
 ### Task T2.6: NVSim forced organization
@@ -560,11 +560,11 @@ Check the arithmetic against NVMain's capacity print (`capacity is ... MB`) in S
 - `1_run_nvsim_hardware.py` success gate additionally requires the literal `2048 Rows x 2048 Columns` (or `1024 Rows x 1024 Columns` for `_1024` cfgs) in stdout; a missing `-ForceBank` key prints `cannot be found` and must fail the run.
 - `2_extract_hardware_metrics.py` records `subarray_rows`, `subarray_cols`, `mats`, `mux` from the NVSim output into `hardware_metrics.json`.
 
-- [ ] **Step 1: Edit the four base cfgs** (trailing newline first; the smoke test in `research_notes/calibration_runs/rerun_smoke/*.cfg` is the template).
-- [ ] **Step 2: Add the organization gate** in `1_run_nvsim_hardware.py` and the extraction fields in `2_extract_hardware_metrics.py` (regex `(\d+) Rows x (\d+) Columns`, `Bank Organization: (\d+) x (\d+)`, `Mux: (\d+)` per the NVSim output format in `calibration_runs/rerun_smoke/out/ours_1t1r.txt`).
-- [ ] **Step 3: Run NVSim for both cells**: `python3 1_run_nvsim_hardware.py --models configs/reram_22nm_1t1r_slc.cfg configs/reram_22nm_selector_slc.cfg && python3 2_extract_hardware_metrics.py`
+- [x] **Step 1: Edit the four base cfgs** (trailing newline first; the smoke test in `research_notes/calibration_runs/rerun_smoke/*.cfg` is the template).
+- [x] **Step 2: Add the organization gate** in `1_run_nvsim_hardware.py` and the extraction fields in `2_extract_hardware_metrics.py` (regex `(\d+) Rows x (\d+) Columns`, `Bank Organization: (\d+) x (\d+)`, `Mux: (\d+)` per the NVSim output format in `calibration_runs/rerun_smoke/out/ours_1t1r.txt`).
+- [x] **Step 3: Run NVSim for both cells**: `python3 1_run_nvsim_hardware.py --models configs/reram_22nm_1t1r_slc.cfg configs/reram_22nm_selector_slc.cfg && python3 2_extract_hardware_metrics.py`
 Expected in `results/hardware_metrics.json`: 1T1R area 12.008 mm², leakage 108.384 mW, read 10.120 ns, write 15.260 ns; 1S1R area 3.540 mm², leakage 108.384 mW, read 4.702 ns, write 24.589 ns; `subarray_rows == 2048` for both.
-- [ ] **Step 4: Negative test**: temporarily strip the trailing newline from a scratch copy of a cfg, run `1_run_nvsim_hardware.py --models <copy>`; expected: the script fails with the organization message, not exit 0.
+- [x] **Step 4: Negative test**: temporarily strip the trailing newline from a scratch copy of a cfg, run `1_run_nvsim_hardware.py --models <copy>`; expected: the script fails with the organization message, not exit 0.
 - [ ] **Step 5: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add configs 1_run_nvsim_hardware.py 2_extract_hardware_metrics.py && git commit -m "[T2.6] NVSim: forced 2048x2048 mux 64 organization for both cells, organization gate, subarray fields"`
 
 ### Task T2.7: Analytic selector layer for 1S1R
@@ -577,9 +577,9 @@ Expected in `results/hardware_metrics.json`: 1T1R area 12.008 mm², leakage 108.
 - Two parameter sets, both bounds reported: `OTS`: k = 1e4, I_on 100 uA (Zhou Table I defaults, handbook OTS Ioff 10 nA at Vth/2); `FAST`: k = 1e6, sneak below 0.1 nA per selector (Crossbar, MEMSYS 2019).
 - Output: `results/selector_layer.json` with, per bound: leakage to add to the NVSim chip leakage (W per chip, and per full DIMM), read margin at N = 2048, and the tile-validity verdict.
 
-- [ ] **Step 1: Failing tests**: `tile_valid(100e-6, 10e-9)` is True for side 1666 and False for 2048; `read_margin(512, 1e3, ...)` is about 0.02-0.05 (Zhou Fig. 3b/9 reading) and `read_margin(256, 1e4, ...)` about 0.10; `sneak_leakage_w` scales linearly with cells and lines.
-- [ ] **Step 2: Implement** with the formulas cited inline (paper, equation, page). Keep it under 150 lines.
-- [ ] **Step 3: Tests pass; run** `python3 selector_layer.py --hardware results/hardware_metrics.json` and read `results/selector_layer.json`. Record both bounds in the tracker.
+- [x] **Step 1: Failing tests**: `tile_valid(100e-6, 10e-9)` is True for side 1666 and False for 2048; `read_margin(512, 1e3, ...)` is about 0.02-0.05 (Zhou Fig. 3b/9 reading) and `read_margin(256, 1e4, ...)` about 0.10; `sneak_leakage_w` scales linearly with cells and lines.
+- [x] **Step 2: Implement** with the formulas cited inline (paper, equation, page). Keep it under 150 lines.
+- [x] **Step 3: Tests pass; run** `python3 selector_layer.py --hardware results/hardware_metrics.json` and read `results/selector_layer.json`. Record both bounds in the tracker.
 - [ ] **Step 4: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add selector_layer.py tests/test_selector_layer.py && git commit -m "[T2.7] Analytic 1S1R selector layer: sneak leakage, read margin, tile validity at two selector bounds"`
 
 ### Task T2.8: Microsecond-silicon sensitivity configs
@@ -591,8 +591,8 @@ Expected in `results/hardware_metrics.json`: 1T1R area 12.008 mm², leakage 108.
 - Same template as the generator's full-DIMM output at CLK 800, but `tRCD + tCAS` = chip read latency and `tWR` = chip write latency: Micron 1T1R read 2.3 us / write 11.7 us (Zahurak IEDM 2014 Table 1) gives tRCD 920 + tCAS 920, tWR 9360; SanDisk 1S1R read 40 us / write 230 us (Liu JSSC 2014 Table II) gives tRCD 16000 + tCAS 16000, tWR 184000. Energies and leakage stay NVSim's (the point is timing only), and the header says so.
 - `mbmm_master.py --silicon` runs both on every trace; `process_metrics.py` classifies them as `1T1R_SILICON` and `1S1R_SILICON`.
 
-- [ ] **Step 1: Write the two configs** (from a generated full-DIMM config, with a header citing the two papers and page numbers).
-- [ ] **Step 2: Smoke run** each on gpt2 for 200000 cycles: exit 0, `averageTotalLatency` in the thousands of cycles.
+- [x] **Step 1: Write the two configs** (from a generated full-DIMM config, with a header citing the two papers and page numbers).
+- [x] **Step 2: Smoke run** each on gpt2 for 200000 cycles: exit 0, `averageTotalLatency` in the thousands of cycles.
 - [ ] **Step 3: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add configs/silicon mbmm_master.py process_metrics.py && git commit -m "[T2.8] Microsecond-silicon sensitivity configs from fabricated-chip latencies"`
 
 ---
@@ -611,9 +611,9 @@ Expected in `results/hardware_metrics.json`: 1T1R area 12.008 mm², leakage 108.
 - Time: tick (ps) to NVMain cycle `round(tick_ps * cpufreq_mhz / 1e6)`; `--region o3` keeps ticks at or after the "Switched CPUS @ tick N" line in stdout plus `--skip-ns`; timestamps are rebased to 0 and asserted monotonic.
 - Output line: `{cycle} {op} 0x{addr:x} {128 zeros} 0` (unchanged NVMain format). Sidecar JSON: source files, gem5 command (from stdout head), switch tick, region, skip, unit `"cycle = 1/3000 us (CPUFreq 3000 MHz)"`, record count, read/write counts, first/last cycle, 64-byte alignment fraction, dropped-line counts by type.
 
-- [ ] **Step 1: Write the fixture and failing tests.** Fixture: 12 hand-written lines: two `recvAtomic` (ticks 1000, 2500), one `recvTimingReq` ReadSharedReq size 64 at tick 600000000500 with its `Access to`/`Command for`/`Responding to` companions, one WritebackDirty, one `queue full` retry pair, one unrelated `system.l2` line. Tests: (a) output has exactly the real requests (4 with region all, 2 with region o3 given a fake stdout "Switched CPUS @ tick 600000000000"); (b) ops mapped R/W; (c) cycle = tick*3/1000 rounded, rebased; (d) unknown command raises; (e) sidecar counts match.
-- [ ] **Step 2: Run tests, expect failures.** `python3 -m pytest tests/test_parse_gem5_memctrl.py -v`
-- [ ] **Step 3: Implement** (about 120 lines; regexes: `^\s*(\d+):\s+(\S*mem_ctrl\S*):\s+recvAtomic:\s+(\w+)\s+0x([0-9a-f]+)` and `^\s*(\d+):\s+(\S*mem_ctrl\S*):\s+recvTimingReq:\s+request\s+(\w+)\s+addr\s+0x([0-9a-f]+)\s+size\s+(\d+)`).
+- [x] **Step 1: Write the fixture and failing tests.** Fixture: 12 hand-written lines: two `recvAtomic` (ticks 1000, 2500), one `recvTimingReq` ReadSharedReq size 64 at tick 600000000500 with its `Access to`/`Command for`/`Responding to` companions, one WritebackDirty, one `queue full` retry pair, one unrelated `system.l2` line. Tests: (a) output has exactly the real requests (4 with region all, 2 with region o3 given a fake stdout "Switched CPUS @ tick 600000000000"); (b) ops mapped R/W; (c) cycle = tick*3/1000 rounded, rebased; (d) unknown command raises; (e) sidecar counts match.
+- [x] **Step 2: Run tests, expect failures.** `python3 -m pytest tests/test_parse_gem5_memctrl.py -v`
+- [x] **Step 3: Implement** (about 120 lines; regexes: `^\s*(\d+):\s+(\S*mem_ctrl\S*):\s+recvAtomic:\s+(\w+)\s+0x([0-9a-f]+)` and `^\s*(\d+):\s+(\S*mem_ctrl\S*):\s+recvTimingReq:\s+request\s+(\w+)\s+addr\s+0x([0-9a-f]+)\s+size\s+(\d+)`).
 - [ ] **Step 4: Tests pass. Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add parse_gem5_memctrl.py tests && git commit -m "[T3.1] gem5 MemCtrl trace parser with provenance sidecar"`
 
 ### Task T3.2: STREAM trace (assistant runs it)
@@ -621,17 +621,17 @@ Expected in `results/hardware_metrics.json`: 1T1R area 12.008 mm², leakage 108.
 **Files:**
 - Modify: nothing tracked; produces `benchmarks/stream.nvt` (git-ignored) and `benchmarks/stream.sidecar.json` (tracked: add `!benchmarks/*.sidecar.json` to `.gitignore`)
 
-- [ ] **Step 1: Build STREAM static, OpenMP off**: `cd /home/yuvalk/MBMM/benchmarks && gcc -O2 -static -DSTREAM_ARRAY_SIZE=10000000 -DNTIMES=10 -o stream_bin/stream_static stream.c && ls -la stream_bin/stream_static` (default 10M doubles = 80 MB per array).
-- [ ] **Step 2: Run gem5** (same recipe as SPEC, scaled so the detailed region covers 200 ms):
+- [x] **Step 1: Build STREAM static, OpenMP off**: `cd /home/yuvalk/MBMM/benchmarks && gcc -O2 -static -DSTREAM_ARRAY_SIZE=10000000 -DNTIMES=10 -o stream_bin/stream_static stream.c && ls -la stream_bin/stream_static` (default 10M doubles = 80 MB per array).
+- [x] **Step 2: Run gem5** (same recipe as SPEC, scaled so the detailed region covers 200 ms):
 ```bash
 cd /home/yuvalk/MBMM/benchmarks && /home/yuvalk/MBMM/simulators/gem5/build/X86/gem5.opt --outdir=stream_bin/m5out --debug-flags=MemCtrl --debug-file=raw_trace.txt \
   /home/yuvalk/MBMM/simulators/gem5/configs/deprecated/example/se.py --cmd=stream_bin/stream_static \
   --cpu-type=X86O3CPU --caches --l2cache --fast-forward=500000000 --maxinsts=300000000 --mem-size=1GB > stream_bin/m5out/gem5_stdout.log 2>&1
 ```
 Expected: exit 0; stdout contains `Switched CPUS @ tick`; `raw_trace.txt` of order 1 GB.
-- [ ] **Step 3: Parse**: `python3 parse_gem5_memctrl.py --raw benchmarks/stream_bin/m5out/raw_trace.txt --stdout benchmarks/stream_bin/m5out/gem5_stdout.log --out benchmarks/stream.nvt --cpufreq-mhz 3000 --region o3 --skip-ns 10000000 --sidecar benchmarks/stream.sidecar.json`
+- [x] **Step 3: Parse**: `python3 parse_gem5_memctrl.py --raw benchmarks/stream_bin/m5out/raw_trace.txt --stdout benchmarks/stream_bin/m5out/gem5_stdout.log --out benchmarks/stream.nvt --cpufreq-mhz 3000 --region o3 --skip-ns 10000000 --sidecar benchmarks/stream.sidecar.json`
 Expected: sidecar shows about 3 reads per write (copy, scale, add, triad kernels), 100% 64-byte alignment, span at least 190 ms (570 M cycles).
-- [ ] **Step 4: Keep the raw log** (decision 35) at `benchmarks/stream_bin/m5out/raw_trace.txt` until Phase 6 ends.
+- [x] **Step 4: Keep the raw log** (decision 35) at `benchmarks/stream_bin/m5out/raw_trace.txt` until Phase 6 ends.
 
 ### Task T3.3: SCALE-Sim parser fix and AI traces
 
@@ -641,9 +641,9 @@ Expected: sidecar shows about 3 reads per write (copy, scale, add, triad kernels
 **Interfaces:**
 - Every address column of a CSV row is emitted (SCALE-Sim `Bandwidth: 10` rows carry up to 10 addresses); `-1` padding is skipped; op from the filename as before; cycle basis documented in a sidecar (`"1 SCALE-Sim cycle = 1 NVMain cycle at CPUFreq 3000 (0.333 ns); SCALE-Sim's own plots assume 2.4 GHz"`).
 
-- [ ] **Step 1: Fixture** (3 rows: cycle 5 with addresses `1024,1088,-1,-1`, cycle 7 with 10 addresses, cycle -3 first row to test rebasing) and failing tests: record count equals the number of non-negative addresses (12), no `-0x1` in output, first cycle is 0.
-- [ ] **Step 2: Implement** (loop over `parts[1:]`, skip values < 0), keep the OFMAP op rule, write the sidecar.
-- [ ] **Step 3: Regenerate**: `python3 parse_trace.py benchmarks/ml_trace_output/GoogleTPU_v1_os/layer0/IFMAP_DRAM_TRACE.csv benchmarks/gpt2_ifmap.nvt` and the AlexNet layer-1 IFMAP/OFMAP CSVs (rerun SCALE-Sim for AlexNet first: `cd simulators/SCALE-Sim && python3 scale.py -c configs/google.cfg -t topologies/conv_nets/alexnet.csv -p ../../benchmarks/ml_trace_output/alexnet` per its README; record the exact command in the sidecar).
+- [x] **Step 1: Fixture** (3 rows: cycle 5 with addresses `1024,1088,-1,-1`, cycle 7 with 10 addresses, cycle -3 first row to test rebasing) and failing tests: record count equals the number of non-negative addresses (12), no `-0x1` in output, first cycle is 0.
+- [x] **Step 2: Implement** (loop over `parts[1:]`, skip values < 0), keep the OFMAP op rule, write the sidecar.
+- [x] **Step 3: Regenerate**: `python3 parse_trace.py benchmarks/ml_trace_output/GoogleTPU_v1_os/layer0/IFMAP_DRAM_TRACE.csv benchmarks/gpt2_ifmap.nvt` and the AlexNet layer-1 IFMAP/OFMAP CSVs (rerun SCALE-Sim for AlexNet first: `cd simulators/SCALE-Sim && python3 scale.py -c configs/google.cfg -t topologies/conv_nets/alexnet.csv -p ../../benchmarks/ml_trace_output/alexnet` per its README; record the exact command in the sidecar).
 Expected: gpt2 record count about 65,540 (matches `DETAILED_ACCESS_REPORT.csv` DRAM reads), zero negative addresses in all three.
 - [ ] **Step 4: Hand the commit to the Lead**: `! cd /home/yuvalk/MBMM && git add parse_trace.py tests .gitignore benchmarks/*.sidecar.json && git commit -m "[T3.3] SCALE-Sim parser: keep every address, drop padding; AI traces regenerated"`
 
@@ -652,17 +652,17 @@ Expected: gpt2 record count about 65,540 (matches `DETAILED_ACCESS_REPORT.csv` D
 **Files:**
 - Produces: `benchmarks/gcc_spec2017.nvt`, `lbm_spec2017.nvt`, `mcf_spec2017.nvt` and sidecars; raw logs kept under `benchmarks/raw_logs/<bench>/` (git-ignored via `*_raw.txt`; add `benchmarks/raw_logs/` to `.gitignore`)
 
-- [ ] **Step 1: Locate the run directories without indexing**: the earlier runs used `/home/yuvalk/spec2017/benchspec/CPU/<id>/run/run_base_refrate_*` (per `cleanup_traces.sh:3`). Ask the Lead for the exact three run-directory paths and the `speccmds.cmd` argument line for each (602.gcc_s or 502.gcc_r, 619.lbm_s or 519.lbm_r, 505.mcf_r). Do not `find` or `ls -R` the suite.
-- [ ] **Step 2: Run gcc and lbm first** (each in its run directory, one command, kept in the sidecar):
+- [x] **Step 1: Locate the run directories without indexing**: the earlier runs used `/home/yuvalk/spec2017/benchspec/CPU/<id>/run/run_base_refrate_*` (per `cleanup_traces.sh:3`). Ask the Lead for the exact three run-directory paths and the `speccmds.cmd` argument line for each (602.gcc_s or 502.gcc_r, 619.lbm_s or 519.lbm_r, 505.mcf_r). Do not `find` or `ls -R` the suite.
+- [x] **Step 2: Run gcc and lbm first** (each in its run directory, one command, kept in the sidecar):
 ```bash
 /home/yuvalk/MBMM/simulators/gem5/build/X86/gem5.opt --outdir=/home/yuvalk/MBMM/benchmarks/raw_logs/<bench> --debug-flags=MemCtrl --debug-file=raw_trace.txt \
   /home/yuvalk/MBMM/simulators/gem5/configs/deprecated/example/se.py --cmd=./<binary> --options="<args from speccmds.cmd>" \
   --cpu-type=X86O3CPU --caches --l2cache --fast-forward=500000000 --maxinsts=300000000 --mem-size=8GB > /home/yuvalk/MBMM/benchmarks/raw_logs/<bench>/gem5_stdout.log 2>&1
 ```
 Expected: 30-60 min each; `Switched CPUS @ tick` present; LBM log of order 2.5 GB.
-- [ ] **Step 3: Parse both** with `--region o3 --skip-ns 10000000` as in T3.2; expected sidecar spans of at least 190 ms and 100% alignment.
-- [ ] **Step 4: Run mcf the same way**, then parse.
-- [ ] **Step 5: Record in the tracker** the three commands, wall times, log sizes and sidecar summaries. The SPEC exception ends when T3.5 accepts the traces; note the date in `MBMM/CLAUDE.md` guardrail 3.
+- [x] **Step 3: Parse both** with `--region o3 --skip-ns 10000000` as in T3.2; expected sidecar spans of at least 190 ms and 100% alignment.
+- [ ] **Step 4: Run mcf the same way**, then parse. PARKED 2026-09-20: gem5 panics inside mcf's input reader; needs a rebuilt binary from the Lead and a new SPEC grant.
+- [x] **Step 5: Record in the tracker** the three commands, wall times, log sizes and sidecar summaries. The SPEC exception ends when T3.5 accepts the traces; note the date in `MBMM/CLAUDE.md` guardrail 3.
 
 ### Task T3.5: Trace validation
 
@@ -672,9 +672,9 @@ Expected: 30-60 min each; `Switched CPUS @ tick` present; LBM log of order 2.5 G
 **Interfaces:**
 - `validate_trace.py benchmarks/<name>.nvt --sidecar benchmarks/<name>.sidecar.json --window-ns 250000000`: checks monotonic timestamps, 5 fields per line, 128-char data, 64-byte alignment (SPEC and STREAM must be 100%; AI traces reported), no negative addresses, span covers the window (or reports the shortfall), and prints reads/writes inside the window. Exit 1 on any hard failure.
 
-- [ ] **Step 1: Failing tests** on three tiny fixtures (good, non-monotonic, misaligned).
-- [ ] **Step 2: Implement; tests pass.**
-- [ ] **Step 3: Validate all seven traces**; paste the summary table (trace, records, reads, writes in window, span ms, alignment) into the tracker. Acceptance = all seven pass. Then edit `MBMM/CLAUDE.md` guardrail 3 to "ended <date>" and hand the commit: `! cd /home/yuvalk/MBMM && git add tools/validate_trace.py tests CLAUDE.md benchmarks/*.sidecar.json .gitignore && git commit -m "[T3.5] Trace validation; regenerated traces accepted; SPEC exception closed"`
+- [x] **Step 1: Failing tests** on three tiny fixtures (good, non-monotonic, misaligned).
+- [x] **Step 2: Implement; tests pass.**
+- [x] **Step 3: Validate all seven traces**; paste the summary table (trace, records, reads, writes in window, span ms, alignment) into the tracker. Acceptance = all seven pass. Then edit `MBMM/CLAUDE.md` guardrail 3 to "ended <date>" and hand the commit: `! cd /home/yuvalk/MBMM && git add tools/validate_trace.py tests CLAUDE.md benchmarks/*.sidecar.json .gitignore && git commit -m "[T3.5] Trace validation; regenerated traces accepted; SPEC exception closed"`
 
 ---
 
@@ -795,7 +795,7 @@ Work through this list in order, ticking each; every number comes from `results/
 
 ## Verification (end to end)
 
-1. `python3 -m pytest tests -v`: all tests pass.
+1. `python3 -m pytest tests -v -m ""`: all tests pass, including the slow-marked ones that `pytest.ini` deselects by default.
 2. `tools/nvmain_regress.sh`: PASS x3 against the pre-patch golden files.
 3. `tools/check_live_configs.py`: exit 0.
 4. `tools/validate_trace.py` on all seven traces: pass.
@@ -823,3 +823,18 @@ Book figures 1-17, 25, 27 and Tables 2-7 of the 3 September version came from `r
 
 2026-09-18: plan approved; Phase 0 started.
 2026-09-18: T1.4 Start-Gap decoder done (faithful Qureshi 2009 mapping after the plan's remap was found non-bijective; boundary-alias stat added on review); T1.5 NVSim patch log corrected. Phase 1 complete; commits for T1.4/T1.5 handed to the Lead. Phase 2 starts with T2.1/T2.2.
+2026-09-18: T2.1/T2.2 generator done: read latency charged once (tRCD 13 + tCAS 13 at 800 MHz for 1T1R SLC), fatal validation, capacity 8192 MB (was 512 GB), MATHeight = NVSim subarray rows (NVMain's stale 65536 default segfaulted at the corrected ROWS), endurance and decoder keys, dead keys dropped. 7 tests pass.
+2026-09-19: T2.3 master done: --window-ns gives every model the same 250 ms window (200M/600M/100M cycles at CLK 800/2400/400, exact integer rounding). Found and fixed: 4_execute_simulation.py skipped PCM silently (native models were detected only by 'DRAM' in the name) and the master always exited 0; failures now propagate. 25 tests pass.
+2026-09-19: T2.4 DDR5 baseline done: two-subchannel config (BusWidth 32, BL16, 64 B per access, 8192 MB x 2 channels) and a 64B cross-check; stale configs/ copy deleted; check_live_configs.py wired into the master. Plan defect corrected: both DDR5 variants are full_dimm rows (the plan's variant tags would have dropped DDR5 from every full-DIMM figure); process_metrics now refuses duplicate rows, so T5.1 must start from an emptied results/system. Found: the old live DDR5 config modeled 32 GiB, not 16. 46 tests pass.
+2026-09-19: T2.5 done: five new CSV columns (E2E_Latency_ns, Delivered_BW_MBps, Completed_Requests, Wear_Max_Writes, Wear_HotSpot_Factor). Two plan defects corrected: elapsed time is NVMain's exit cycle on the 3000 MHz CPU clock, not the memory clock; and every cycles-to-ns conversion now reads the clocks from the stats file itself (the fixed per-technology table would have reported a 2400 MHz ReRAM run 3x too slow). Post-processing scripts now exit non-zero on any unparsable stats file. 89 tests pass.
+2026-09-19: T2.6 done: both cells forced to 2048x2048 subarrays at mux 64; NVSim gives 1T1R 12.008 mm2 / 108.384 mW / 10.120 ns read / 15.260 ns write and 1S1R 3.540 mm2 / 108.384 mW / 4.702 / 24.589 (identical leakage: the 47x gap is gone). Organization gate (anchored match) in both NVSim call sites via nvsim_common.py; a misspelled -ForceBank now fails the run. Found and fixed: stale per-architecture NVSim result files polluted hardware_metrics.json on every second run and produced bogus double-suffixed NVMain configs. Negative-test note: a cfg without a trailing newline is parsed fine; the real trap is appending a key to such a file (nvsim CLAUDE.md corrected). New device metrics kept at results/rev2026-09_staging/. 101 tests pass.
+2026-09-20: T2.7 selector layer done. At a 2048-cell side: OTS bound tile NOT VALID (max side 1666), 7.56 mW per chip access-time sneak, margin 24.0%; FAST bound VALID, 0.076 mW, margin 23.2%. Standby adder zero. 1S1R at 2048x2048 is therefore conditional on selector quality; the book must say so. My '10% at 256' target was a misreading of Zhou Fig. 3(b) (6.8%).
+2026-09-20: T2.8 done and Phase 2 complete. Silicon sensitivity configs are generated (not static) from Zahurak IEDM 2014 Table 1 (2.3 / 11.7 us) and Liu JSSC 2014 Table II (40 / 230 us): tRCD+tCAS 1840 and 32000 cycles, tWR 9360 and 184000 at 800 MHz. Plan defect fixed: --channels 2 crashed the generator (rows were halved below the subarray height); channels now split ranks (full DIMM: 4 ranks x 2 channels, capacity unchanged); one-rank modules stay at one channel. 197 tests pass (+1 slow). Next: Phase 3 traces; needs the three SPEC run-directory paths and command lines from the Lead.
+2026-09-20: T3.4 step 1 done at the Lead's request: no SPEC run directories exist; March runs were launched from data/refrate/input of 502.gcc_r / 505.mcf_r / 519.lbm_r; exact command lines recovered from gem5's config.ini (see trace_timebase_investigation.md section 8). The March mcf attempt died at 0.13 ms, so mcf has never been traced.
+2026-09-20: T3.1 parser done (v1.2.0). On a real gem5 log its detailed-region counts equal gem5's own mem_ctrls.readReqs / writeReqs exactly (55,556 / 23,657), and the old parser's rule would have kept 4.0x as many lines. Exact integer tick-to-cycle conversion at CPUFreq 3000, regions all/ff/o3, per-controller retry drops settled by tick, full line accounting, atomic write with a provenance sidecar, never overwrites without --force. T3.2 STREAM gem5 run started 08:19 (detached), artifacts under benchmarks/raw_logs/stream/.
+2026-09-20: T3.3 done. AI traces regenerated with every address kept and padding dropped: GPT-2 IFMAP 6,554 -> 65,536 (10.0x), AlexNet layer1 IFMAP 184,320 -> 1,269,600 (6.9x; 31% of slots were padding, previously written as -0x1), AlexNet layer1 OFMAP 13,543 -> 135,424 (10.0x); all match SCALE-Sim's access report. Provenance closed: the old AlexNet traces are reproduced byte for byte from SCALE-Sim folder layer1 (zero-indexed: AlexNet's SECOND convolution layer), so that is the layer every earlier result used. Old traces preserved under benchmarks/pre_revision_2026-09/; the regression harness now replays a tracked gzip copy of the frozen GPT-2 trace.
+2026-09-20: T3.4 gcc and lbm gem5 runs started 09:15 (detached, from data/refrate/input, 8 GB, ff 500M + 300M detailed). mcf PARKED: gem5 panics 0.13 ms in, inside mcf's input reader (a node index parsed from inp.in comes back as about 2^55), the same failure as the March attempt; fixing it needs a rebuilt binary, which only the Lead can produce. The revision proceeds with six traces.
+2026-09-20: gem5 runs finished, all exit 0: STREAM (94 min, detailed region 1.482 s), gcc (33 min, 0.216 s), lbm (35 min, 0.494 s). gcc and lbm switched CPUs at exactly the March ticks, so the runs are reproducible. gcc's detailed region is shorter than skip + window, so gcc is being rerun with 400M detailed instructions. lbm and STREAM are being parsed into benchmarks/rev2026-09_staging/.
+2026-09-20: new lbm trace validated (staging): 10.78 M records over 484 ms, every request accounted for against gem5's own counters (kept + skipped = 11,001,972 = readReqs + writeReqs), 100% aligned, no duplicates. Window write rate 9.54 M writes/s: the steady state the endurance deep dive predicted, against 27.9 M/s in the old start-up window.
+2026-09-20: all three gem5 traces parsed and validated against the full 250 ms window (staging folder), each reconciling EXACTLY with gem5's own memory-controller request counters: gcc 545,566 records (220,776 writes in window, 0.88 M/s), lbm 10.78 M (2.38 M writes, 9.54 M/s), STREAM 48.4 M (2.00 M writes, 7.99 M/s; 2 reads per write). gcc needed a rerun with 400M detailed instructions (277.5 ms). Parser fix: gem5 prints address zero as a bare 0; the fail-loud rule caught it.
+2026-09-20: PHASE 3 COMPLETE with six traces. Old gcc/lbm/STREAM traces preserved under benchmarks/pre_revision_2026-09/, regenerated ones swapped in with sidecars; all six pass validation in place. SPEC exception closed in both CLAUDE.md files with a usage record. T5.3 endurance tools complete and independently verified (model within 0.3% of a write-by-write simulator; required endurance is an exact inverse of lifetime). Next: Phase 4 pilot.
