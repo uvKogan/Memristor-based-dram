@@ -1,0 +1,41 @@
+{
+  "addresses": {
+    "aligned_64b_fraction": 0.015625,
+    "distinct_64b_lines": 1024,
+    "max": "0xffff",
+    "min": "0x0",
+    "records_sharing_line_with_previous": 2,
+    "span_bytes": 65535
+  },
+  "argv": [
+    "benchmarks/ml_trace_output/GoogleTPU_v1_os/layer0/IFMAP_DRAM_TRACE.csv",
+    "benchmarks/gpt2_ifmap.nvt",
+    "--force",
+    "--scalesim-cmd",
+    "python3 scale.py -c configs/google.cfg -t topologies/GEMM_mnk/gpt2.csv -i gemm -p ../../benchmarks/ml_trace_output",
+    "--note",
+    "scalesim_layer_folder=layer0"
+  ],
+  "cycles": {
+    "first_cycle": 0,
+    "last_cycle": 6553,
+    "rebase_offset": 6554
+  },
+  "op": "R",
+  "op_rule": "W if 'OFMAP' appears in the input filename (case-insensitive), else R",
+  "padding_skipped": 4,
+  "parser": "parse_trace.py",
+  "parser_version": "2.1.0",
+  "reads": 65536,
+  "records_written": 65536,
+  "rows_read": 6554,
+  "scalesim_layer_folder": "layer0",
+  "source": {
+    "csv_path": "benchmarks/ml_trace_output/GoogleTPU_v1_os/layer0/IFMAP_DRAM_TRACE.csv",
+    "csv_sha256": "c592522fe11b62277462aa75ffaf356f492c3fd285e8f73fc4bc8a4aa4cdba41",
+    "csv_size_bytes": 564523,
+    "scalesim_command": "python3 scale.py -c configs/google.cfg -t topologies/GEMM_mnk/gpt2.csv -i gemm -p ../../benchmarks/ml_trace_output"
+  },
+  "unit": "1 SCALE-Sim cycle = 1 NVMain cycle at CPUFreq 3000 (0.333 ns); SCALE-Sim's own plots assume 2.4 GHz",
+  "writes": 0
+}

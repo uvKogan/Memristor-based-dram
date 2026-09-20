@@ -1,0 +1,9 @@
+1200000000: system.mem_ctrls: recvTimingReq: request WriteReq addr 0x30000 size 64
+1200000000: system.mem_ctrls: Write queue limit 64, current size 64, entries needed 1
+1200000000: system.mem_ctrls: Write queue full, not accepting
+1200000500: system.mem_ctrls: recvTimingReq: request ReadReq addr 0x30040 size 64
+1200000500: system.mem_ctrls: Read queue limit 32, current size 32, entries needed 1
+1200000500: system.mem_ctrls: Read queue full, not accepting
+1200001000: system.mem_ctrls: recvTimingReq: request ReadReq addr 0x30080 size 64
+1200001000: system.mem_ctrls: Read queue limit 32, current size 0, entries needed 1
+1200001000: system.mem_ctrls: Adding to read queue

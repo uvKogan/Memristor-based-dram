@@ -1,0 +1,44 @@
+{
+  "addresses": {
+    "aligned_64b_fraction": 0.015625,
+    "distinct_64b_lines": 2116,
+    "max": "0x1333dff",
+    "min": "0x1312d00",
+    "records_sharing_line_with_previous": 0,
+    "span_bytes": 135423
+  },
+  "argv": [
+    "benchmarks/ml_trace_output/alexnet_rev2026-09/GoogleTPU_v1_os/layer1/OFMAP_DRAM_TRACE.csv",
+    "benchmarks/alexnet_layer1_ofmap.nvt",
+    "--force",
+    "--scalesim-cmd",
+    "cd simulators/SCALE-Sim && PYTHONPATH=$PWD python3 scalesim/scale.py -c configs/google.cfg -t topologies/conv_nets/alexnet.csv -p ../../benchmarks/ml_trace_output/alexnet_rev2026-09",
+    "--note",
+    "scalesim_layer_folder=layer1",
+    "--note",
+    "layer_note=SCALE-Sim zero-indexed layer 1 = AlexNet second convolution layer (Conv2); this is the layer every earlier MBMM result used"
+  ],
+  "cycles": {
+    "first_cycle": 8729,
+    "last_cycle": 22271,
+    "rebase_offset": 0
+  },
+  "layer_note": "SCALE-Sim zero-indexed layer 1 = AlexNet second convolution layer (Conv2); this is the layer every earlier MBMM result used",
+  "op": "W",
+  "op_rule": "W if 'OFMAP' appears in the input filename (case-insensitive), else R",
+  "padding_skipped": 6,
+  "parser": "parse_trace.py",
+  "parser_version": "2.1.0",
+  "reads": 0,
+  "records_written": 135424,
+  "rows_read": 13543,
+  "scalesim_layer_folder": "layer1",
+  "source": {
+    "csv_path": "benchmarks/ml_trace_output/alexnet_rev2026-09/GoogleTPU_v1_os/layer1/OFMAP_DRAM_TRACE.csv",
+    "csv_sha256": "92e579deb7289dd81a6849056f5cdb822ed7c8294c2e0a423a06d54fd255f5b0",
+    "csv_size_bytes": 1596767,
+    "scalesim_command": "cd simulators/SCALE-Sim && PYTHONPATH=$PWD python3 scalesim/scale.py -c configs/google.cfg -t topologies/conv_nets/alexnet.csv -p ../../benchmarks/ml_trace_output/alexnet_rev2026-09"
+  },
+  "unit": "1 SCALE-Sim cycle = 1 NVMain cycle at CPUFreq 3000 (0.333 ns); SCALE-Sim's own plots assume 2.4 GHz",
+  "writes": 135424
+}

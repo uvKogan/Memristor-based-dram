@@ -5,7 +5,16 @@ set -euo pipefail
 ROOT=/home/yuvalk/MBMM
 NV=$ROOT/simulators/nvmain
 GOLD=$ROOT/tools/golden
-TRACE=$ROOT/benchmarks/gpt2_ifmap.nvt        # small, deterministic, 6553 reads
+# Frozen pre-revision GPT-2 IFMAP trace (6554 reads), tracked compressed so the harness works on a fresh clone.
+# T3.3 regenerated benchmarks/gpt2_ifmap.nvt with 10x the records; this harness tests NVMain behavior, not the
+# trace, so it keeps replaying the input the golden files were recorded with.
+TRACE_GZ=$GOLD/gpt2_ifmap_pre_revision.nvt.gz
+TRACE_SHA256=fa31910b2dcf4e1ad40f32f5bc79eb3f3482e9d1b060a9add4ef5b07581419f9
+[[ -f "$TRACE_GZ" ]] || { echo "nvmain_regress: missing $TRACE_GZ (tracked file; restore it with: git checkout -- tools/golden)"; exit 2; }
+TRACE=$(mktemp --suffix=.nvt)
+trap 'rm -f "$TRACE"' EXIT
+gzip -dc "$TRACE_GZ" > "$TRACE"
+echo "$TRACE_SHA256  $TRACE" | sha256sum -c --status || { echo "nvmain_regress: frozen trace checksum mismatch"; exit 2; }
 CYCLES=20000
 CONFIGS=("reram_22nm_1t1r_slc_full_dimm" "DDR5_4800_DRAM" "pcm_microsoft_2009")
 mkdir -p "$GOLD/configs"

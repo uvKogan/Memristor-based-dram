@@ -1,0 +1,25 @@
+      0: system.mem_ctrls: Setting up controller
+      0: system.mem_ctrls: recvAtomic: ReadSharedReq 0x1740
+   2000: system.mem_ctrls: recvAtomic: ReadSharedReq 0x10b2dc0
+   5500: system.mem_ctrls: recvAtomic: ReadExReq 0x10b2d80
+  12000: system.mem_ctrls: recvAtomic: ReadSharedReq 0x3d80
+  20000: system.cpu.dcache: Sending packet 0x20000
+1154833000: system.mem_ctrls: recvTimingReq: request ReadSharedReq addr 0x18c0 size 64
+1154833000: system.mem_ctrls: Read queue limit 32, current size 0, entries needed 1
+1154833000: system.mem_ctrls: Read queue limit 32, current size 0, entries needed 1
+1154833000: system.mem_ctrls: Adding to read queue
+1154833000: system.mem_ctrls: Access to 0x18c0, ready at 1154866250 next burst at 1154852500.
+1154833000: system.mem_ctrls: Command for 0x18c0, issued at 1154847500.
+1154866250: system.mem_ctrls: Responding to Address 0x18c0..
+1154953000: system.mem_ctrls: recvTimingReq: request ReadExReq addr 0x968fc0 size 64
+1154953000: system.mem_ctrls: Read queue limit 32, current size 0, entries needed 1
+1154953000: system.mem_ctrls: Adding to read queue
+1154953000: system.mem_ctrls: Access to 0x968fc0, ready at 1154999250 next burst at 1154985500.
+1154953000: system.mem_ctrls: Command for 0x968fc0, issued at 1154980500.
+1154999250: system.mem_ctrls: Responding to Address 0x968fc0..
+1154999250: system.mem_ctrls: Done
+1174081000: system.mem_ctrls: recvTimingReq: request WritebackDirty addr 0x10abb40 size 64
+1174081000: system.mem_ctrls: Write queue limit 64, current size 0, entries needed 1
+1174081000: system.mem_ctrls: Adding to write queue
+1174081000: system.mem_ctrls: Responding to Address 0x10abb40..
+1174081000: system.mem_ctrls: Done
