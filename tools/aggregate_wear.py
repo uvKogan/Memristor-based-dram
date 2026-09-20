@@ -71,7 +71,7 @@ def _all_values(content, stat_name):
     additional raw sums (touched locations, total writes) that function
     does not expose.
     """
-    pattern = rf'{re.escape(stat_name)}\s+([\d\.eE\-]+)'
+    pattern = rf'{re.escape(stat_name)}\s+([\d\.eE+\-]+)'
     try:
         return [float(m) for m in re.findall(pattern, content)]
     except ValueError:

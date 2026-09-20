@@ -466,3 +466,14 @@ def test_main_cli_allow_parse_failures_flag_exits_zero(tmp_path, monkeypatch, ca
     assert success is True
     assert any(bad_file.name in record.message and record.levelname == "WARNING"
                for record in caplog.records)
+
+
+def test_extract_end_to_end_latency_ns_accepts_positive_exponent():
+    # T4.1 pilot: a saturated PCM run printed "averageEndToEndLatency 2.4895e+07";
+    # the number pattern lacked '+', matched "2.4895e", and the column went blank.
+    stats = (
+        "i0.defaultMemory.channel0.FRFCFS-WQF.averageEndToEndLatency 2.4895e+07\n"
+        "i0.defaultMemory.channel0.FRFCFS-WQF.measuredEndToEndLatencies 2794420\n"
+    )
+    result = pm.extract_end_to_end_latency_ns(stats, 400)
+    assert result == pytest.approx(2.4895e7 * 2.5)

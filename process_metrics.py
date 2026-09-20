@@ -316,7 +316,7 @@ def _extract_latency_stat(content, stat_name):
     DDR5-4800 has two sub-channels; single-channel ReRAM/PCM has one.
     Averaging gives a single representative number regardless of channel count.
     """
-    pattern = rf'{re.escape(stat_name)}\s+([\d\.eE\-]+)'
+    pattern = rf'{re.escape(stat_name)}\s+([\d\.eE+\-]+)'
     matches = re.findall(pattern, content, re.IGNORECASE)
     if not matches:
         return None
@@ -384,7 +384,7 @@ def extract_end_to_end_latency_ns(content, clk_mhz):
     different one (e.g. a clock-sensitivity config); callers now resolve the
     real clock once (per file, via resolve_clocks_mhz) and pass it in here.
     """
-    lat_matches = re.findall(r'averageEndToEndLatency\s+([\d\.eE\-]+)', content)
+    lat_matches = re.findall(r'averageEndToEndLatency\s+([\d\.eE+\-]+)', content)
     cnt_matches = re.findall(r'measuredEndToEndLatencies\s+(\d+)', content)
 
     if not lat_matches or not cnt_matches or len(lat_matches) != len(cnt_matches):
@@ -501,7 +501,7 @@ def extract_dimm_wear_stats(content):
     Returns (wear_max_writes, wear_hotspot_factor), either element None.
     """
     def _all_values(stat_name):
-        pattern = rf'{re.escape(stat_name)}\s+([\d\.eE\-]+)'
+        pattern = rf'{re.escape(stat_name)}\s+([\d\.eE+\-]+)'
         try:
             return [float(m) for m in re.findall(pattern, content)]
         except ValueError:
@@ -551,7 +551,7 @@ def extract_total_power(content):
     Applied uniformly here, to every technology, for a like-for-like total.
     """
     # Pattern: "totalPower" followed by value and optional "W" unit
-    pattern = r'totalpower\s+([\d\.eE\-]+)(?:\s*w)?'
+    pattern = r'totalpower\s+([\d\.eE+\-]+)(?:\s*w)?'
     matches = re.findall(pattern, content, re.IGNORECASE)
 
     if not matches:
