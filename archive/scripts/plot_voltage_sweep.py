@@ -71,8 +71,8 @@ def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     fig = plt.figure(figsize=(16, 10))
-    fig.suptitle('ReadVoltage Sensitivity — 1T1R SLC Full DIMM\n'
-                 'NVSim @ 22nm LOP | NVMain 2.0 @ 50M cycles | Benchmarks: LBM + GCC — All metrics: lower is better',
+    fig.suptitle('ReadVoltage Sensitivity - 1T1R SLC Full DIMM\n'
+                 'NVSim @ 22nm LOP | NVMain 2.0 @ 50M cycles | Benchmarks: LBM + GCC - All metrics: lower is better',
                  fontsize=14, fontweight='bold', y=0.98)
     gs = gridspec.GridSpec(2, 2, hspace=0.50, wspace=0.35)
 

@@ -69,7 +69,7 @@ TECHNOLOGY_COLORS = {
     '1S1R_SILICON': '#CC7722',           # Ochre (distinct from primary 1S1R magenta)
 }
 
-# Generic DRAM examples dropped — narrative focuses on literature-backed baselines only
+# Generic DRAM examples dropped - narrative focuses on literature-backed baselines only
 EXCLUDED_TECHNOLOGIES = {'2D_DRAM_example', '3D_DRAM_example'}
 
 # The primary bar charts show exactly these six -- the four ReRAM tracks plus
@@ -301,7 +301,7 @@ def generate_bar_charts(df):
         formatted_bench = format_benchmark_name(benchmark)
         ax.set_ylabel('Average Latency (ns)', fontsize=12, fontweight='bold')
         ax.set_xlabel('Memory Technology', fontsize=12, fontweight='bold')
-        ax.set_title(f'{formatted_bench} — Average Latency (ns)',
+        ax.set_title(f'{formatted_bench} - Average Latency (ns)',
                     fontsize=14, fontweight='bold', pad=15)
 
         fig.text(0.99, 0.01,
@@ -319,15 +319,22 @@ def generate_bar_charts(df):
         plt.close(fig)
         
         # ====================================================================
-        # 2. POWER BREAKDOWN (v3: two-panel — total power (log) | composition %)
+        # 2. POWER BREAKDOWN (v3: two-panel - total power (log) | composition %)
         # ====================================================================
-        # Redesigned from a single linear-stacked chart because the repaired
-        # leakage model spans 0.073 W (PCM) to 51 W (1T1R) — a >600x range that
-        # renders DDR5/PCM/1S1R as invisible slivers on a linear axis, and a log
-        # axis is not valid on *stacked* bars (segment heights lose meaning).
-        # Left panel isolates magnitude (log-scale, one bar per technology);
-        # right panel isolates the static/dynamic/refresh mix as 100%-stacked
-        # percentages, independent of the underlying magnitude.
+        # Redesigned from a single linear-stacked chart because module power
+        # spans two to three orders of magnitude across the technologies drawn
+        # on one chart (PCM's tens of milliwatts against a ReRAM full DIMM's
+        # several watts), which renders the small ones as invisible slivers on
+        # a linear axis, and a log axis is not valid on *stacked* bars (segment
+        # heights lose meaning). Left panel isolates magnitude (log-scale, one
+        # bar per technology); right panel isolates the static/dynamic/refresh
+        # mix as 100%-stacked percentages, independent of the magnitude.
+        #
+        # Minor-2 (final review 2026-09): this comment used to quote "0.073 W
+        # (PCM) to 51 W (1T1R)". The 51 W came from the retired 47x leakage
+        # artifact (research_notes/leakage_47x_organization_artifact.md) and is
+        # withdrawn, so no figure is quoted here: the reason for the two panels
+        # is the spread itself, not any particular pair of values.
         from matplotlib.patches import Patch
 
         power_order = [t for t in POWER_TECH_ORDER_V3
@@ -375,7 +382,7 @@ def generate_bar_charts(df):
         axR.bar(px, ref_pct, bottom=stat_pct + dyn_pct, color=p_colors, edgecolor='black',
                linewidth=1.5, alpha=0.25, hatch='xx')
 
-        # Label segments ≥3% only — smaller slivers (e.g. 1T1R's ~0.01% dynamic
+        # Label segments ≥3% only - smaller slivers (e.g. 1T1R's ~0.01% dynamic
         # share) can't fit a readable label and would just clutter the panel.
         for xi, (s, d, r) in enumerate(zip(stat_pct, dyn_pct, ref_pct)):
             if s >= 3:
@@ -451,10 +458,10 @@ def generate_bar_charts(df):
         else:
             ax.set_ylim(0, max_edp * 1.15)
 
-        # "Lower is better" folded into the ylabel (v3) — the old in-axes
+        # "Lower is better" folded into the ylabel (v3) - the old in-axes
         # annotation box overlapped bars/value labels on several benchmarks.
-        pdp_ylabel = ('Average PDP (W·ns), log scale — lower is better' if use_log
-                     else 'Average PDP (W·ns) — lower is better')
+        pdp_ylabel = ('Average PDP (W·ns), log scale - lower is better' if use_log
+                     else 'Average PDP (W·ns) - lower is better')
         ax.set_ylabel(pdp_ylabel, fontsize=12, fontweight='bold')
         ax.set_xlabel('Memory Technology', fontsize=12, fontweight='bold')
         formatted_bench = format_benchmark_name(benchmark)

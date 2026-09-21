@@ -423,17 +423,27 @@ def test_json_report_on_all_read_trace_parses_with_strict_json(tmp_path):
     assert data["read_write_ratio"] is None
 
 
-def test_json_report_on_real_gpt2_all_read_trace(tmp_path):
-    # Reproduces the exact failure the reviewer found on real data.
-    real_trace = pathlib.Path(__file__).resolve().parents[1] / "benchmarks" / "gpt2_ifmap.nvt"
-    if not real_trace.exists():
-        pytest.skip("benchmarks/gpt2_ifmap.nvt not present in this checkout")
-    json_out = tmp_path / "gpt2_report.json"
-    rc = vt.main([str(real_trace), "--kind", "scalesim", "--json", str(json_out)])
+def test_json_report_on_all_read_scalesim_trace(tmp_path):
+    """The exact shape the reviewer hit on real data: an all-read SCALE-Sim
+    trace validated with an explicit --kind, whose read_write_ratio is a
+    division by zero.
+
+    I10 (final review 2026-09): this used to run against
+    benchmarks/gpt2_ifmap.nvt and `pytest.skip` when that git-ignored 9 MB
+    trace was absent, so it vanished on every clean checkout. The inputs are
+    now derived in the test: gpt2_ifmap.nvt is all reads, 64-byte aligned,
+    from cycle 0 upwards, which is what the code path under test reacts to,
+    and none of its 65,536 records adds anything the three below do not.
+    """
+    records = [(cycle, "R", format(cycle * 64, "x"), 0) for cycle in range(3)]
+    trace = _write_pair(tmp_path, "scalesim_allread", records, "scalesim")
+    json_out = tmp_path / "scalesim_report.json"
+    rc = vt.main([str(trace), "--kind", "scalesim", "--json", str(json_out)])
     assert rc == 0
     text = json_out.read_text()
     assert "Infinity" not in text
-    json.loads(text)
+    data = json.loads(text)  # a bare `Infinity` token is not valid per RFC 8259
+    assert data["read_write_ratio"] is None
 
 
 def test_human_readable_ratio_na_for_no_writes(tmp_path):

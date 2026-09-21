@@ -33,15 +33,189 @@ RESULTS_SYS_DIR = "/home/yuvalk/MBMM/results/system"
 OUTPUT_DIR = "/home/yuvalk/MBMM/results"
 HARDWARE_METRICS_FILE = "/home/yuvalk/MBMM/results/hardware_metrics.json"
 
+
+def _load_hardware_metrics(path):
+    """Load hardware_metrics.json from `path`. Returns {} (with a WARNING logged) if the
+    file is missing or fails to parse.
+
+    T5.1 step 2 fix round 1: factored out of the module-level load below so main() can
+    reload HARDWARE_METRICS against a different file via --hardware-metrics (e.g. an
+    isolated sensitivity run's own hardware_metrics.json copy, which carries the _1024
+    entries the live results/hardware_metrics.json may or may not still have) instead of
+    always reading the shared, live default.
+
+    I5 (final review 2026-09): returning {} here is NOT a silent degradation any
+    more. The WARNING the docstring always promised is now actually logged (a
+    missing file used to return {} with no log line at all), and a ReRAM row
+    that needs an entry out of this dict raises in _reram_json_entry() rather
+    than falling back to an area-density ratio of 1.0 ("DDR5 parity"). DDR5 and
+    PCM rows never read this file, so a run that processes only those still
+    works with an empty dict, as before.
+    """
+    metrics = {}
+    try:
+        if Path(path).exists():
+            with open(path, 'r') as f:
+                metrics = json.load(f)
+                logger.debug(f"Loaded hardware metrics for {len(metrics)} technologies from {path}")
+        else:
+            logger.warning(
+                f"hardware_metrics.json not found at {path}: no ReRAM area/capacity is "
+                f"available. DDR5 and PCM rows are unaffected; any ReRAM row will fail "
+                f"loudly rather than fall back to a density ratio of 1.0.")
+    except Exception as e:
+        logger.warning(f"Could not load hardware metrics from {path}: {e}")
+    return metrics
+
+
 # Load hardware metrics (area, capacity) from extraction stage
-HARDWARE_METRICS = {}
-try:
-    if Path(HARDWARE_METRICS_FILE).exists():
-        with open(HARDWARE_METRICS_FILE, 'r') as f:
-            HARDWARE_METRICS = json.load(f)
-            logger.debug(f"Loaded hardware metrics for {len(HARDWARE_METRICS)} technologies")
-except Exception as e:
-    logger.warning(f"Could not load hardware metrics: {e}")
+HARDWARE_METRICS = _load_hardware_metrics(HARDWARE_METRICS_FILE)
+
+
+# ============================================================================
+# RUN PROVENANCE (I6, final review 2026-09)
+# ============================================================================
+#
+# mbmm_master.py writes a run_manifest.json next to the stats files it is about
+# to produce (results/system/run_manifest.json), at the start of Stage 4. Until
+# that existed, nothing in a stats filename or in a processed CSV said which
+# flags produced it: the only thing separating a sensitivity dataset from the
+# primary was the directory name someone typed. These columns carry the manifest's
+# key flags into every row, so a CSV can be read on its own.
+#
+# The column -> manifest-flag mapping. Order is the column order appended to the
+# CSVs (last, after every pre-existing column, so readers that index by name
+# keep working).
+RUN_PROVENANCE_COLUMNS = (
+    ("Run_Channels", "channels"),
+    ("Run_Decoder", "decoder"),
+    ("Run_Organization", "organization"),
+    ("Run_Queue_Size", "queue_size"),
+    ("Run_Freq_MHz", "freq_mhz"),
+    ("Run_Window_ns", "window_ns"),
+    ("Run_DDR5_Model", "ddr5_model"),
+)
+
+# What a column holds when no manifest is present. The ten frozen 2026-09
+# datasets predate the manifest and must NOT have one fabricated for them.
+RUN_PROVENANCE_UNKNOWN = "unknown"
+
+# The Run_* column names alone, in order, for the CSV writers.
+RUN_PROVENANCE_COLUMN_NAMES = [name for name, _ in RUN_PROVENANCE_COLUMNS]
+
+RUN_MANIFEST_NAME = "run_manifest.json"
+
+# The manifest key listing the stats filenames THIS run is expected to produce.
+# F2 fix round 1 (review Important-1): results/system is not cleared between
+# master runs, so a second run with different flags could leave a folder holding
+# both runs' stats files and only the second run's manifest. Without this list a
+# manifest describes "whatever is in the folder", and the older files would be
+# stamped with the newer run's Run_* values. With it, a manifest describes an
+# explicit set of files and nothing else.
+RUN_MANIFEST_STATS_KEY = "expected_stats_files"
+
+
+def load_run_manifest(results_dir):
+    """Read `results_dir`/run_manifest.json, or return None with a WARNING.
+
+    Returns the parsed manifest dict, or None when the file is absent or
+    unreadable. A missing manifest is expected for the frozen datasets (they
+    were produced before mbmm_master.py wrote one) and must never be invented:
+    the Run_* columns are then written as "unknown".
+    """
+    path = Path(results_dir) / RUN_MANIFEST_NAME
+    if not path.exists():
+        logger.warning(
+            f"No {RUN_MANIFEST_NAME} in {results_dir}: the Run_* provenance columns "
+            f"will be written as {RUN_PROVENANCE_UNKNOWN!r}. This is expected for a "
+            f"dataset produced before mbmm_master.py wrote a run manifest; for a fresh "
+            f"run it means Stage 4 did not write one.")
+        return None
+    try:
+        with open(path, 'r') as f:
+            manifest = json.load(f)
+    except Exception as e:
+        logger.warning(f"Could not read {path}: {e}; Run_* columns will be "
+                       f"{RUN_PROVENANCE_UNKNOWN!r}.")
+        return None
+    logger.info(f"Loaded run manifest {path} (date {manifest.get('date', '?')})")
+    return manifest
+
+
+def run_provenance_fields(manifest):
+    """{column: value} for every Run_* column, from `manifest` (None -> all unknown)."""
+    flags = (manifest or {}).get("flags", {})
+    fields = {}
+    for column, flag in RUN_PROVENANCE_COLUMNS:
+        value = flags.get(flag) if manifest else None
+        if value is None:
+            value = RUN_PROVENANCE_UNKNOWN
+        fields[column] = value
+    return fields
+
+
+def unknown_run_provenance_fields():
+    """{column: 'unknown'} for every Run_* column."""
+    return {name: RUN_PROVENANCE_UNKNOWN for name in RUN_PROVENANCE_COLUMN_NAMES}
+
+
+def manifest_stats_files(manifest):
+    """The set of stats filenames `manifest` claims to describe.
+
+    Returns None when the manifest carries no list at all, which is how a
+    manifest written before F2 fix round 1 is recognised. Such a manifest is
+    treated as covering NOTHING (see make_run_provenance_resolver): it cannot
+    say which of the files beside it are its own, and guessing is exactly the
+    mislabelling this list exists to prevent.
+    """
+    if not manifest:
+        return None
+    files = manifest.get(RUN_MANIFEST_STATS_KEY)
+    if files is None:
+        return None
+    return set(files)
+
+
+def make_run_provenance_resolver(manifest, results_dir=None):
+    """Return f(stats_filename) -> {Run_* column: value}.
+
+    A stats file gets the manifest's flags only if the manifest lists it. Any
+    other stats file in the same directory gets "unknown" in every column and a
+    WARNING naming it, because results/system is not cleared between runs and a
+    file that this manifest does not claim may well have been simulated with
+    different flags (F2 fix round 1, review Important-1).
+    """
+    unknown = unknown_run_provenance_fields()
+    where = f" in {results_dir}" if results_dir else ""
+
+    if manifest is None:
+        # load_run_manifest already logged why.
+        return lambda filename: dict(unknown)
+
+    covered = manifest_stats_files(manifest)
+    if covered is None:
+        logger.warning(
+            f"The {RUN_MANIFEST_NAME}{where} carries no {RUN_MANIFEST_STATS_KEY!r} "
+            f"list, so it cannot say which stats files beside it are its own. "
+            f"Treating it as covering nothing: every Run_* column is "
+            f"{RUN_PROVENANCE_UNKNOWN!r}. Re-run the master to get a manifest that "
+            f"lists its own outputs.")
+        return lambda filename: dict(unknown)
+
+    fields = run_provenance_fields(manifest)
+
+    def resolve(filename):
+        name = Path(filename).name
+        if name in covered:
+            return dict(fields)
+        logger.warning(
+            f"{name}{where} is not listed in this run manifest's "
+            f"{RUN_MANIFEST_STATS_KEY!r} ({len(covered)} file(s)), so it belongs to "
+            f"some other run: its Run_* columns are {RUN_PROVENANCE_UNKNOWN!r}. Each "
+            f"results directory should hold exactly one run's stats files.")
+        return dict(unknown)
+
+    return resolve
 
 # Area Density Baseline (Hybrid-Empirical Approach)
 DDR5_MM2_PER_GB = 35.0  # DDR5-4800 empirical baseline
@@ -242,6 +416,40 @@ def classify_technology(filename):
     
     logger.warning(f"Unknown technology in filename: {filename}")
     return None
+
+
+def classify_reram_organization(filename):
+    """T5.1 step 2 organization axis: ReRAM subarray organization (2048
+    default / 1024 sensitivity) encoded in a stats filename.
+
+    Technology stays 1T1R_SLC/1S1R_SLC/etc for either organization (a
+    1024-organization run's Technology label is not distinguished from the
+    2048 baseline's -- acceptable per T5.1 step 2's requirement, since each
+    sensitivity run is processed into its own results directory/CSV, and
+    parse_raw_stats() below refuses to let stats files for both
+    organizations coexist in one --results-dir). The filename itself still
+    makes the organization explicit: mbmm_master.py's reram_factory_bases()/
+    2_extract_hardware_metrics.py's base-key convention puts a literal
+    "_1024" token in the ReRAM base name for every 1024 stats file (e.g.
+    "stats_reram_22nm_1t1r_1024_slc_full_dimm_<bench>.out"), never for a
+    2048 one.
+
+    Returns 1024 or 2048 for a ReRAM stats filename, None for a non-ReRAM
+    technology (DDR5/PCM/silicon), which has no organization axis.
+
+    T5.1 step 2 fix round 1 (Important-2): anchored to the model-name convention
+    (mbmm_master.reram_factory_bases()/2_extract_hardware_metrics.py's key naming) rather
+    than a bare '_1024' substring search over the whole filename
+    ("stats_{model}_{trace_name}.out"). The '_1024' token always sits directly between the
+    base model name and the '_slc'/'_mlc' track suffix in a 1024 stats file (e.g.
+    "stats_reram_22nm_1t1r_1024_slc_full_dimm_<bench>.out"); requiring '_1024_slc' or
+    '_1024_mlc' specifically means a trace/benchmark name that happens to contain "1024"
+    (e.g. a future "..._matmul_1024.out") cannot be misclassified as organization 1024.
+    """
+    filename_lower = filename.lower()
+    if not re.search(r'reram.*(1t1r|selector)', filename_lower):
+        return None
+    return 1024 if re.search(r'_1024_(?:slc|mlc)', filename_lower) else 2048
 
 
 def extract_architecture(filename):
@@ -535,6 +743,361 @@ def extract_dimm_wear_stats(content):
     return dimm_max_writes, dimm_hotspot_factor
 
 
+# ============================================================================
+# CURRENT-MODE BACKGROUND-POWER CORRECTION (F1, final-review C1)
+# ============================================================================
+#
+# UPSTREAM NVMAIN DEFECT, CORRECTED HERE AND NOT IN THE C++:
+#
+# simulators/nvmain/Ranks/StandardRank/StandardRank.cpp, EnergyModel "current"
+# mode only. backgroundEnergy is accumulated for the WHOLE RANK (every term at
+# lines ~895-941 is multiplied by deviceCount), but line ~992 computes
+#
+#     backgroundPower = ( backgroundEnergy / deviceCount * Voltage )
+#                       / simulationTime / 1000.0
+#
+# and, unlike activatePower / burstPower / refreshPower (which ARE multiplied
+# back by deviceCount at lines ~1015-1017), backgroundPower is never
+# re-multiplied. The printed rank backgroundPower is therefore ONE device's
+# background power while the rank's other three components are the whole
+# rank's, and the printed rank totalPower (line ~1021, the sum of the four)
+# inherits the same omission. In current mode the stats file is internally
+# consistent and self-reconciling, so no residual check can see the loss.
+#
+# Only the DDR5 configs set `EnergyModel current`. PCM uses `energy` and ReRAM
+# `NonVolatile`; both take the else-branch (backgroundPower = backgroundEnergy
+# / simulationTime), which has no deviceCount division at all, so those
+# technologies are unaffected and their device factor is 1.
+#
+# The correction is applied HERE, in post-processing, not in the submodule:
+# the frozen raw stats stay exactly what NVMain printed, the golden regression
+# files stay valid, and nothing has to be re-simulated. See
+# simulators/nvmain/CLAUDE.md for the deliberately-unpatched note.
+
+# Where to look for the NVMain .config a stats file names on its own "NVMain
+# command line" line, when that absolute path no longer resolves (a moved
+# checkout, an archived dataset). Tried in order, by basename. The tracked
+# project copies come first so a repo-local config always wins over whatever
+# happens to sit in the submodule's working tree.
+NVMAIN_CONFIG_SEARCH_DIRS = (
+    "/home/yuvalk/MBMM/configs",
+    "/home/yuvalk/MBMM/simulators/nvmain/Config",
+)
+
+# Config keys this module needs, and what each is used for.
+#   BusWidth / DeviceWidth -> devices per rank (StandardRank.cpp:125)
+#   Voltage                -> the independent backgroundEnergy cross-check
+#   EIDD2P0 / EIDD3N       -> the module static-power floor and ceiling
+_DEVICE_COUNT_KEYS = ('BusWidth', 'DeviceWidth')
+
+
+def uses_current_energy_model(content):
+    """
+    True when this stats file came from a run with `EnergyModel current`.
+
+    Detection is on the file's own printed output, not on a filename or a
+    technology guess: in current mode every NVMain energy counter is printed
+    in milliamp-cycles ("...Energy 1.97967e+11mA*t"), while the `energy` and
+    `NonVolatile` models print nanojoules ("...Energy 2.16768e+08nJ"). The
+    unit is therefore a direct, per-file witness of which branch of
+    StandardRank::CalculateStats ran.
+    """
+    return re.search(r'Energy\s+[\d\.eE+\-]+\s*mA\*t', content) is not None
+
+
+def extract_nvmain_config_ref(content):
+    """
+    The .config path NVMain was launched with, read from the stats file's own
+    "NVMain command line is:" banner (traceMain.cpp prints it first thing).
+    Returns None if the banner or a .config token is absent.
+    """
+    match = re.search(r'NVMain command line is:\s*\n(.+)', content)
+    if not match:
+        return None
+    for token in match.group(1).split():
+        if token.endswith('.config') or token.endswith('.cfg'):
+            return token
+    return None
+
+
+def resolve_nvmain_config(config_ref, stats_name="", search_dirs=None):
+    """
+    Resolve `config_ref` (as printed on the stats file's command line) to a
+    readable config file. The literal path is tried first; if it no longer
+    exists, the basename is looked for in NVMAIN_CONFIG_SEARCH_DIRS.
+
+    Raises ValueError naming the stats file and every location tried. There is
+    no default and no fallback device count: a silently-assumed device count
+    would reintroduce exactly the class of error this correction exists to
+    remove.
+    """
+    dirs = tuple(search_dirs) if search_dirs is not None else NVMAIN_CONFIG_SEARCH_DIRS
+
+    if config_ref is None:
+        raise ValueError(
+            f"{stats_name or '<stats file>'}: EnergyModel-current stats file with no "
+            f"'NVMain command line is:' config path, so the rank device count "
+            f"(BusWidth/DeviceWidth) cannot be resolved and the rank backgroundPower "
+            f"cannot be corrected. Refusing to guess a device count."
+        )
+
+    tried = []
+    candidate = Path(config_ref)
+    tried.append(str(candidate))
+    if candidate.is_file():
+        return candidate
+
+    for directory in dirs:
+        candidate = Path(directory) / Path(config_ref).name
+        tried.append(str(candidate))
+        if candidate.is_file():
+            return candidate
+
+    raise ValueError(
+        f"{stats_name or '<stats file>'}: cannot find the NVMain config {config_ref!r} "
+        f"named on its own command line, so the rank device count "
+        f"(BusWidth/DeviceWidth) cannot be resolved and the rank backgroundPower "
+        f"cannot be corrected. Tried: {tried}."
+    )
+
+
+def read_nvmain_config_keys(config_path, keys, stats_name=""):
+    """
+    Read the named keys out of an NVMain .config file ("KEY value" per line,
+    ';' starts a comment). Returns {key: float}. Keys that are absent are
+    simply missing from the returned dict; the caller decides which ones are
+    mandatory and raises with its own message.
+    """
+    wanted = set(keys)
+    values = {}
+    try:
+        text = Path(config_path).read_text(encoding='utf-8', errors='ignore')
+    except OSError as exc:
+        raise ValueError(
+            f"{stats_name or '<stats file>'}: cannot read NVMain config "
+            f"{config_path}: {exc}"
+        )
+
+    for line in text.splitlines():
+        line = line.split(';')[0].split('#')[0].strip()
+        if not line:
+            continue
+        parts = line.split()
+        if len(parts) >= 2 and parts[0] in wanted:
+            try:
+                values[parts[0]] = float(parts[1])
+            except ValueError:
+                continue
+    return values
+
+
+def extract_printed_device_count(content):
+    """
+    The device count NVMain itself printed, from StandardRank's own
+    "Creating <banks> banks in all <devices> devices." line. Returns None when
+    the line is absent (it is printed only when the rank creates its children,
+    which every real run does, but hand-made fixtures need not). Used purely
+    as a cross-check against the config arithmetic.
+    """
+    match = re.search(r'Creating\s+\d+\s+banks in all\s+(\d+)\s+devices', content)
+    if not match:
+        return None
+    try:
+        return int(match.group(1))
+    except ValueError:
+        return None
+
+
+def rank_device_count(content, stats_name="", search_dirs=None):
+    """
+    Devices per rank for the run that produced `content`, computed exactly the
+    way StandardRank.cpp:125 computes it:
+
+        deviceCount = BusWidth / DeviceWidth        (rounded up if not exact)
+
+    from the run's OWN config, located through its own command line. Cross-
+    checked against NVMain's printed "Creating N banks in all D devices." line
+    when that line is present; a disagreement raises rather than picking one.
+
+    Raises ValueError, naming the stats file and the missing key or file, if
+    the config cannot be found or either key is absent. Never returns a
+    default.
+    """
+    config_path = resolve_nvmain_config(
+        extract_nvmain_config_ref(content), stats_name=stats_name, search_dirs=search_dirs)
+
+    values = read_nvmain_config_keys(config_path, _DEVICE_COUNT_KEYS, stats_name=stats_name)
+    missing = [k for k in _DEVICE_COUNT_KEYS if k not in values]
+    if missing:
+        raise ValueError(
+            f"{stats_name or '<stats file>'}: NVMain config {config_path} is missing "
+            f"{missing} (needed as BusWidth/DeviceWidth for the rank device count of "
+            f"an EnergyModel-current run). Refusing to guess a device count."
+        )
+
+    bus_width = values['BusWidth']
+    device_width = values['DeviceWidth']
+    if device_width <= 0 or bus_width <= 0:
+        raise ValueError(
+            f"{stats_name or '<stats file>'}: NVMain config {config_path} has "
+            f"non-positive BusWidth={bus_width} / DeviceWidth={device_width}; cannot "
+            f"derive a rank device count."
+        )
+
+    device_count = int(bus_width // device_width)
+    if bus_width % device_width != 0:
+        # Mirrors StandardRank.cpp:126-130, which increments on a non-multiple.
+        device_count += 1
+
+    printed = extract_printed_device_count(content)
+    if printed is not None and printed != device_count:
+        raise ValueError(
+            f"{stats_name or '<stats file>'}: NVMain printed 'in all {printed} devices' "
+            f"but its config {config_path} gives BusWidth/DeviceWidth = "
+            f"{bus_width:g}/{device_width:g} = {device_count}. The stats file and the "
+            f"config disagree about the rank device count; refusing to correct "
+            f"backgroundPower with either."
+        )
+
+    return device_count
+
+
+def background_power_device_factor(content, stats_name="", search_dirs=None):
+    """
+    The factor each rank's printed backgroundPower must be multiplied by to
+    become that rank's real background power.
+
+    1 for every energy-mode technology (ReRAM `NonVolatile`, PCM `energy`):
+    their backgroundPower is already per rank and nothing is corrected.
+    The rank device count for an `EnergyModel current` run (DDR5), which is
+    the exact factor StandardRank.cpp divides by and never multiplies back.
+    """
+    if not uses_current_energy_model(content):
+        return 1
+    return rank_device_count(content, stats_name=stats_name, search_dirs=search_dirs)
+
+
+def extract_memory_clock_cycles(content, clk_mhz, cpufreq_mhz=CPUFREQ_MHZ):
+    """
+    Elapsed simulated time in MEMORY-clock cycles, which is NVMain's
+    `simulationTime` in EnergyModel-current mode (StandardRank.cpp:975,
+    GetCurrentCycle() - lastReset on the memory subsystem's own event queue).
+
+    The stats file's "Exiting at cycle <n>" line is on the GLOBAL/CPUFreq
+    domain (see extract_completed_requests_and_bandwidth), so it is converted
+    here: cycles_mem = cycles_global * CLK / CPUFreq. Returns None when the
+    line is absent or the clocks are unusable.
+    """
+    match = re.search(r'Exiting at cycle\s+(\d+)', content)
+    if match is None or not clk_mhz or not cpufreq_mhz:
+        return None
+    try:
+        global_cycles = int(match.group(1))
+    except ValueError:
+        return None
+    if global_cycles <= 0:
+        return None
+    return global_cycles * (float(clk_mhz) / float(cpufreq_mhz))
+
+
+def crosscheck_current_mode_background(content, device_factor, clk_mhz,
+                                       cpufreq_mhz=CPUFREQ_MHZ, stats_name="",
+                                       search_dirs=None, rel_tol=1e-3):
+    """
+    Independent check of the correction that does not go through the printed
+    backgroundPower at all.
+
+    NVMain's own current-mode definition (StandardRank.cpp:992), with the
+    deviceCount division removed, is
+
+        rank background power [W] = backgroundEnergy [mA*t] * Voltage [V]
+                                    / simulationTime [memory cycles] / 1000
+
+    so the RANK's backgroundEnergy counter (which IS accumulated per rank)
+    reproduces the corrected power directly. This recomputes it from
+    backgroundEnergy and compares against device_factor x the printed
+    backgroundPower for every rank in the file.
+
+    Returns a list of per-rank dicts (rank, expected_w, corrected_w, rel_err,
+    ok). Returns [] when the file is not current-mode or lacks the inputs --
+    never raises on a missing input, so one odd file cannot lose a whole row
+    through parse_raw_stats' per-file except.
+    """
+    if not uses_current_energy_model(content):
+        return []
+
+    cycles = extract_memory_clock_cycles(content, clk_mhz, cpufreq_mhz)
+    if not cycles:
+        return []
+
+    try:
+        config_path = resolve_nvmain_config(
+            extract_nvmain_config_ref(content), stats_name=stats_name,
+            search_dirs=search_dirs)
+        voltage = read_nvmain_config_keys(
+            config_path, ('Voltage',), stats_name=stats_name).get('Voltage')
+    except ValueError:
+        return []
+    if not voltage:
+        return []
+
+    energies = dict(re.findall(
+        r'([\w.\-]+\.rank\d+)\.backgroundEnergy\s+([\d\.eE\-\+]+)mA\*t', content))
+    powers = dict(re.findall(
+        r'([\w.\-]+\.rank\d+)\.backgroundPower\s+([\d\.eE\-\+]+)W', content))
+
+    checks = []
+    for rank, energy_str in energies.items():
+        if rank not in powers:
+            continue
+        try:
+            expected = float(energy_str) * voltage / cycles / 1000.0
+            corrected = float(powers[rank]) * device_factor
+        except ValueError:
+            continue
+        rel_err = abs(expected - corrected) / expected if expected else 0.0
+        checks.append({'rank': rank, 'expected_w': expected,
+                       'corrected_w': corrected, 'rel_err': rel_err,
+                       'ok': rel_err <= rel_tol})
+    return checks
+
+
+def current_mode_static_power_bounds(content, device_factor, rank_count,
+                                     stats_name="", search_dirs=None):
+    """
+    Physical floor and ceiling the config's OWN datasheet currents put on the
+    module's corrected static (background) power:
+
+        floor   = devices x EIDD2P0 x Voltage / 1000   (deepest power-down)
+        ceiling = devices x EIDD3N  x Voltage / 1000   (active standby)
+
+    with devices = device_factor x rank_count (devices per rank x ranks in the
+    module). The uncorrected DDR5 static figure sits BELOW this floor, which is
+    the check that makes the defect visible without reading any source.
+
+    Returns (floor_w, ceiling_w, devices), or None when the file is not
+    current-mode or the config/keys are unavailable.
+    """
+    if not uses_current_energy_model(content) or rank_count <= 0:
+        return None
+    try:
+        config_path = resolve_nvmain_config(
+            extract_nvmain_config_ref(content), stats_name=stats_name,
+            search_dirs=search_dirs)
+        values = read_nvmain_config_keys(
+            config_path, ('Voltage', 'EIDD2P0', 'EIDD3N'), stats_name=stats_name)
+    except ValueError:
+        return None
+
+    if not all(k in values for k in ('Voltage', 'EIDD2P0', 'EIDD3N')):
+        return None
+
+    devices = device_factor * rank_count
+    floor_w = devices * values['EIDD2P0'] * values['Voltage'] / 1000.0
+    ceiling_w = devices * values['EIDD3N'] * values['Voltage'] / 1000.0
+    return floor_w, ceiling_w, devices
+
+
 def extract_total_power(content):
     """
     Extract total system power from a stats file: the sum of every rank's
@@ -573,7 +1136,7 @@ def extract_total_power(content):
     return sum(valid_powers)
 
 
-def extract_module_power_components(content):
+def extract_module_power_components(content, background_factor=1):
     """
     Return the module-level (all ranks, all channels, summed) Watt-level power
     breakdown: backgroundPower, activatePower, burstPower, refreshPower.
@@ -583,6 +1146,21 @@ def extract_module_power_components(content):
     (module-sum semantics, applied uniformly across every technology).
     Returns None if no rank block with a plausible totalPower (0.01-100W) is
     found in the file.
+
+    F1 (final-review C1): `background_factor` is the rank device count for an
+    `EnergyModel current` run (DDR5) and 1 for every energy-mode technology.
+    Each rank's printed backgroundPower is multiplied by it BEFORE the module
+    sum, which is the whole correction: see this module's
+    "CURRENT-MODE BACKGROUND-POWER CORRECTION" section for why the printed
+    value is one device's and the other three components are the rank's. The
+    caller gets both the corrected sum ('backgroundPower') and the raw one
+    ('backgroundPowerRaw'), plus 'backgroundPowerCorrection' (the Watts added,
+    which is also exactly what the printed rank totalPower omits) and
+    'rankCount', so nothing downstream has to re-derive the delta.
+
+    The rank-validity filter still uses the PRINTED totalPower: it is a
+    sanity window on NVMain's own output, and widening it for corrected values
+    would change which ranks are admitted.
     """
     pattern = r'([\w.\-]+\.rank\d+)\.(totalPower|backgroundPower|activatePower|burstPower|refreshPower)\s+([\d\.eE\-\+]+)W'
     matches = re.findall(pattern, content)
@@ -607,6 +1185,13 @@ def extract_module_power_components(content):
         for key in totals:
             totals[key] += fields.get(key, 0.0)
 
+    raw_background = totals['backgroundPower']
+    totals['backgroundPowerRaw'] = raw_background
+    totals['backgroundPower'] = raw_background * background_factor
+    totals['backgroundPowerCorrection'] = totals['backgroundPower'] - raw_background
+    totals['backgroundPowerDeviceFactor'] = background_factor
+    totals['rankCount'] = len(valid_ranks)
+
     return totals
 
 
@@ -623,43 +1208,115 @@ RERAM_KEY_PREFIX = {
     '1S1R_SILICON': 'reram_22nm_selector_slc',
 }
 
+# T5.1 step 2 fix round 1 (Critical-1): the 1024-organization equivalents of
+# RERAM_KEY_PREFIX's keys. mbmm_master.reram_factory_bases()'s docstring explains the
+# token-order flip: 2_extract_hardware_metrics.py derives "reram_22nm_1t1r_1024_slc" (not
+# "reram_22nm_1t1r_slc_1024") from the Stage-1 result filename, so the 1024 prefix is NOT
+# simply RERAM_KEY_PREFIX[tech] + "_1024". No silicon entries here: T2.8's silicon
+# sensitivity configs have no organization axis of their own (classify_reram_organization
+# never returns 1024 for a silicon filename -- their parent hardware is always the 2048
+# SLC entry), so RERAM_KEY_PREFIX's existing silicon rows are always correct.
+RERAM_KEY_PREFIX_1024 = {
+    '1T1R_SLC': 'reram_22nm_1t1r_1024_slc',
+    '1T1R_MLC': 'reram_22nm_1t1r_1024_mlc',
+    '1S1R_SLC': 'reram_22nm_selector_1024_slc',
+    '1S1R_MLC': 'reram_22nm_selector_1024_mlc',
+}
 
-def _reram_json_entry(technology_model):
-    """Return the first matching hardware_metrics.json entry for a ReRAM tech."""
-    if not HARDWARE_METRICS or technology_model not in RERAM_KEY_PREFIX:
+
+def _reram_json_entry(technology_model, organization=2048):
+    """Return the matching hardware_metrics.json entry for a ReRAM tech at `organization`
+    (2048 default / 1024 T5.1 step 2 sensitivity).
+
+    T5.1 step 2 fix round 1 (Critical-1): Technology alone (e.g. 1T1R_SLC) does not
+    distinguish the two organizations -- that is by design (see
+    classify_reram_organization's docstring) -- so a lookup keyed only by
+    RERAM_KEY_PREFIX[technology_model] always resolves the 2048 entry: the 1024
+    hardware_metrics.json key never startswith()-matches the 2048 prefix (verified by
+    mbmm_master's test_reram_factory_bases_1024_do_not_collide_with_2048_key_prefixes),
+    so silently it is also never matched BY it. Callers must pass the organization the
+    stats file this lookup is for actually is (classify_reram_organization(filename)).
+
+    Raises ValueError, naming the missing key, when the required entry is absent from
+    HARDWARE_METRICS -- no silent fallback to the 2048 entry, and (I5, final review
+    2026-09) no silent None for a missing file or a missing 2048 entry either. Only a
+    technology that is not ReRAM at all (not in RERAM_KEY_PREFIX) returns None, which is
+    how DDR5 and PCM keep working with no hardware_metrics.json at all.
+    """
+    if technology_model not in RERAM_KEY_PREFIX:
         return None
+
+    if not HARDWARE_METRICS:
+        raise ValueError(
+            f"_reram_json_entry: technology {technology_model!r} is a ReRAM track and "
+            f"needs its area/capacity from {HARDWARE_METRICS_FILE}, but no hardware "
+            f"metrics were loaded (the file is missing, empty or unreadable). Run "
+            f"2_extract_hardware_metrics.py, or point --hardware-metrics at the "
+            f"hardware_metrics.json that belongs to this results directory."
+        )
+
+    if organization == 1024 and technology_model in RERAM_KEY_PREFIX_1024:
+        prefix = RERAM_KEY_PREFIX_1024[technology_model]
+        for key, entry in HARDWARE_METRICS.items():
+            if key.startswith(prefix):
+                return entry
+        raise ValueError(
+            f"_reram_json_entry: organization 1024 requires a hardware_metrics.json key "
+            f"starting with {prefix!r} for technology {technology_model!r}, but none was "
+            f"found (have: {sorted(HARDWARE_METRICS)}). Run 1_run_nvsim_hardware.py on the "
+            f"_1024 base cfg and 2_extract_hardware_metrics.py first, or point "
+            f"--hardware-metrics at a hardware_metrics.json copy that has it."
+        )
+
     prefix = RERAM_KEY_PREFIX[technology_model]
     for key, entry in HARDWARE_METRICS.items():
         if key.startswith(prefix):
             return entry
-    return None
+    # I5: same loud failure the 1024 branch above already had. Returning None
+    # here used to end as an Area_Density_Ratio of 1.0, i.e. a ReRAM row
+    # published as exactly DDR5-dense, with exit 0.
+    raise ValueError(
+        f"_reram_json_entry: technology {technology_model!r} (organization "
+        f"{organization}) requires a hardware_metrics.json key starting with "
+        f"{prefix!r}, but none was found in {HARDWARE_METRICS_FILE} "
+        f"(have: {sorted(HARDWARE_METRICS)}). Run 1_run_nvsim_hardware.py and "
+        f"2_extract_hardware_metrics.py for that base model, or point "
+        f"--hardware-metrics at the hardware_metrics.json that belongs to this "
+        f"results directory."
+    )
 
 
-def extract_area_mm2(content, technology_model):
+def extract_area_mm2(content, technology_model, organization=2048):
     """
-    Extract silicon area in mm² from hardware_metrics.json.
+    Extract silicon area in mm² from hardware_metrics.json, at `organization`
+    (T5.1 step 2 fix round 1: organization-aware, see _reram_json_entry).
     DRAM/PCM use fixed ratios and return None here.
     """
     if technology_model in ['DDR5_4800', 'DDR5_4800_64B', 'pcm_microsoft_2009', '2D_DRAM_example', '3D_DRAM_example']:
         return None
 
-    entry = _reram_json_entry(technology_model)
+    entry = _reram_json_entry(technology_model, organization)
     if entry is None:
-        logger.error(f"[CRITICAL] hardware_metrics.json lookup failed for {technology_model}")
+        logger.error(f"[CRITICAL] hardware_metrics.json lookup failed for {technology_model} "
+                     f"(organization {organization})")
         return None
 
     area = entry.get('area_mm2', None)
     if area is None or area <= 0:
-        logger.error(f"[CRITICAL] Invalid area in hardware_metrics.json for {technology_model}: {area}")
-        return None
+        # I5: a missing/zero area is a broken hardware entry, not a reason to
+        # publish this ReRAM row with a fabricated density ratio.
+        raise ValueError(
+            f"Invalid area_mm2 in {HARDWARE_METRICS_FILE} for {technology_model} "
+            f"(organization {organization}): {area!r}")
 
-    logger.debug(f"Found area for {technology_model}: {area} mm²")
+    logger.debug(f"Found area for {technology_model} (organization {organization}): {area} mm²")
     return area
 
 
-def extract_physical_capacity_gb(technology_model):
+def extract_physical_capacity_gb(technology_model, organization=2048):
     """
-    Return per-chip physical capacity (GB) from hardware_metrics.json.
+    Return per-chip physical capacity (GB) from hardware_metrics.json, at `organization`
+    (T5.1 step 2 fix round 1: organization-aware, see _reram_json_entry).
 
     NVMain stats report the *simulated system* address space, which varies with
     chip count and does not reflect the single-chip physical capacity needed for
@@ -668,63 +1325,30 @@ def extract_physical_capacity_gb(technology_model):
     if technology_model in ['DDR5_4800', 'DDR5_4800_64B', 'pcm_microsoft_2009', '2D_DRAM_example', '3D_DRAM_example']:
         return None
 
-    entry = _reram_json_entry(technology_model)
+    entry = _reram_json_entry(technology_model, organization)
     if entry is None:
-        logger.error(f"[CRITICAL] hardware_metrics.json lookup failed for capacity of {technology_model}")
+        logger.error(f"[CRITICAL] hardware_metrics.json lookup failed for capacity of "
+                     f"{technology_model} (organization {organization})")
         return None
 
     cap = entry.get('capacity_gb', None)
     if cap is None or cap <= 0:
-        logger.error(f"[CRITICAL] Invalid capacity in hardware_metrics.json for {technology_model}: {cap}")
-        return None
+        # I5: see extract_area_mm2 -- fail loudly rather than fall back.
+        raise ValueError(
+            f"Invalid capacity_gb in {HARDWARE_METRICS_FILE} for {technology_model} "
+            f"(organization {organization}): {cap!r}")
 
-    logger.debug(f"Found per-chip capacity for {technology_model}: {cap} GB")
+    logger.debug(f"Found per-chip capacity for {technology_model} (organization {organization}): {cap} GB")
     return cap
 
 
-def extract_capacity_gb(content):
-    """
-    Extract capacity in GB from NVMain stats output.
-    
-    NVMain format: "defaultMemory.channel0.FRFCFS capacity is 65536 MB."
-    Converts MB to GB automatically.
-    """
-    
-    # Primary pattern: NVMain format "capacity is XXXXX MB"
-    patterns = [
-        (r'capacity\s+is\s+([\d\.]+)\s*MB', 'MB'),
-        (r'capacity\s+is\s+([\d\.]+)\s*GB', 'GB'),
-        (r'Capacity\s*:\s*([\d\.]+)(MB|GB|KB)', None),  # NVSim format
-        (r'capacity\s*[:=]\s*([\d\.]+)\s*g?b', 'GB'),
-    ]
-    
-    for pattern, unit in patterns:
-        matches = re.findall(pattern, content, re.IGNORECASE)
-        if matches:
-            try:
-                if unit is None:
-                    # Handle (value, unit) tuple from second pattern
-                    val, matched_unit = float(matches[0][0]), matches[0][1]
-                    if matched_unit.upper() == 'MB':
-                        return val / 1024.0
-                    elif matched_unit.upper() == 'GB':
-                        return val
-                    elif matched_unit.upper() == 'KB':
-                        return val / (1024.0**2)
-                else:
-                    val = float(matches[0])
-                    if unit == 'MB':
-                        return val / 1024.0
-                    elif unit == 'GB':
-                        return val
-                    elif unit == 'KB':
-                        return val / (1024.0**2)
-            except (ValueError, IndexError, TypeError) as e:
-                logger.debug(f"Error parsing capacity with pattern {pattern}: {e}")
-                continue
-    
-    logger.error(f"[CRITICAL] Capacity extraction failed from stats file")
-    return None
+# Minor-3 (final review 2026-09): extract_capacity_gb() used to sit here. It
+# read the NVMain stats "capacity is N MB" line, took only the FIRST channel,
+# and nothing called it: the area-density ratio deliberately uses the per-chip
+# physical capacity from hardware_metrics.json instead (see
+# extract_physical_capacity_gb above and the comment in parse_raw_stats).
+# visualize_slides._extract_capacity_gib() is the live, channel-summing reader
+# of that stats line. Removed rather than left as a second, wrong answer.
 
 
 # ============================================================================
@@ -747,6 +1371,15 @@ def decompose_power(record, technology, power):
     key — backgroundPower is a real, technology-differentiated NVMain counter
     now, not a generic default, so it no longer needs a separate residual-based
     path the way it did before that fix.
+
+    F1 (final-review C1): `record['background_power']` is the CORRECTED module
+    background sum -- each rank's printed backgroundPower multiplied by that
+    rank's device count for an EnergyModel-current (DDR5) run, unchanged for
+    every energy-mode technology. `record['power']` carries the identical
+    correction (parse_raw_stats), because the printed rank totalPower omits the
+    same Watts. The reconciliation below therefore still holds by construction;
+    note that it could never have DETECTED the omission, since totalPower and
+    the components shared it.
 
     Returns (dynamic, static, refresh, unattributed_power). unattributed_power
     is the leftover after Static+Dynamic+Refresh is subtracted from Power;
@@ -909,8 +1542,32 @@ def parse_raw_stats():
     # both files, so the results/ directory can be cleaned up deliberately.
     seen_keys = {}
 
+    # T5.1 step 2: guard against a --results-dir mixing stats files from both
+    # the 2048 (default) and 1024 (sensitivity) ReRAM organizations. Technology
+    # alone does not distinguish them (classify_reram_organization's docstring),
+    # so this is a separate, directory-wide check, not something the
+    # (Technology, Architecture, Benchmark) duplicate-key guard above would
+    # always catch (it only fires when the two organizations happen to share a
+    # benchmark for the same tech/arch).
+    seen_organization = None  # (organization, filename) of the first ReRAM file seen
+
     for filepath in stat_files:
         filename = Path(filepath).name
+
+        org = classify_reram_organization(filename)
+        if org is not None:
+            if seen_organization is not None and seen_organization[0] != org:
+                raise ValueError(
+                    f"Mixed ReRAM organization in {RESULTS_SYS_DIR}: "
+                    f"{seen_organization[1]!r} is {seen_organization[0]}x"
+                    f"{seen_organization[0]} but {filename!r} is {org}x{org}. Each "
+                    f"results directory must hold stats files for exactly one "
+                    f"organization (T5.1 step 2, organization axis); move one run's "
+                    f"stats files to its own results directory before re-running "
+                    f"process_metrics.py."
+                )
+            if seen_organization is None:
+                seen_organization = (org, filename)
 
         # Classify
         tech = classify_technology(filename)
@@ -955,14 +1612,33 @@ def parse_raw_stats():
 
             # Extract area and per-chip physical capacity for ReRAM density ratio.
             # Both come from hardware_metrics.json so they are at the same scale.
-            # extract_capacity_gb() reads the NVMain simulated address space which
-            # scales with chip count and must NOT be used for the density formula.
-            area_mm2 = extract_area_mm2(content, tech)
-            capacity_gb = extract_physical_capacity_gb(tech)
+            # The NVMain stats "capacity is N MB" line reports the simulated
+            # address space, which scales with chip count and must NOT be used
+            # for the density formula.
+            # T5.1 step 2 fix round 1 (Critical-1): pass this file's own organization
+            # (already classified above for the mixed-organization guard) so a
+            # 1024-organization stats file gets the 1024 hardware entry, not the 2048
+            # one -- `org` is None for non-ReRAM technologies, where organization is
+            # unused anyway (extract_area_mm2/extract_physical_capacity_gb return None
+            # for DDR5/PCM before ever looking at it), so default to 2048 for those.
+            area_mm2 = extract_area_mm2(content, tech, org if org is not None else 2048)
+            capacity_gb = extract_physical_capacity_gb(tech, org if org is not None else 2048)
+
+            # F1 (final-review C1): the factor each rank's printed
+            # backgroundPower must be multiplied by. 1 for ReRAM/PCM
+            # (energy-mode), the rank device count for DDR5 (EnergyModel
+            # current), where NVMain divides background by deviceCount and
+            # never multiplies it back. This RAISES (caught by the per-file
+            # except below, which turns it into a reported parse failure and a
+            # non-zero exit) if the run's config or its BusWidth/DeviceWidth
+            # keys cannot be found: a silently-defaulted device count is the
+            # exact failure mode being repaired here.
+            bg_factor = background_power_device_factor(content, stats_name=filename)
 
             # Real, module-summed power-component counters (all ranks, all
             # channels) for the static/dynamic/refresh decomposition.
-            module_power = extract_module_power_components(content)
+            module_power = extract_module_power_components(
+                content, background_factor=bg_factor)
 
             # T2.5 fix round 1: resolve this file's OWN clocks once (prefers
             # the stats file's own diagnostic line over the CLOCK_FREQUENCY_MHZ/
@@ -980,6 +1656,41 @@ def parse_raw_stats():
                 content, cpufreq_mhz)
             wear_max_writes, wear_hotspot_factor = extract_dimm_wear_stats(content)
 
+            # F1: Power is the sum of the ranks' PRINTED totalPower, and each
+            # printed rank totalPower omits exactly (deviceCount - 1) x that
+            # rank's printed backgroundPower (StandardRank.cpp:1021 adds the
+            # un-re-multiplied background to the three re-multiplied
+            # components). Adding the same correction here keeps Power equal
+            # to the sum of the corrected components, so decompose_power's
+            # reconciliation still holds by construction and Unattributed_Power
+            # stays the small printing residual it has always been. For every
+            # energy-mode technology the correction is exactly 0.0 W and Power
+            # is bit-for-bit what it was before this change.
+            if module_power is not None and module_power['backgroundPowerCorrection']:
+                power += module_power['backgroundPowerCorrection']
+
+                for check in crosscheck_current_mode_background(
+                        content, bg_factor, clk_mhz, cpufreq_mhz, stats_name=filename):
+                    if not check['ok']:
+                        logger.error(
+                            f"[BACKGROUND-XCHECK] {filename}: {check['rank']} "
+                            f"backgroundEnergy x Voltage / memory cycles / 1000 = "
+                            f"{check['expected_w']:.6f}W but corrected backgroundPower "
+                            f"({bg_factor} x printed) = {check['corrected_w']:.6f}W "
+                            f"(relative error {check['rel_err']:.2%})")
+
+                bounds = current_mode_static_power_bounds(
+                    content, bg_factor, module_power['rankCount'], stats_name=filename)
+                if bounds is not None:
+                    floor_w, ceiling_w, devices = bounds
+                    static_w = module_power['backgroundPower']
+                    if not (floor_w <= static_w <= ceiling_w):
+                        logger.error(
+                            f"[STATIC-BOUNDS] {filename}: corrected module static power "
+                            f"{static_w:.6f}W is outside the config's own datasheet range "
+                            f"[{floor_w:.6f}W, {ceiling_w:.6f}W] for {devices} devices "
+                            f"(devices x EIDD2P0 x V .. devices x EIDD3N x V)")
+
             data.append({
                 'filename': filename,
                 'technology': tech,
@@ -995,6 +1706,11 @@ def parse_raw_stats():
                 'activate_power': module_power['activatePower'] if module_power else None,
                 'burst_power': module_power['burstPower'] if module_power else None,
                 'refresh_power': module_power['refreshPower'] if module_power else None,
+                # F1: 1 for every energy-mode technology, the rank device count
+                # for an EnergyModel-current (DDR5) run. Carried into the CSVs
+                # as Background_Power_Device_Factor so a corrected row can never
+                # be mistaken for a raw one.
+                'background_power_device_factor': bg_factor,
                 'clk_mhz': clk_mhz,
                 'cpufreq_mhz': cpufreq_mhz,
                 'e2e_latency_ns': e2e_latency_ns,
@@ -1037,13 +1753,33 @@ def parse_raw_stats():
     return data, failures
 
 
-def process_metrics(raw_data):
-    """Calculate derived metrics from raw data."""
-    
+def process_metrics(raw_data, run_fields=None):
+    """Calculate derived metrics from raw data.
+
+    `run_fields` carries the Run_* provenance columns (I6). It may be:
+      - None (default): build a PER-FILE resolver from the run_manifest.json
+        beside the stats files being processed. A directory without a manifest,
+        a manifest that does not list its own outputs, and any stats file a
+        manifest does not list, each get "unknown" in every Run_* column and a
+        WARNING - never a fabricated value (F2 fix round 1, review Important-1).
+      - a callable f(stats_filename) -> {column: value}.
+      - a plain dict, applied to every row (used by tests).
+    """
+
     logger.info("Calculating derived metrics...")
-    
+
+    if run_fields is None:
+        resolve_run_fields = make_run_provenance_resolver(
+            load_run_manifest(RESULTS_SYS_DIR), RESULTS_SYS_DIR)
+    elif callable(run_fields):
+        resolve_run_fields = run_fields
+    else:
+        fixed_fields = dict(run_fields)
+        def resolve_run_fields(filename):
+            return dict(fixed_fields)
+
     processed = []
-    
+
     for record in raw_data:
         tech = record['technology']
         power = record['power']
@@ -1073,14 +1809,19 @@ def process_metrics(raw_data):
             tech
         )
 
-        # If area extraction failed for ReRAM, use fallback but log it
+        # I5 (final review 2026-09): a ReRAM row whose area density could not be
+        # derived used to be published with a ratio of 1.0, i.e. as exactly
+        # DDR5-dense, and the run still exited 0. It is now fatal. DDR5/PCM
+        # never reach here (calculate_area_density_ratio returns their fixed
+        # ratio), so this cannot affect a DDR5-only or PCM-only run.
         if area_ratio is None:
-            if tech in ['1T1R_SLC', '1T1R_MLC', '1S1R_SLC', '1S1R_MLC',
-                        '1T1R_SILICON', '1S1R_SILICON']:
-                logger.error(f"[SKIP-WITH-FALLBACK] {tech}: Using 1.0 ratio due to extraction failure")
-                area_ratio = 1.0
-            else:
-                area_ratio = 1.0  # Safe fallback for DRAM/PCM (shouldn't reach here)
+            raise ValueError(
+                f"Area density ratio could not be computed for {tech} "
+                f"({record['architecture']}, {record['benchmark']}): "
+                f"area_mm2={record['area_mm2']!r}, capacity_gb={record['capacity_gb']!r}. "
+                f"A ReRAM row must not be published with a fallback ratio of 1.0 "
+                f"('DDR5 parity'); fix the hardware metrics for this technology or "
+                f"point --hardware-metrics at the right file.")
 
         processed.append({
             'Technology': tech,
@@ -1104,8 +1845,21 @@ def process_metrics(raw_data):
             'Wear_Max_Writes': record['wear_max_writes'],
             'Wear_HotSpot_Factor': record['wear_hotspot_factor'],
             'Completed_Requests': record['completed_requests'],
+            # F1 (final-review C1): makes the background-power correction
+            # visible in every CSV that carries a power number. 1 means the
+            # row's Static_Power/Power are exactly NVMain's printed rank sums
+            # (ReRAM, PCM); > 1 means each rank's printed backgroundPower was
+            # multiplied by this rank device count first, because the run used
+            # EnergyModel current and NVMain prints that one component per
+            # device (4 for DDR5_4800_DRAM_subchannel, 8 for the 64 B and
+            # legacy 64-bit DDR5 configs).
+            'Background_Power_Device_Factor': record['background_power_device_factor'],
+            # I6 (final review 2026-09): the run's own flags, from the run
+            # manifest mbmm_master.py wrote beside these stats files - but only
+            # for the stats files that manifest lists as its own (F2 fix round 1).
+            **resolve_run_fields(record.get('filename', '')),
         })
-    
+
     logger.info(f"Processed {len(processed)} data points\n")
     return processed
 
@@ -1159,8 +1913,11 @@ def save_bar_chart_metrics(df_processed):
         'Latency_ns', 'HW_Latency_ns', 'Queue_Latency_ns',
         'Power', 'Dynamic_Power', 'Static_Power', 'Refresh_Power', 'Unattributed_Power', 'PDP',
         'E2E_Latency_ns', 'Delivered_BW_MBps', 'Wear_Max_Writes', 'Wear_HotSpot_Factor',
-        'Completed_Requests'
-    ]]
+        'Completed_Requests',
+        # F1 (final-review C1): appended after the T2.5 block, so every
+        # downstream reader that indexes by name keeps working.
+        'Background_Power_Device_Factor'
+    ] + RUN_PROVENANCE_COLUMN_NAMES]
 
     df_output.to_csv(output_file, index=False)
 
@@ -1178,8 +1935,11 @@ def save_pareto_metrics(df_processed):
     # Select columns for Pareto plots (all architectures)
     df_output = df_processed[[
         'Technology', 'Architecture', 'Benchmark',
-        'Total_Execution_Cycles', 'Latency_ns', 'Power'
-    ]]
+        'Total_Execution_Cycles', 'Latency_ns', 'Power',
+        # F1 (final-review C1): Power carries the corrected background, so the
+        # factor that corrected it travels with it here too.
+        'Background_Power_Device_Factor'
+    ] + RUN_PROVENANCE_COLUMN_NAMES]
     
     df_output.to_csv(output_file, index=False)
     
@@ -1201,8 +1961,11 @@ def save_hero_metrics(df_processed):
         'Total_Execution_Cycles', 'HW_Latency_Cycles', 'Queue_Latency_Cycles',
         'Power', 'PDP', 'Area_Density_Ratio',
         'E2E_Latency_ns', 'Delivered_BW_MBps', 'Wear_Max_Writes', 'Wear_HotSpot_Factor',
-        'Completed_Requests'
-    ]]
+        'Completed_Requests',
+        # F1 (final-review C1): Power and PDP here carry the corrected
+        # background, so the factor travels with them.
+        'Background_Power_Device_Factor'
+    ] + RUN_PROVENANCE_COLUMN_NAMES]
     
     df_output.to_csv(output_file, index=False)
     
@@ -1234,13 +1997,21 @@ def save_geometric_means(geometric_means_dict):
 def main():
     """Execute data processing pipeline."""
 
-    global RESULTS_SYS_DIR, OUTPUT_DIR
+    global RESULTS_SYS_DIR, OUTPUT_DIR, HARDWARE_METRICS_FILE, HARDWARE_METRICS
 
     parser = argparse.ArgumentParser(description="MBMM Step 6: Metrics Processing")
     parser.add_argument("--results-dir", default=RESULTS_SYS_DIR,
                         help="Directory to scan for stats_*.out files (default: results/system).")
     parser.add_argument("--output-dir", default=OUTPUT_DIR,
                         help="Directory to write processed_*.csv files (default: results/).")
+    parser.add_argument("--hardware-metrics", default=HARDWARE_METRICS_FILE,
+                        help="Path to the hardware_metrics.json to read ReRAM area/capacity "
+                             "from (default: results/hardware_metrics.json, the live shared "
+                             "file). T5.1 step 2 fix round 1: point this at an isolated "
+                             "sensitivity run's own copy (e.g. "
+                             "results/system_rev2026-09_org1024/_csv/hardware_metrics.json) "
+                             "to re-derive that run's processed CSVs without depending on "
+                             "whatever the live file currently holds.")
     parser.add_argument("--allow-parse-failures", action="store_true",
                         help="T2.5 fix round 2: downgrade per-file stats-parse failures from "
                              "a fatal condition (ERROR logged, process exits 1) to a WARNING "
@@ -1252,6 +2023,8 @@ def main():
     args = parser.parse_args()
     RESULTS_SYS_DIR = args.results_dir
     OUTPUT_DIR = args.output_dir
+    HARDWARE_METRICS_FILE = args.hardware_metrics
+    HARDWARE_METRICS = _load_hardware_metrics(HARDWARE_METRICS_FILE)
 
     try:
         # Step 1: Parse raw stats files

@@ -171,27 +171,66 @@ def run_simulations():
             continue
 
         print(f"    [2/2] Running NVMain System Phase...")
-        # Tagging stats file with benchmark name
+        # Tagging stats file with benchmark name.
+        #
+        # Minor-5 (final review 2026-09): NVMain used to write straight to the
+        # final name, so a failed or crashed run left a PARTIAL stats file
+        # there under the name a complete run would have. process_metrics.py
+        # globs that directory, and a partial file can parse (it just carries
+        # fewer counters). The run now writes to "<name>.partial" and renames
+        # only on success; on failure the partial file is kept, renamed to
+        # "<name>.failed", so it can still be read for the crash but is never
+        # picked up as a result.
         stats_file = sys_results_dir / f"stats_{model}_{trace_name}.out"
+        partial_file = sys_results_dir / f"stats_{model}_{trace_name}.out.partial"
+        failed_file = sys_results_dir / f"stats_{model}_{trace_name}.out.failed"
+
+        # F2 fix round 1 (review Important-2): an EARLIER run's successful
+        # output at this exact name used to survive a later failed re-run, and
+        # process_metrics.py's stats_*.out glob would then read it as if it
+        # were this attempt's result. Move it aside first (never delete), so
+        # that after a failure nothing fresh-looking sits at the final name.
+        # mbmm_master.py also clears the whole directory at the start of Stage
+        # 4, but this stage script is called directly too (the DDR5-only
+        # re-runs were done that way), so the rule lives here as well.
+        if stats_file.exists():
+            superseded = sys_results_dir / (
+                stats_file.name
+                + datetime.datetime.now().strftime(".superseded_%Y%m%d_%H%M%S"))
+            stats_file.rename(superseded)
+            print(f"          -> Existing {stats_file.name} moved aside to "
+                  f"{superseded.name} before this attempt (not deleted).")
+
+        def _keep_as_failed(reason):
+            if partial_file.exists():
+                if failed_file.exists():
+                    failed_file.unlink()
+                partial_file.rename(failed_file)
+                print(f"          -> Partial output kept as {failed_file.name} "
+                      f"(not a result; {reason})")
 
         try:
-            with open(stats_file, "w") as out_f:
+            with open(partial_file, "w") as out_f:
                 process = subprocess.run(
                     [str(nvmain_exe), str(nvmain_cfg), str(trace_path), str(args.cycles)],
                     stdout=out_f, stderr=subprocess.STDOUT
                 )
             if process.returncode == 0:
-                if not stats_file.exists() or stats_file.stat().st_size == 0:
+                if not partial_file.exists() or partial_file.stat().st_size == 0:
                     print(f"    [!] NVMain Error: exit 0 but stats output is missing or empty.")
                     failed_models.append((model, "NVMain exited 0 but produced no/empty stats output"))
+                    _keep_as_failed("exit 0 with empty output")
                 else:
+                    partial_file.replace(stats_file)
                     print(f"          -> System stats saved: {stats_file.name}")
             else:
                 print(f"    [!] NVMain Error (Code {process.returncode}).")
                 failed_models.append((model, f"NVMain exited with code {process.returncode}"))
+                _keep_as_failed(f"NVMain exit code {process.returncode}")
         except Exception as e:
             print(f"    [!] NVMain Execution Failed: {e}")
             failed_models.append((model, f"NVMain execution failed: {e}"))
+            _keep_as_failed(f"NVMain execution failed: {e}")
 
     print("\n" + "=" * 60)
     print("STEP 4 COMPLETE.")
