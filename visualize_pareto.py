@@ -66,7 +66,7 @@ TECHNOLOGY_CONFIGS = {
         'color': '#FF00FF',  # Magenta
         'label': '1S1R MLC',
     },
-    # Baselines — distinct shapes to separate from ReRAM trajectory lines
+    # Baselines - distinct shapes to separate from ReRAM trajectory lines
     'pcm_microsoft_2009': {
         'marker': 'D',       # Diamond
         'color': '#FF0000',  # Pure Red
@@ -106,6 +106,17 @@ TECHNOLOGY_CONFIGS = {
     },
 }
 
+# Display names for figure titles (same table as visualize_results.py's
+# format_benchmark_name; kept as a per-script copy like the other tables here).
+BENCHMARK_TITLES = {
+    'alexnet_layer1_ifmap': 'AlexNet Layer 1 (IFMAP)',
+    'alexnet_layer1_ofmap': 'AlexNet Layer 1 (OFMAP)',
+    'gpt2_ifmap': 'GPT-2 (IFMAP)',
+    'gcc_spec2017': 'GCC (SPEC2017)',
+    'lbm_spec2017': 'LBM (SPEC2017)',
+    'stream': 'STREAM',
+}
+
 # Architecture scale configurations
 ARCHITECTURE_SCALES = {
     'single':    {'size_base': 200,  'alpha': 0.65, 'edgewidth': 1.5},
@@ -114,12 +125,14 @@ ARCHITECTURE_SCALES = {
     'full_dimm': {'size_base': 900,  'alpha': 1.0,  'edgewidth': 2.5, 'edgecolor': 'black'}
 }
 
-# Architecture ordering for scaling trajectory (Single → 16-Chip → Full DIMM)
-# 8chip is excluded: its simulation values are identical to single, adding no
-# new architectural information and creating visual clutter.
-ARCH_ORDER = ['single', '16chip', 'full_dimm']
+# Architecture ordering for scaling trajectory (Single → 8-Chip → 16-Chip → Full DIMM)
+# 8chip was excluded before the 2026-09 revision, when its values were identical
+# to single. With the corrected capacity it is a distinct point (about 7.8x the
+# power of single, and the last one-channel point before the 8-to-16 step that
+# Section 3.2 of the book argues from), so it is plotted.
+ARCH_ORDER = ['single', '8chip', '16chip', 'full_dimm']
 
-# Generic examples dropped — narrative focuses on literature-backed baselines
+# Generic examples dropped - narrative focuses on literature-backed baselines
 EXCLUDED_TECHNOLOGIES = {'2D_DRAM_example', '3D_DRAM_example'}
 
 # The primary Pareto figures show exactly these six -- see visualize_results.py
@@ -208,7 +221,7 @@ def create_pareto_plot(benchmark, data_points):
 
     # Bullseye draw order: largest marker first (bottom), smallest last (top).
     # Descending arch_order_idx → full_dimm drawn before 16chip before single.
-    # 8chip rows are excluded (not in ARCH_ORDER / ARCHITECTURE_SCALES).
+    # All four architectures in ARCH_ORDER are plotted (8chip included since the 2026-09 revision).
     RERAM_TECHS = {'1T1R_SLC', '1T1R_MLC', '1S1R_SLC', '1S1R_MLC'}
     arch_order_idx = {a: i for i, a in enumerate(ARCH_ORDER)}
     data_sorted = sorted(
@@ -246,7 +259,7 @@ def create_pareto_plot(benchmark, data_points):
         )
         plotted_techs.add(tech)
 
-    # Scaling trajectory lines (Single → 16-Chip → Full DIMM)
+    # Scaling trajectory lines (Single → 8-Chip → 16-Chip → Full DIMM)
     for tech in sorted(plotted_techs):
         ordered_pts = []
         for arch in ARCH_ORDER:
@@ -311,9 +324,10 @@ def create_pareto_plot(benchmark, data_points):
     # Architecture scale entries
     legend_elements += [
         Line2D([0], [0], color='none', label=''),
-        Line2D([0], [0], color='none', label='── Capacity Scale ──'),
+        Line2D([0], [0], color='none', label='Capacity Scale'),
     ]
     for arch_key, arch_label in [('single',    '1-Chip  (smallest marker)'),
+                                  ('8chip',     '8-Chip'),
                                   ('16chip',    '16-Chip'),
                                   ('full_dimm', '64-Chip / Full DIMM (outlined)')]:
         acfg = ARCHITECTURE_SCALES[arch_key]
@@ -334,9 +348,9 @@ def create_pareto_plot(benchmark, data_points):
 
     # ── Labels & grid ───────────────────────────────────────────────────────
     ax.set_xlabel('Latency (ns)', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Total System Power (W)' + (' — Log Scale' if y_is_log else ''),
+    ax.set_ylabel('Total System Power (W)' + (' - Log Scale' if y_is_log else ''),
                  fontsize=12, fontweight='bold')
-    ax.set_title(f'Pareto Frontier — Latency vs. Power: {benchmark}',
+    ax.set_title(f'Pareto Frontier - Latency vs. Power: {BENCHMARK_TITLES.get(benchmark, benchmark)}',
                  fontsize=13, fontweight='bold', pad=12)
     ax.grid(True, alpha=0.3, linestyle='--')
 
@@ -344,7 +358,7 @@ def create_pareto_plot(benchmark, data_points):
                           style='italic', color='gray')
 
     # Reserve 30 % of canvas width for the outside legend, and bottom margin
-    # for the caveat footnote — no tight_layout (would fight the fixed legend
+    # for the caveat footnote - no tight_layout (would fight the fixed legend
     # position), so both margins have to be reserved explicitly. caveat_text
     # is passed back to main() so it can be added to bbox_extra_artists --
     # savefig(bbox_inches='tight') does not reliably auto-discover fig.text()

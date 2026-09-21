@@ -355,6 +355,8 @@ def test_save_bar_chart_metrics_appends_new_columns_at_end(tmp_path, monkeypatch
         'E2E_Latency_ns': 2187.5, 'Delivered_BW_MBps': 9.6,
         'Wear_Max_Writes': 50, 'Wear_HotSpot_Factor': 5.357142857142857,
         'Completed_Requests': 150,
+        'Background_Power_Device_Factor': 1,
+        **{name: pm.RUN_PROVENANCE_UNKNOWN for name in pm.RUN_PROVENANCE_COLUMN_NAMES},
     }
     import pandas as pd
     df = pd.DataFrame([row])
@@ -374,7 +376,14 @@ def test_save_bar_chart_metrics_appends_new_columns_at_end(tmp_path, monkeypatch
 
     new_columns = ['E2E_Latency_ns', 'Delivered_BW_MBps', 'Wear_Max_Writes',
                    'Wear_HotSpot_Factor', 'Completed_Requests']
-    assert header[-len(new_columns):] == new_columns
+    # F1 (final-review C1) appended Background_Power_Device_Factor after the
+    # T2.5 block, and F2 (I6) appended the Run_* provenance columns after that.
+    # Every append is at the END, so a reader that indexes by name keeps working.
+    run_columns = list(pm.RUN_PROVENANCE_COLUMN_NAMES)
+    assert header[-len(run_columns):] == run_columns
+    tail = header[:-len(run_columns)]
+    assert tail[-len(new_columns) - 1:-1] == new_columns
+    assert tail[-1] == 'Background_Power_Device_Factor'
 
 
 def test_import_does_not_run_main(capsys):
@@ -477,3 +486,303 @@ def test_extract_end_to_end_latency_ns_accepts_positive_exponent():
     )
     result = pm.extract_end_to_end_latency_ns(stats, 400)
     assert result == pytest.approx(2.4895e7 * 2.5)
+
+
+# ==========================================================================
+# F1 (final-review C1): the EnergyModel-current background-power correction
+# ==========================================================================
+#
+# NVMain's StandardRank divides backgroundPower by the rank's device count in
+# `EnergyModel current` mode and never multiplies it back, while activate,
+# burst and refresh ARE multiplied back. process_metrics.py corrects the
+# printed value in post-processing. These tests use synthetic stats text and a
+# synthetic config in tmp_path only: nothing here reads results/ or
+# simulators/, and nothing writes into results/.
+
+# Devices per rank = BusWidth / DeviceWidth = 32 / 8 = 4.
+# Two ranks (one per channel) -> 8 devices on the module.
+F1_CONFIG = """\
+; synthetic DDR5-shaped config for the F1 tests
+CLK 2400
+BusWidth 32
+DeviceWidth 8
+RANKS 1
+CHANNELS 2
+EnergyModel current
+Voltage 1.1
+EIDD2P0 46.87
+EIDD2N 49
+EIDD3P 115.94
+EIDD3N 117.6
+"""
+
+# Per rank: backgroundPower 0.09 W printed (one device), so 0.36 W corrected.
+# backgroundEnergy 1.96363636e+11 mA*t is chosen so that the independent
+# cross-check reproduces 0.36 W exactly:
+#   E * V / memory_cycles / 1000 = 1.96363636e11 * 1.1 / 6e8 / 1000 = 0.36
+# Memory cycles = "Exiting at cycle 750000000" (CPUFreq 3000) x 2400/3000 = 6e8.
+# Printed rank totalPower = 0.09 + 0 + 0.0001 + 0.036 = 0.1261 (NVMain's own,
+# with the undercounted background); corrected = 0.36 + 0.0001 + 0.036 = 0.3961.
+F1_CURRENT_MODE_STATS_TEMPLATE = """\
+NVMain command line is:
+/home/yuvalk/MBMM/simulators/nvmain/nvmain.fast {config} /tmp/trace.nvt 600000000
+
+NVMain: GlobalEventQueue: Added a memory subsystem running at 2400MHz. My frequency is 3000MHz.
+Creating 32 banks in all 4 devices.
+i0.defaultMemory.channel0.FRFCFS.channel0.rank0.totalEnergy 2.2e+11mA*t
+i0.defaultMemory.channel0.FRFCFS.channel0.rank0.backgroundEnergy 1.96363636e+11mA*t
+i0.defaultMemory.channel0.FRFCFS.channel0.rank0.totalPower 0.1261W
+i0.defaultMemory.channel0.FRFCFS.channel0.rank0.backgroundPower 0.09W
+i0.defaultMemory.channel0.FRFCFS.channel0.rank0.activatePower 0W
+i0.defaultMemory.channel0.FRFCFS.channel0.rank0.burstPower 0.0001W
+i0.defaultMemory.channel0.FRFCFS.channel0.rank0.refreshPower 0.036W
+i0.defaultMemory.channel0.FRFCFS.mem_reads 40
+i0.defaultMemory.channel0.FRFCFS.mem_writes 10
+i0.defaultMemory.channel0.FRFCFS.averageTotalLatency 500.0
+i0.defaultMemory.channel1.FRFCFS.channel1.rank0.totalEnergy 2.2e+11mA*t
+i0.defaultMemory.channel1.FRFCFS.channel1.rank0.backgroundEnergy 1.96363636e+11mA*t
+i0.defaultMemory.channel1.FRFCFS.channel1.rank0.totalPower 0.1261W
+i0.defaultMemory.channel1.FRFCFS.channel1.rank0.backgroundPower 0.09W
+i0.defaultMemory.channel1.FRFCFS.channel1.rank0.activatePower 0W
+i0.defaultMemory.channel1.FRFCFS.channel1.rank0.burstPower 0.0001W
+i0.defaultMemory.channel1.FRFCFS.channel1.rank0.refreshPower 0.036W
+i0.defaultMemory.channel1.FRFCFS.mem_reads 40
+i0.defaultMemory.channel1.FRFCFS.mem_writes 10
+i0.defaultMemory.channel1.FRFCFS.averageTotalLatency 500.0
+Exiting at cycle 750000000 because simCycles 750000000 reached.
+"""
+
+# Same shape, energy model `NonVolatile`/`energy`: energies in nJ, no
+# deviceCount division anywhere in NVMain, so nothing may be corrected.
+F1_ENERGY_MODE_STATS = """\
+NVMain command line is:
+/home/yuvalk/MBMM/simulators/nvmain/nvmain.fast /tmp/does_not_exist.config /tmp/trace.nvt 600000000
+
+NVMain: GlobalEventQueue: Added a memory subsystem running at 800MHz. My frequency is 3000MHz.
+i0.defaultMemory.channel0.FRFCFS.channel0.rank0.totalEnergy 2.17684e+08nJ
+i0.defaultMemory.channel0.FRFCFS.channel0.rank0.backgroundEnergy 2.16768e+08nJ
+i0.defaultMemory.channel0.FRFCFS.channel0.rank0.totalPower 0.867416W
+i0.defaultMemory.channel0.FRFCFS.channel0.rank0.backgroundPower 0.867072W
+i0.defaultMemory.channel0.FRFCFS.channel0.rank0.activatePower 0.0002W
+i0.defaultMemory.channel0.FRFCFS.channel0.rank0.burstPower 0.000144W
+i0.defaultMemory.channel0.FRFCFS.channel0.rank0.refreshPower 0W
+i0.defaultMemory.channel0.FRFCFS.mem_reads 40
+i0.defaultMemory.channel0.FRFCFS.mem_writes 10
+i0.defaultMemory.channel0.FRFCFS.averageTotalLatency 500.0
+Exiting at cycle 750000000 because simCycles 750000000 reached.
+"""
+
+
+def _f1_current_mode(tmp_path, config_text=F1_CONFIG, config_name="F1_DDR5.config"):
+    """Write the synthetic config into tmp_path and return the stats text that
+    names it on its own NVMain command line."""
+    config = tmp_path / config_name
+    config.write_text(config_text)
+    return F1_CURRENT_MODE_STATS_TEMPLATE.format(config=config)
+
+
+def test_f1_current_mode_detected_from_energy_units(tmp_path):
+    assert pm.uses_current_energy_model(_f1_current_mode(tmp_path)) is True
+    assert pm.uses_current_energy_model(F1_ENERGY_MODE_STATS) is False
+
+
+def test_f1_device_factor_is_four_for_current_mode(tmp_path):
+    stats = _f1_current_mode(tmp_path)
+    assert pm.background_power_device_factor(stats, stats_name="synthetic") == 4
+
+
+def test_f1_device_factor_is_one_for_energy_mode():
+    # No config is even consulted: an energy-mode file names a config that does
+    # not exist here, and the factor is still 1 without raising.
+    assert pm.background_power_device_factor(
+        F1_ENERGY_MODE_STATS, stats_name="synthetic") == 1
+
+
+def test_f1_background_power_multiplied_by_four(tmp_path):
+    stats = _f1_current_mode(tmp_path)
+    factor = pm.background_power_device_factor(stats, stats_name="synthetic")
+    components = pm.extract_module_power_components(stats, background_factor=factor)
+
+    # Two ranks x 0.09 W printed = 0.18 W raw, x 4 = 0.72 W corrected.
+    assert components['backgroundPowerRaw'] == pytest.approx(0.18)
+    assert components['backgroundPower'] == pytest.approx(0.72)
+    assert components['backgroundPowerCorrection'] == pytest.approx(0.54)
+    assert components['backgroundPowerDeviceFactor'] == 4
+    assert components['rankCount'] == 2
+
+    # The other three components are NVMain's own, untouched: they were already
+    # multiplied back by deviceCount inside StandardRank.
+    assert components['activatePower'] == pytest.approx(0.0)
+    assert components['burstPower'] == pytest.approx(0.0002)
+    assert components['refreshPower'] == pytest.approx(0.072)
+
+
+def test_f1_energy_mode_components_are_untouched():
+    factor = pm.background_power_device_factor(
+        F1_ENERGY_MODE_STATS, stats_name="synthetic")
+    corrected = pm.extract_module_power_components(
+        F1_ENERGY_MODE_STATS, background_factor=factor)
+    baseline = pm.extract_module_power_components(F1_ENERGY_MODE_STATS)
+
+    assert factor == 1
+    for key in ('backgroundPower', 'activatePower', 'burstPower', 'refreshPower'):
+        assert corrected[key] == baseline[key]
+    assert corrected['backgroundPowerCorrection'] == 0.0
+    assert corrected['backgroundPower'] == pytest.approx(0.867072)
+
+
+def test_f1_missing_config_raises_naming_the_file(tmp_path):
+    # Current-mode stats naming a config that exists nowhere: no default.
+    stats = F1_CURRENT_MODE_STATS_TEMPLATE.format(
+        config=str(tmp_path / "never_written.config"))
+    with pytest.raises(ValueError) as excinfo:
+        pm.background_power_device_factor(
+            stats, stats_name="stats_synthetic.out", search_dirs=[str(tmp_path)])
+    message = str(excinfo.value)
+    assert "stats_synthetic.out" in message
+    assert "never_written.config" in message
+
+
+def test_f1_missing_config_keys_raise_naming_the_key(tmp_path):
+    config_text = "\n".join(
+        line for line in F1_CONFIG.splitlines() if not line.startswith("DeviceWidth"))
+    stats = _f1_current_mode(tmp_path, config_text=config_text + "\n")
+    with pytest.raises(ValueError) as excinfo:
+        pm.background_power_device_factor(stats, stats_name="stats_synthetic.out")
+    message = str(excinfo.value)
+    assert "stats_synthetic.out" in message
+    assert "DeviceWidth" in message
+
+
+def test_f1_no_command_line_raises(tmp_path):
+    stats = _f1_current_mode(tmp_path).split("\n", 2)[2]  # drop the command-line banner
+    with pytest.raises(ValueError) as excinfo:
+        pm.background_power_device_factor(stats, stats_name="stats_synthetic.out")
+    assert "stats_synthetic.out" in str(excinfo.value)
+
+
+def test_f1_printed_device_count_disagreement_raises(tmp_path):
+    stats = _f1_current_mode(tmp_path).replace(
+        "Creating 32 banks in all 4 devices.", "Creating 32 banks in all 8 devices.")
+    with pytest.raises(ValueError) as excinfo:
+        pm.background_power_device_factor(stats, stats_name="stats_synthetic.out")
+    assert "disagree" in str(excinfo.value)
+
+
+def test_f1_background_energy_crosscheck_reproduces_corrected_power(tmp_path):
+    # The independent check: rank backgroundEnergy (mA*t) x Voltage / elapsed
+    # memory cycles / 1000 must equal the CORRECTED rank background power,
+    # without going through the printed backgroundPower at all.
+    stats = _f1_current_mode(tmp_path)
+    checks = pm.crosscheck_current_mode_background(
+        stats, 4, clk_mhz=2400, cpufreq_mhz=3000, stats_name="synthetic")
+
+    assert len(checks) == 2
+    for check in checks:
+        assert check['expected_w'] == pytest.approx(0.36, rel=1e-6)
+        assert check['corrected_w'] == pytest.approx(0.36)
+        assert check['ok'] is True
+
+
+def test_f1_background_energy_crosscheck_fails_on_the_uncorrected_value(tmp_path):
+    # Factor 1 is what the defect amounts to; the cross-check must reject it.
+    stats = _f1_current_mode(tmp_path)
+    checks = pm.crosscheck_current_mode_background(
+        stats, 1, clk_mhz=2400, cpufreq_mhz=3000, stats_name="synthetic")
+    assert checks and all(check['ok'] is False for check in checks)
+
+
+def test_f1_memory_clock_cycles_from_global_exit_cycle(tmp_path):
+    stats = _f1_current_mode(tmp_path)
+    assert pm.extract_memory_clock_cycles(stats, 2400, 3000) == pytest.approx(6e8)
+
+
+def test_f1_static_power_floor_and_ceiling(tmp_path):
+    stats = _f1_current_mode(tmp_path)
+    components = pm.extract_module_power_components(stats, background_factor=4)
+    floor_w, ceiling_w, devices = pm.current_mode_static_power_bounds(
+        stats, 4, components['rankCount'], stats_name="synthetic")
+
+    # 8 devices (4 per rank x 2 ranks) x EIDD2P0 46.87 mA x 1.1 V / 1000.
+    assert devices == 8
+    assert floor_w == pytest.approx(8 * 46.87 * 1.1 / 1000.0)
+    assert ceiling_w == pytest.approx(8 * 117.6 * 1.1 / 1000.0)
+
+    # The corrected module static power sits inside the config's own range;
+    # the uncorrected one is below the floor, which is the defect made visible.
+    assert floor_w <= components['backgroundPower'] <= ceiling_w
+    assert components['backgroundPowerRaw'] < floor_w
+
+
+def test_f1_end_to_end_power_pdp_and_new_column(tmp_path, monkeypatch):
+    stats_dir = tmp_path / "system"
+    stats_dir.mkdir()
+    config = tmp_path / "F1_DDR5.config"
+    config.write_text(F1_CONFIG)
+
+    (stats_dir / "stats_DDR5_4800_DRAM_subchannel_gcc_spec2017.out").write_text(
+        F1_CURRENT_MODE_STATS_TEMPLATE.format(config=config))
+    (stats_dir / "stats_reram_22nm_1t1r_slc_full_dimm_gcc_spec2017.out").write_text(
+        F1_ENERGY_MODE_STATS)
+
+    monkeypatch.setattr(pm, "RESULTS_SYS_DIR", str(stats_dir))
+    raw, failures = pm.parse_raw_stats()
+    assert failures == []
+
+    rows = {r['technology']: r for r in raw}
+
+    # DDR5: Power carries the same correction the components do, so the
+    # decomposition still reconciles.
+    ddr5 = rows['DDR5_4800']
+    assert ddr5['background_power_device_factor'] == 4
+    assert ddr5['background_power'] == pytest.approx(0.72)
+    assert ddr5['power'] == pytest.approx(0.1261 * 2 + 0.54)
+
+    # ReRAM: factor 1, power exactly NVMain's printed rank sum.
+    reram = rows['1T1R_SLC']
+    assert reram['background_power_device_factor'] == 1
+    assert reram['power'] == pytest.approx(0.867416)
+
+    processed = {r['Technology']: r for r in pm.process_metrics(raw)}
+
+    ddr5_row = processed['DDR5_4800']
+    assert ddr5_row['Background_Power_Device_Factor'] == 4
+    assert ddr5_row['Static_Power'] == pytest.approx(0.72)
+    assert ddr5_row['Unattributed_Power'] == pytest.approx(0.0, abs=1e-9)
+    assert ddr5_row['PDP'] == pytest.approx(
+        ddr5_row['Latency_ns'] * ddr5_row['Power'])
+
+    assert processed['1T1R_SLC']['Background_Power_Device_Factor'] == 1
+
+    # The column reaches every CSV that carries a power number.
+    import pandas as pd
+    monkeypatch.setattr(pm, "OUTPUT_DIR", str(tmp_path / "out"))
+    df = pd.DataFrame(pm.process_metrics(raw))
+    pm.save_bar_chart_metrics(df)
+    pm.save_pareto_metrics(df)
+    pm.save_hero_metrics(df)
+    for name in ("processed_bar_chart_metrics.csv", "processed_pareto_metrics.csv",
+                 "processed_hero_metrics.csv"):
+        header = (tmp_path / "out" / name).read_text().splitlines()[0].split(',')
+        # F2 (I6): the Run_* provenance columns are appended after it.
+        assert header[-len(pm.RUN_PROVENANCE_COLUMN_NAMES) - 1] == 'Background_Power_Device_Factor'
+
+
+def test_f1_current_mode_file_with_unresolvable_config_is_a_reported_failure(
+        tmp_path, monkeypatch):
+    # A current-mode stats file whose config cannot be found must surface as a
+    # named parse failure (and a non-zero exit), never as a silently
+    # uncorrected row.
+    stats_dir = tmp_path / "system"
+    stats_dir.mkdir()
+    bad = stats_dir / "stats_DDR5_4800_DRAM_subchannel_gcc_spec2017.out"
+    bad.write_text(F1_CURRENT_MODE_STATS_TEMPLATE.format(
+        config=str(tmp_path / "never_written.config")))
+
+    monkeypatch.setattr(pm, "RESULTS_SYS_DIR", str(stats_dir))
+    monkeypatch.setattr(pm, "NVMAIN_CONFIG_SEARCH_DIRS", (str(tmp_path),))
+
+    raw, failures = pm.parse_raw_stats()
+    assert raw == []
+    assert [name for name, _ in failures] == [bad.name]
+    assert "never_written.config" in failures[0][1]

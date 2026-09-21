@@ -32,8 +32,17 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import selector_layer as SL
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STAGING = os.path.join(REPO, "results", "rev2026-09_staging",
-                       "hardware_metrics_2048x2048.json")
+
+# I10 (final review 2026-09): these tests used to read
+# results/rev2026-09_staging/hardware_metrics_2048x2048.json, a git-ignored
+# file under results/, and were `skipif` it was absent -- so the four tests
+# that pin the selector-layer headline verdicts passed here and vanished on
+# every clean checkout and in CI. The same four entries now live in a tracked
+# 1.6 KB fixture, byte-identical to the staging copy (which is itself identical
+# to the frozen primary's hardware_metrics.json), so nothing under results/ or
+# simulators/ is needed and nothing can be skipped.
+HARDWARE_FIXTURE = os.path.join(REPO, "tests", "fixtures",
+                                "hardware_metrics_2048x2048.json")
 
 # Zhou Table I, p. 1371: the defaults used for Fig. 3 and Fig. 8.
 TBL1 = dict(r_on=1e4, r_off=1e6, r_line=5.0, i_on=100e-6, v_read=1.0)
@@ -444,16 +453,27 @@ def test_operating_point_matches_the_nvsim_cell_file():
 # Hardware loading
 # ---------------------------------------------------------------------------
 
-def test_frozen_pre_revision_file_fails_with_a_clear_message(tmp_path):
-    """The live results/hardware_metrics.json has no subarray fields.  That
-    must be a readable error, not a KeyError."""
-    p = tmp_path / "frozen.json"
+def test_pre_revision_file_fails_with_a_clear_message(tmp_path):
+    """A PRE-REVISION hardware_metrics.json (written before T2.6 recorded the
+    forced subarray organization) must give a readable error, not a KeyError.
+
+    I10: the old docstring said "the live results/hardware_metrics.json has no
+    subarray fields", and the message it asserted pointed at a git-ignored
+    staging file. Both describe a state that no longer exists: since T2.6 the
+    live file DOES carry the subarray fields (see HARDWARE_FIXTURE, a copy of
+    it), so only a pre-revision file can fail this way. The leakage value below
+    is the retired pre-revision 50.9 mW figure, deliberately, because that is
+    what such a file holds."""
+    p = tmp_path / "pre_revision.json"
     p.write_text(json.dumps({"reram_22nm_selector_slc": {
         "capacity_gb": 0.125, "leakage_mw": 50.9, "area_mm2": 1.0}}))
     with pytest.raises(SystemExit) as e:
         SL.load_hardware(str(p))
     msg = str(e.value)
-    assert "subarray_rows" in msg and "staging" in msg
+    assert "subarray_rows" in msg
+    assert "PRE-REVISION" in msg
+    assert "2_extract_hardware_metrics.py" in msg
+    assert "staging" not in msg
 
 
 def test_missing_cell_key_fails_clearly(tmp_path):
@@ -474,9 +494,8 @@ def test_non_square_subarray_is_refused(tmp_path):
     assert "square" in str(e.value)
 
 
-@pytest.mark.skipif(not os.path.exists(STAGING), reason="staging file absent")
-def test_staging_file_loads():
-    hw = SL.load_hardware(STAGING)
+def test_hardware_fixture_loads():
+    hw = SL.load_hardware(HARDWARE_FIXTURE)
     assert hw["subarray_rows"] == 2048 and hw["subarray_cols"] == 2048
     assert hw["mux"] == 64
     assert hw["leakage_mw"] == pytest.approx(108.384)
@@ -492,9 +511,8 @@ def test_staging_file_loads():
 FAST_CEILING = 2048
 
 
-@pytest.mark.skipif(not os.path.exists(STAGING), reason="staging file absent")
 def test_evaluate_verdicts_at_the_revision_organization():
-    res = SL.evaluate(SL.load_hardware(STAGING), side_ceiling=FAST_CEILING)
+    res = SL.evaluate(SL.load_hardware(HARDWARE_FIXTURE), side_ceiling=FAST_CEILING)
     org = res["organization"]
     assert org["active_subarrays_per_access"] == 16
     assert org["active_wordlines_per_access"] == 16
@@ -568,12 +586,11 @@ def test_chips_per_dimm_matches_the_generator_geometry():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not os.path.exists(STAGING), reason="staging file absent")
 def test_margin_limited_side_at_the_full_ceiling():
     """With the real 8192 ceiling the FAST bound is margin limited at a side of
     about 5824, where the read margin is just above 10 percent.  This is the
     one test that pays for the full search."""
-    res = SL.evaluate(SL.load_hardware(STAGING), side_ceiling=8192)
+    res = SL.evaluate(SL.load_hardware(HARDWARE_FIXTURE), side_ceiling=8192)
     fast = res["bounds"]["FAST"]["verdict"]
     assert fast["max_side_read_margin_above_10pct"] == pytest.approx(5824, abs=128)
     assert fast["read_margin_at_max_side"] == pytest.approx(0.10, abs=0.005)
@@ -583,12 +600,11 @@ def test_margin_limited_side_at_the_full_ceiling():
     assert ots["binding_limit"] == "handbook tile leakage"
 
 
-@pytest.mark.skipif(not os.path.exists(STAGING), reason="staging file absent")
 def test_cli_writes_json_and_table(tmp_path):
     out = tmp_path / "selector_layer.json"
     r = subprocess.run(
         [sys.executable, os.path.join(REPO, "selector_layer.py"),
-         "--hardware", STAGING, "--out", str(out),
+         "--hardware", HARDWARE_FIXTURE, "--out", str(out),
          "--side-ceiling", str(FAST_CEILING)],
         capture_output=True, text=True, cwd=REPO)
     assert r.returncode == 0, r.stderr

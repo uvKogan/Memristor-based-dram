@@ -65,6 +65,31 @@ def extract_metrics(filename):
         match = re.search(pattern, content)
         results[label] = match.group(1) if match else "N/A"
 
+    # F1 (final-review C1): the printed rank totalPower is NOT the rank's total
+    # power for an EnergyModel-current run (every DDR5 config). NVMain divides
+    # backgroundPower by the rank's device count and never multiplies it back
+    # (StandardRank.cpp:992 against :1015-1017), so the printed rank totalPower
+    # carries one device's background against the whole rank's activate, burst
+    # and refresh. This column is a per-rank diagnostic display, but it must
+    # still not show a number that is physically impossible under the config's
+    # own currents, so the same correction process_metrics.py applies to the
+    # CSVs is applied here, through the same helpers. Energy-mode technologies
+    # (ReRAM NonVolatile, PCM energy) get factor 1 and are untouched. A config
+    # that cannot be resolved raises, and main()'s per-file try/except reports
+    # it as a parse failure -- no silent default device count.
+    if results["Total Power (W)"] != "N/A":
+        factor = pm.background_power_device_factor(content, stats_name=str(filename))
+        if factor != 1:
+            bg = re.search(r"rank0\.backgroundPower\s+([\d\.eE+-]+)W", content)
+            if bg is None:
+                raise ValueError(
+                    f"{filename}: EnergyModel-current stats file with a rank0.totalPower "
+                    f"but no rank0.backgroundPower, so the per-device background "
+                    f"undercount cannot be corrected."
+                )
+            corrected = float(results["Total Power (W)"]) + (factor - 1) * float(bg.group(1))
+            results["Total Power (W)"] = f"{corrected:.6g}"
+
     # T2.5 fix round 1: this script has no per-technology classification (it
     # just globs .out files), so `technology` is unknown here -- pm.resolve_
     # clocks_mhz falls back to CLOCK_FREQUENCY_MHZ.get(None, 800) == 800 only

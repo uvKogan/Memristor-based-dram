@@ -237,7 +237,12 @@ def test_lbm_completion_pct_fails_loudly_on_missing_completed_requests(synthetic
 def test_endurance_write_rates_read_from_stats_files(synthetic_stats_dir, monkeypatch):
     monkeypatch.setattr(vs, "DATA_DIR", str(synthetic_stats_dir))
     rates = vs._endurance_write_rates()
-    assert set(rates) == {'LBM\n(worst case)', 'GCC', 'STREAM', 'AlexNet\nOFMAP'}
+    # T6.2: only the three SUSTAINED gem5 workloads. The AlexNet OFMAP row was
+    # dropped because its "rate" depends entirely on the denominator chosen
+    # (a 4.5 us burst against either its own drain time or the 250 ms window),
+    # which Project_Book.typ Table 5 flags as burst-derived and not a
+    # sustained requirement.
+    assert set(rates) == {'GCC', 'LBM', 'STREAM'}
     # 1,000,000 writes / (750,000,000 cycles * 1/3000 MHz-derived ns * 1e-9 s) = 4,000,000 writes/s
     for rate in rates.values():
         assert rate == pytest.approx(4_000_000.0, rel=1e-6)
@@ -247,7 +252,9 @@ def test_endurance_write_rates_fails_loudly_on_missing_stats_file(tmp_path, monk
     empty_dir = tmp_path / "empty_system"
     empty_dir.mkdir()
     monkeypatch.setattr(vs, "DATA_DIR", str(empty_dir))
-    with pytest.raises(FileNotFoundError, match="lbm_spec2017"):
+    # Whichever of the three sustained workloads is reached first, the
+    # failure must name the missing stats file rather than plot a default.
+    with pytest.raises(FileNotFoundError, match="Missing stats file"):
         vs._endurance_write_rates()
 
 
@@ -284,3 +291,267 @@ def test_slides_stats_path_refuses_silicon_label():
     import visualize_slides as vs
     with pytest.raises(ValueError, match="SILICON"):
         vs._stats_path('1T1R_SILICON', 'full_dimm', 'gcc_spec2017')
+
+
+# ----------------------------------------------------------------------
+# (d) T6.2: the loaders the rebuilt deck charts added -- sensitivity axes,
+# the endurance projection table, module capacity and the CSV cell reader.
+# Each must fail loudly, naming the file and the key.
+# ----------------------------------------------------------------------
+
+def test_sensitivity_csv_path_refuses_unknown_axis():
+    with pytest.raises(ValueError, match="nonexistent_axis"):
+        vs.sensitivity_csv_path('nonexistent_axis')
+
+
+@pytest.mark.parametrize("axis", sorted(vs.SENSITIVITY_AXES))
+def test_sensitivity_csv_path_builds_the_documented_layout(axis, monkeypatch):
+    monkeypatch.setattr(vs, "SENS_ROOT", "/tmp/sensroot")
+    path = vs.sensitivity_csv_path(axis)
+    assert path == os.path.join(
+        "/tmp/sensroot", f"system_rev2026-09_{axis}", "_csv",
+        "processed_bar_chart_metrics.csv")
+
+
+def test_load_sensitivity_bar_chart_fails_loudly_when_missing(tmp_path, monkeypatch):
+    monkeypatch.setattr(vs, "SENS_ROOT", str(tmp_path))
+    with pytest.raises(FileNotFoundError, match="freq1333"):
+        vs.load_sensitivity_bar_chart('freq1333')
+
+
+def test_load_sensitivity_bar_chart_raises_on_unknown_technology(tmp_path, monkeypatch):
+    axis_dir = tmp_path / "system_rev2026-09_freq2400" / "_csv"
+    axis_dir.mkdir(parents=True)
+    pd.DataFrame([{'Technology': 'TOTALLY_UNKNOWN_TECH', 'Architecture': 'full_dimm',
+                   'Benchmark': 'gcc_spec2017', 'Latency_ns': 1.0}]).to_csv(
+        axis_dir / "processed_bar_chart_metrics.csv", index=False)
+    monkeypatch.setattr(vs, "SENS_ROOT", str(tmp_path))
+    with pytest.raises(ValueError, match="TOTALLY_UNKNOWN_TECH"):
+        vs.load_sensitivity_bar_chart('freq2400')
+
+
+@pytest.fixture
+def synthetic_endurance_csv(tmp_path):
+    rows = []
+    for trace in ('gcc_spec2017', 'lbm_spec2017'):
+        for scheme, years in (('NONE', 0.001), ('START_GAP', 0.001),
+                              ('RANDOMIZED_START_GAP', 0.2), ('IDEAL', 3.5)):
+            rows.append({'trace': trace, 'scheme': scheme, 'capacity_gib': 64,
+                         'endurance': 1e6, 'write_reduction': 1.0,
+                         'rate_basis': 'admitted', 'lifetime_years': years,
+                         'required_endurance_10yr': 1e6})
+    path = tmp_path / "endurance_table.csv"
+    pd.DataFrame(rows).to_csv(path, index=False)
+    return path
+
+
+def test_load_endurance_projection_selects_the_documented_slice(
+        synthetic_endurance_csv, monkeypatch):
+    monkeypatch.setattr(vs, "ENDURANCE_CSV", str(synthetic_endurance_csv))
+    df = vs.load_endurance_projection()
+    assert len(df) == 8
+    assert set(df['scheme']) == {'NONE', 'START_GAP', 'RANDOMIZED_START_GAP', 'IDEAL'}
+
+
+def test_load_endurance_projection_fails_loudly_on_empty_slice(
+        synthetic_endurance_csv, monkeypatch):
+    monkeypatch.setattr(vs, "ENDURANCE_CSV", str(synthetic_endurance_csv))
+    with pytest.raises(ValueError, match="capacity_gib=128"):
+        vs.load_endurance_projection(capacity_gib=128)
+
+
+def test_load_endurance_projection_fails_loudly_when_missing(tmp_path, monkeypatch):
+    monkeypatch.setattr(vs, "ENDURANCE_CSV", str(tmp_path / "nope.csv"))
+    with pytest.raises(FileNotFoundError, match="nope.csv"):
+        vs.load_endurance_projection()
+
+
+def test_endurance_value_reads_a_named_cell(synthetic_endurance_csv, monkeypatch):
+    monkeypatch.setattr(vs, "ENDURANCE_CSV", str(synthetic_endurance_csv))
+    df = vs.load_endurance_projection()
+    assert vs.endurance_value(df, 'lbm_spec2017', 'IDEAL') == pytest.approx(3.5)
+
+
+def test_endurance_value_fails_loudly_on_missing_scheme(
+        synthetic_endurance_csv, monkeypatch):
+    monkeypatch.setattr(vs, "ENDURANCE_CSV", str(synthetic_endurance_csv))
+    df = vs.load_endurance_projection()
+    with pytest.raises(ValueError, match="NO_SUCH_SCHEME"):
+        vs.endurance_value(df, 'lbm_spec2017', 'NO_SUCH_SCHEME')
+
+
+def test_endurance_value_fails_loudly_on_blank_cell(
+        synthetic_endurance_csv, monkeypatch):
+    monkeypatch.setattr(vs, "ENDURANCE_CSV", str(synthetic_endurance_csv))
+    df = vs.load_endurance_projection().copy()
+    df.loc[df['scheme'] == 'IDEAL', 'lifetime_years'] = float('nan')
+    with pytest.raises(ValueError, match="lifetime_years"):
+        vs.endurance_value(df, 'lbm_spec2017', 'IDEAL')
+
+
+def test_extract_capacity_gib_sums_every_channel():
+    content = ("defaultMemory.channel0.FRFCFS capacity is 4096 MB.\n"
+               "defaultMemory.channel1.FRFCFS capacity is 4096 MB.\n")
+    assert vs._extract_capacity_gib(content, "fake.out") == pytest.approx(8.0)
+
+
+def test_extract_capacity_gib_fails_loudly_on_missing_key():
+    with pytest.raises(ValueError, match="capacity is"):
+        vs._extract_capacity_gib("no relevant stats here\n", "fake_path.out")
+
+
+def test_extract_capacity_gib_fails_loudly_on_zero_capacity():
+    with pytest.raises(ValueError, match="non-positive"):
+        vs._extract_capacity_gib("channel0.FRFCFS capacity is 0 MB.\n", "fake.out")
+
+
+def test_module_capacity_gib_resolves_the_non_reram_baselines(tmp_path, monkeypatch):
+    # The DDR5 and PCM stats filenames carry no architecture token; without
+    # NON_RERAM_STATS_STEM the per-GiB charts could not read their capacity.
+    stats_dir = tmp_path / "system"
+    stats_dir.mkdir()
+    for stem, mb in (('DDR5_4800_DRAM_subchannel', 8192), ('pcm_microsoft_2009', 4096)):
+        (stats_dir / f"stats_{stem}_gcc_spec2017.out").write_text(
+            f"defaultMemory.channel0.FRFCFS capacity is {mb} MB.\n")
+    monkeypatch.setattr(vs, "DATA_DIR", str(stats_dir))
+    assert vs.module_capacity_gib('DDR5_4800') == pytest.approx(8.0)
+    assert vs.module_capacity_gib('pcm_microsoft_2009') == pytest.approx(4.0)
+
+
+def test_stats_path_fails_loudly_on_a_technology_with_no_stem():
+    with pytest.raises(ValueError, match="2D_DRAM_example"):
+        vs._stats_path('2D_DRAM_example', 'full_dimm', 'gcc_spec2017')
+
+
+def test_value_fails_loudly_on_missing_row(synthetic_csv_dir):
+    df = pd.read_csv(synthetic_csv_dir / "processed_bar_chart_metrics.csv")
+    with pytest.raises(ValueError, match="NONEXISTENT_TECH"):
+        vs.value(df, 'gcc_spec2017', 'NONEXISTENT_TECH', 'Latency_ns')
+
+
+def test_value_fails_loudly_on_blank_cell(synthetic_csv_dir):
+    df = pd.read_csv(synthetic_csv_dir / "processed_bar_chart_metrics.csv")
+    df.loc[df['Technology'] == '1T1R_SLC', 'Latency_ns'] = float('nan')
+    with pytest.raises(ValueError, match="Latency_ns"):
+        vs.value(df, 'gcc_spec2017', '1T1R_SLC', 'Latency_ns')
+
+
+def test_value_reads_a_named_cell(synthetic_csv_dir):
+    df = pd.read_csv(synthetic_csv_dir / "processed_bar_chart_metrics.csv")
+    assert vs.value(df, 'gcc_spec2017', '1T1R_SLC', 'Latency_ns') == pytest.approx(50.0)
+
+
+def test_save_refuses_an_em_dash_in_a_footnote(tmp_path, monkeypatch):
+    # The deck, the outline and the cheat sheet must contain no U+2014; a
+    # footnote baked into a PNG is the one place a grep over the HTML would
+    # not catch one.
+    import matplotlib.pyplot as plt
+    monkeypatch.setattr(vs, "OUTPUT_DIR", str(tmp_path))
+    fig, ax = plt.subplots()
+    try:
+        with pytest.raises(ValueError, match="em-dash"):
+            vs._save(fig, "scratch.png", footnote="a — b")
+    finally:
+        plt.close(fig)
+
+
+# ----------------------------------------------------------------------
+# (e) Minor-6 (final review 2026-09): the four label tables must AGREE
+#
+# The review asked for the four duplicated technology label/color/order
+# tables to be merged into one module. That is deliberately NOT done here (it
+# would touch every figure script at once, for no change in output). Instead
+# this section pins the agreement the duplication is supposed to preserve, so
+# the next edit to one table cannot silently drift from the other three.
+# ----------------------------------------------------------------------
+
+def _label_tables():
+    """{module name: {technology: display label}} for the four visualizers."""
+    return {
+        "visualize_results": dict(vr.TECH_LABELS),
+        "visualize_hero_graphs": dict(vh.TECH_LABELS),
+        "visualize_pareto": {k: v["label"] for k, v in vp.TECHNOLOGY_CONFIGS.items()},
+        "visualize_slides": dict(vs.TECH_LABELS),
+    }
+
+
+def _normalize(label):
+    """Collapse whitespace: visualize_slides wraps two labels onto two lines
+    for a slide, which is a layout choice, not a different name."""
+    return " ".join(label.split())
+
+
+# The only display names that deliberately differ between scripts, each pinned
+# exactly. A NEW divergence, or a change to one of these, fails the test below.
+#
+# visualize_pareto's scatter legend has no axis title to lean on, so it spells
+# out what each baseline is; visualize_slides says "legacy" for the same reason
+# on a slide read from the back of a room. Both were chosen in T5.4 / T6.2.
+DELIBERATE_LABEL_VARIANTS = {
+    ("visualize_pareto", "DDR5_4800"): "DDR5-4800 (Baseline)",
+    ("visualize_pareto", "pcm_microsoft_2009"): "PCM (Microsoft 2009)",
+    ("visualize_slides", "pcm_microsoft_2009"): "PCM (legacy)",
+    # The deck wraps the two silicon labels onto two lines and drops the word
+    # "timings" to fit a slide legend; the citation itself is kept.
+    ("visualize_slides", "1T1R_SILICON"): "1T1R silicon\n(Micron 16 Gb)",
+    ("visualize_slides", "1S1R_SILICON"): "1S1R silicon\n(SanDisk 32 Gb)",
+}
+
+
+def test_all_four_label_tables_cover_exactly_the_produced_labels():
+    """Key sets: every label process_metrics.classify_technology can produce,
+    and nothing beyond the two documented excluded DRAM examples."""
+    allowed_extra = vr.EXCLUDED_TECHNOLOGIES
+    for name, table in _label_tables().items():
+        missing = TECHNOLOGY_LABELS_PRODUCED - set(table)
+        extra = set(table) - TECHNOLOGY_LABELS_PRODUCED - allowed_extra
+        assert not missing, f"{name} is missing {missing}"
+        assert not extra, f"{name} carries unknown technologies {extra}"
+
+
+def test_all_four_label_tables_agree_on_every_display_name():
+    tables = _label_tables()
+    canonical = tables["visualize_results"]  # the primary bar charts
+    for name, table in tables.items():
+        for tech in sorted(TECHNOLOGY_LABELS_PRODUCED):
+            expected = DELIBERATE_LABEL_VARIANTS.get((name, tech),
+                                                      canonical[tech])
+            assert _normalize(table[tech]) == _normalize(expected), (
+                f"{name}[{tech!r}] = {table[tech]!r}; expected {expected!r}. "
+                f"Either fix the table or add the difference to "
+                f"DELIBERATE_LABEL_VARIANTS with a reason.")
+
+
+def test_every_deliberate_label_variant_is_still_a_real_difference():
+    """Guards the allow-list itself: an entry that has become identical to the
+    canonical label is stale and must be removed."""
+    tables = _label_tables()
+    canonical = tables["visualize_results"]
+    for (name, tech), variant in DELIBERATE_LABEL_VARIANTS.items():
+        assert _normalize(tables[name][tech]) == _normalize(variant)
+        assert _normalize(variant) != _normalize(canonical[tech]), (
+            f"{name}[{tech!r}] now matches the canonical label; drop it from "
+            f"DELIBERATE_LABEL_VARIANTS.")
+
+
+def test_the_three_color_tables_cover_the_same_technologies():
+    """Colors themselves differ on purpose (the deck has its own palette), but
+    the three tables must cover the same technology set."""
+    sets = {
+        "visualize_results": set(vr.TECHNOLOGY_COLORS),
+        "visualize_hero_graphs": set(vh.TECHNOLOGY_COLORS),
+        "visualize_slides": set(vs.TECH_COLORS),
+        "visualize_pareto": set(vp.TECHNOLOGY_CONFIGS) - vr.EXCLUDED_TECHNOLOGIES,
+    }
+    reference = sets["visualize_results"]
+    assert reference == TECHNOLOGY_LABELS_PRODUCED
+    for name, s in sets.items():
+        assert s == reference, f"{name} colors cover {s ^ reference} differently"
+
+
+def test_primary_and_secondary_partitions_agree_across_the_four():
+    for module in (vr, vh, vp, vs):
+        assert module.PRIMARY_TECHNOLOGIES == vr.PRIMARY_TECHNOLOGIES
+        assert module.SECONDARY_TECHNOLOGIES == vr.SECONDARY_TECHNOLOGIES
+        assert (module.PRIMARY_TECHNOLOGIES | module.SECONDARY_TECHNOLOGIES
+                == TECHNOLOGY_LABELS_PRODUCED)

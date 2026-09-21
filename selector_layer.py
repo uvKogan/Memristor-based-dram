@@ -559,12 +559,18 @@ def load_hardware(path, key="reram_22nm_selector_slc"):
     missing = [f for f in ("subarray_rows", "subarray_cols", "mats", "mux",
                            "leakage_mw", "capacity_gb") if f not in hw]
     if missing:
+        # I10 (final review 2026-09): this message used to point at a
+        # git-ignored "2026-09 staging file". That staging copy is gone; since
+        # T2.6, 2_extract_hardware_metrics.py writes the subarray organization
+        # fields into the ordinary results/hardware_metrics.json, so the live
+        # file is the right answer and only a PRE-revision file lacks them.
         raise SystemExit(
             "ERROR: %s['%s'] is missing %s.\n"
-            "       This looks like the FROZEN pre-revision hardware_metrics.json,\n"
-            "       which records no subarray organization. Point --hardware at the\n"
-            "       2026-09 staging file, e.g.\n"
-            "         results/rev2026-09_staging/hardware_metrics_2048x2048.json"
+            "       This looks like a PRE-REVISION hardware_metrics.json, written\n"
+            "       before T2.6 recorded the forced subarray organization. Point\n"
+            "       --hardware at a file produced by the current\n"
+            "       2_extract_hardware_metrics.py (results/hardware_metrics.json),\n"
+            "       or re-run Stages 1 and 2."
             % (path, key, ", ".join(missing)))
     if hw["subarray_rows"] != hw["subarray_cols"]:
         raise SystemExit(
@@ -749,8 +755,10 @@ def render(res):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--hardware", default="results/hardware_metrics.json",
-                    help="NVSim device metrics JSON (needs subarray fields; "
-                         "the frozen pre-revision file does not have them)")
+                    help="NVSim device metrics JSON. Needs the T2.6 subarray "
+                         "organization fields (subarray_rows/_cols, mats, mux), which "
+                         "the current 2_extract_hardware_metrics.py writes and a "
+                         "pre-revision file does not have.")
     ap.add_argument("--out", default="results/selector_layer.json")
     ap.add_argument("--config", default=SELECTOR_CFG,
                     help="NVSim config holding the forced organization")

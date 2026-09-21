@@ -1,0 +1,58 @@
+{
+    "reram_22nm_1t1r_slc": {
+        "capacity_gb": 0.125,
+        "read_latency_ns": 10.12,
+        "write_latency_ns": 15.26,
+        "read_energy_nj": 0.375512,
+        "write_energy_nj": 0.913376,
+        "leakage_mw": 108.384,
+        "area_mm2": 12.008,
+        "subarray_rows": 2048,
+        "subarray_cols": 2048,
+        "mats": 64,
+        "mux": 64,
+        "is_analytical_mlc": false
+    },
+    "reram_22nm_1t1r_mlc": {
+        "capacity_gb": 0.25,
+        "read_latency_ns": 15.18,
+        "write_latency_ns": 49.79338,
+        "read_energy_nj": 0.4130632000000001,
+        "write_energy_nj": 2.740128,
+        "leakage_mw": 108.384,
+        "area_mm2": 12.008,
+        "subarray_rows": 2048,
+        "subarray_cols": 2048,
+        "mats": 64,
+        "mux": 64,
+        "is_analytical_mlc": true
+    },
+    "reram_22nm_selector_slc": {
+        "capacity_gb": 0.125,
+        "read_latency_ns": 4.702,
+        "write_latency_ns": 24.589,
+        "read_energy_nj": 0.328591,
+        "write_energy_nj": 1.078,
+        "leakage_mw": 108.384,
+        "area_mm2": 3.54,
+        "subarray_rows": 2048,
+        "subarray_cols": 2048,
+        "mats": 64,
+        "mux": 64,
+        "is_analytical_mlc": false
+    },
+    "reram_22nm_selector_mlc": {
+        "capacity_gb": 0.25,
+        "read_latency_ns": 7.053,
+        "write_latency_ns": 80.23390699999999,
+        "read_energy_nj": 0.36145010000000005,
+        "write_energy_nj": 3.234,
+        "leakage_mw": 108.384,
+        "area_mm2": 3.54,
+        "subarray_rows": 2048,
+        "subarray_cols": 2048,
+        "mats": 64,
+        "mux": 64,
+        "is_analytical_mlc": true
+    }
+}

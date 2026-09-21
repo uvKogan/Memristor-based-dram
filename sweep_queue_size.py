@@ -45,8 +45,12 @@ def setup_args():
                         help="Comma-separated architectures to test (single/8chip/16chip/full_dimm).")
     parser.add_argument("--trace", default="lbm_spec2017.nvt", help="Trace file name.")
     parser.add_argument("--cycles", type=int, default=66666667,
-                        help="Input (host) cycles -- 66666667 reproduces the book's own "
-                             "83.33ms matched-host window at ReRAM's 800MHz/CPUFreq 3000.")
+                        help="Input (host) cycles. The default 66666667 reproduces the "
+                             "PRE-REVISION window this sweep was first run with (83.33 ms "
+                             "under the retired trace time base). The 2026-09 revision's "
+                             "matched window is 250 ms of trace time, which mbmm_master.py "
+                             "expresses as --window-ns 250000000 and converts per model; pass "
+                             "the matching cycle count explicitly for a comparable sweep.")
     parser.add_argument("--freq", type=int, default=800, help="Target frequency in MHz.")
     parser.add_argument("--timeout", type=int, default=240,
                         help="Per-run wall-clock timeout in seconds.")

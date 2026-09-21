@@ -68,7 +68,7 @@ TECH_LABELS = {
     '1S1R_SILICON':       '1S1R silicon timings (SanDisk 32 Gb)',
 }
 
-# Generic DRAM examples dropped — narrative focuses on literature-backed baselines only
+# Generic DRAM examples dropped - narrative focuses on literature-backed baselines only
 EXCLUDED_TECHNOLOGIES = {'2D_DRAM_example', '3D_DRAM_example'}
 
 # The primary hero figures show exactly these six -- see visualize_results.py
@@ -168,7 +168,7 @@ def generate_hero_area_density(df_metrics):
     df_metrics = primary_only(df_metrics)
     area_by_tech = df_metrics.groupby('Technology')['Area_Density_Ratio'].mean()
 
-    # Sort descending — higher ratio = denser = better
+    # Sort descending - higher ratio = denser = better
     area_by_tech = area_by_tech.sort_values(ascending=False)
 
     technologies = area_by_tech.index.tolist()
@@ -193,7 +193,7 @@ def generate_hero_area_density(df_metrics):
                ha='center', va='bottom', fontsize=12, fontweight='bold')
 
     # Formatting
-    ax.set_ylabel('Normalized Area Density (vs DDR5) — Higher is Better', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Normalized Area Density (vs DDR5) - Higher is Better', fontsize=14, fontweight='bold')
     ax.set_xlabel('Memory Technology', fontsize=14, fontweight='bold')
     ax.set_title('Silicon Density Comparison: Normalized Area Density (Hybrid-Empirical)',
                 fontsize=15, fontweight='bold', pad=20)
@@ -264,13 +264,13 @@ def generate_hero_average_pdp(geometric_means):
     use_log = max_val > 0 and min_val > 0 and max_val / min_val > 10
     if use_log:
         ax.set_yscale('log')
-        # "Lower is better" appears exactly once, here in the ylabel (v3 dedupe —
+        # "Lower is better" appears exactly once, here in the ylabel (v3 dedupe -
         # this figure never had a separate in-axes annotation box).
-        ylabel = 'Average PDP (W·ns), log scale — lower is better'
+        ylabel = 'Average PDP (W·ns), log scale - lower is better'
         logger.info(f"  [AXIS] Hero_Average_PDP: log scale "
                    f"(range {min_val:.1f}-{max_val:.1f} W*ns, {max_val/min_val:.0f}x spread > 10x threshold)")
     else:
-        ylabel = 'Average PDP (W·ns) — lower is better'
+        ylabel = 'Average PDP (W·ns) - lower is better'
 
     # Formatting
     ax.set_ylabel(ylabel, fontsize=14, fontweight='bold')
