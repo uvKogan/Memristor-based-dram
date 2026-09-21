@@ -2,20 +2,74 @@
 **Project:** Evaluation of 22nm Memristor-Based Main Memory (MBMM) in Commodity DIMM Architectures
 **Researcher:** Yuval Kogan, Technion
 **Supervisor:** Prof. Shahar Kvatinsky
-**Generated:** 2026-08-16 (Hardfork — regenerated from `documents/MBMM_Book_Typst/Project_Book.typ`,
-the canonical, compile-verified edition of the Project Book, now including the reference-audit and
-re-simulation cycle summarized in §3 below); **updated in place 2026-08-22** with item (14)'s
-MLC read-latency correction and 4 bonus stale-data fixes (§1.3, §2.3, §3, §5 all reflect this).
 
-**Supersedes:** the 2026-07-22 hardfork of this file, now archived at
-`archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-08-16.md` (the version *before that* is
-`archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-07-22.md`).
-That version's DDR5 timing, MLC read/write penalty multipliers, and every number derived from them
-(Findings 2 and 4 below, the §1.3 table, §2.3, §3's audit-item count) have since been corrected by
-the work in §3, items (12), (13), and (14). Do not cite the 2026-07-22 version's DDR5 or MLC-specific
-numbers, or this file's own pre-2026-08-22 MLC read-latency/geo-mean-PDP figures (superseded by item
-(14)); its qualitative structure (Findings 1, 3, and the density baseline) is still accurate and
-carried forward unchanged.
+**Generated:** 2026-09-20 (hardfork); **corrected 2026-09-21** against the post-final-review book,
+after two further defects were found at the source of the DDR5 data and repaired (tasks F1 and F4:
+NVMain's current-mode background-power accounting, which had DDR5 static power 4x too low, and the
+DDR5 write-path / power-down / activate-window timings, which were still DDR3-1333 template cycle
+counts). **Both move DDR5 only** - every ReRAM and PCM figure in this file is unchanged by them -
+but they move every DDR5 latency, power, PDP and ratio, and they reverse the direction of the
+power argument, so every such number below was re-read from the corrected book. Both are recorded
+in the book's Appendix A, "DDR5 Timing and Power Corrections of This Revision", and in Appendix D.
+Regenerated from the 2026-09 revision of
+`documents/MBMM_Book_Typst/Project_Book.typ`, the corrected, compile-verified edition of the Project
+Book that closes out the "3 September" version. This is a full hardfork, not an in-place update: the
+2026-09 revision changed the book's central architectural verdict (the transistor-versus-selector
+leakage gap that the prior edition treated as its deciding fact does not exist as a device effect), so
+almost nothing in the prior context file carries forward unchanged.
+
+**Supersedes:** the 2026-08-22 version of this file, now archived byte-identical at
+`archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-09-20.md`. Do not cite that file, or
+anything it describes, for any of the following (all corrected in Appendix D of the 2026-09 book,
+"What Changed Since the 3 September Version"):
+- **The 47x/794.7-vs-16.9-mW leakage gap between 1T1R and 1S1R, framed as a device effect.** It was an
+  artifact of characterizing the two cells at different, hand-set array organizations (mux 32 for
+  1T1R, giving 256 mats, vs mux 256 for 1S1R, giving 2 mats). At the matched 2048 x 2048, mux-64
+  organization this revision forces for both cells, NVSim reports 108.384 mW per 1 Gb chip for
+  **both**, identical to three decimals. There is no leakage-class separation.
+- **The "1T1R is infeasible ungated / ~50.9 W" verdict.** Superseded: 1T1R SLC full DIMM now draws
+  6.939 W (identical to 1S1R's 6.940 W) at the matched organization.
+- **The old ReRAM-vs-DDR5 latency ratio ("1T1R SLC 136.2 ns, 1.51x DDR5's 90.2 ns", or any earlier
+  number derived from the double-counted read path).** The generator was charging the full NVSim
+  device read latency into both tRCD and tCAS (every read billed twice); that is fixed, and combined
+  with the trace regeneration below, corrected GCC latency is 41.4 ns (1T1R SLC) and 36.8 ns (1S1R
+  SLC) against DDR5's 83.1 ns, i.e. ReRAM is now *faster* than DDR5 on this trace - at
+  NVSim-projected device timings only, and never to be stated without the counterweights of
+  Section 3.
+- **The 83.33 ms replay window, and any "uncached", no-warmup, no-region-of-interest trace
+  description.** The traces' actual time base is exact integer NVMain cycles at `CPUFreq 3000` (1
+  cycle = 1/3 ns); the real window is 250 ms; every gem5 trace was regenerated with L1/L2 caches, a
+  documented detailed region and a 10 ms warm-up discard, and reconciles exactly with gem5's own
+  request counters (no more fourfold record duplication).
+- **The old LBM write rate (39.1 M/s) and every endurance lifetime derived from it** (e.g. "1.09 years
+  at 8 GB, 8.7 years at 64 GB"). That rate came from a window sitting inside LBM's own start-up burst
+  on a fourfold-duplicated trace. The corrected sustained rate is 9.54 M writes/s, and endurance is now
+  projected across four wear-leveling policies (Section 3.1.4 below), not assumed ideal.
+- **The 512 GB and 32 GiB capacity errors** (the full-DIMM ReRAM configuration decoded 512 GB of
+  address space against an 8 GB physical module; the DDR5 baseline was actually a single 64-bit
+  channel, 32 devices, 32 GiB, while the book's prose claimed two 32-bit subchannels and 16 GiB). Both
+  are fixed: the ReRAM full DIMM is 8 GiB SLC / 16 GiB MLC of 64 x 1 Gb chips; DDR5 is 16 GiB of eight
+  16 Gb x8 devices on two real 32-bit subchannels.
+- **The old chip-count / rank-depth scaling verdict** ("GCC improves ~14% across chip count", "GPT-2
+  IFMAP is exactly flat"; any claim that rank depth or chip count by itself is the scaling lever). The
+  corrected matrix shows the three CPU traces are offered-rate limited (6.4-10.4% improvement, no
+  monotonic trend), the two AI read bursts gain 1.68x entirely from the *second channel* (a one-channel
+  control run collapses all three physical chip-count points onto one latency), and rank depth alone is
+  worth at most 7.5%, only on the CPU traces.
+- **The old AI trace sizes/record counts** (GPT-2 IFMAP 6,554 records; AlexNet IFMAP 184,320; AlexNet
+  OFMAP 13,543). The SCALE-Sim parser was keeping one address per trace row instead of every address
+  and writing padding markers in as real addresses; corrected counts are 65,536 / 1,269,600 / 135,424
+  (undercounts of 10.0x / 6.9x / 10.0x in the old numbers).
+
+Also retired, though not named individually by the task that produced this hardfork: the old die-area
+ratios (1T1R 19.802 mm², 1S1R 2.276 mm², an "8.7x selector advantage"; now 12.008 and 3.540 mm², 3.4x);
+the old density figures (1S1R 1.92x/3.84x DDR5, 1T1R 0.22x/0.44x; now 1.24x/2.47x and 0.36x/0.73x); the
+old geometric-mean PDP figures and the "29x intra-ReRAM gap" claim (now a 1.08x-1.2x near-tie); the
+"selector lives longer" endurance claim (withdrawn: all four ReRAM tracks wear identically once every
+track completes the same request population); and the SLC/MLC endurance rating basis of 10^7/10^6
+cycles cited to Wong et al. [14] (that paper gives no such rating; the basis is now 10^6, cited to
+Chen's 2020 review [47], with 10^4 and 10^7 carried as bounds). Full row-by-row detail for every one of
+these is Appendix D of the book; nothing above should be treated as an exhaustive restatement of it.
 
 ---
 
@@ -24,359 +78,538 @@ carried forward unchanged.
 ### 1.1 Core Thesis
 
 The memory supply-demand gap of late 2025, driven by DRAM wafer reallocation to AI-focused HBM
-production, necessitates alternative technologies for commodity main memory. This project evaluates
-22nm Memristor-based Non-Volatile Memory (NVM) as a DRAM replacement in standard DIMMs, using a
-cross-layer pipeline bridging NVSim (device-level) and NVMain 2.0 (cycle-accurate architecture).
-The evaluation characterizes 1T1R (transistor-gated) and 1S1R (selector-gated) architectures
-across six benchmarks spanning compute-bound, memory-streaming, and AI-inference workloads.
+production, motivates evaluating 22nm Memristor-based Non-Volatile Memory (NVM) as a DRAM replacement
+in standard DIMMs, via a cross-layer pipeline bridging NVSim (device-level) and NVMain 2.0
+(cycle-accurate architecture). The 2026-09 revision's single most consequential methodological change
+is that 1T1R (transistor-gated) and 1S1R (selector-gated) are now characterized at one **matched array
+organization** (2048 x 2048 subarrays, sense-amp mux 64, forced identically for both cells and verified
+against NVSim's own printed geometry on every run), so that every cross-technology difference reported
+is a device difference, not an organization difference. Six workloads are evaluated, drawn from five
+benchmarks (AlexNet split into read-dominant IFMAP and write-dominant OFMAP phases): 502.gcc_r
+(compute-bound), 519.lbm_r (memory-streaming), the real STREAM benchmark, AlexNet IFMAP/OFMAP and
+GPT-2 IFMAP (both SCALE-Sim). A seventh planned workload, 505.mcf_r, is **absent**: gem5 panics inside
+the benchmark's own input reader about 0.13 ms into the detailed region, identically on the March and
+September attempts; no mcf number appears anywhere in the book, and recovering it needs a rebuilt
+benchmark binary from the Lead plus a new, explicit SPEC2017 access grant (the 2026-09-18 exception
+closed 2026-09-20).
 
-### 1.2 The Central Findings (current, book-verified, post-re-simulation)
+### 1.2 The Central Findings (2026-09 revision, all book-verified)
 
-**Finding 1 — The Flatline Paradox (multi-rank scaling limit) — unchanged.**
-Under single-threaded workloads (SPEC2017 gcc), scaling from 1-chip to 64-chip buys almost zero
-latency benefit — the trace lacks the Memory Level Parallelism (MLP) to saturate even the primary
-rank, so added ranks sit idle. The paradox resolves under massively parallel AI workloads (GPT-2,
-AlexNet), where rank-level interleaving drives large latency reductions as the system scales.
+**Finding 1, Latency: the projected ReRAM array beats DDR5 on five of six workloads, bounded hard by a
+published-silicon counterweight.** At NVSim-projected device timings, full-DIMM average total latency
+under GCC is 41.4 ns (1T1R SLC) and 36.8 ns (1S1R SLC) against DDR5's 83.1 ns; under LBM 43.1 / 38.1
+against 78.3; under STREAM 42.3 / 37.3 against 79.4; under GPT-2 IFMAP 143.3 / 130.1 against 222.1;
+under AlexNet IFMAP 143.6 / 130.0 against 212.3. Those DDR5 figures are the corrected ones: they carry
+the JESD79-5 write path, power-down path and activate window that replaced the DDR3-1333 template cycle
+counts (Appendix A), which raised DDR5's own average latency by 6.4 to 47.5% across the six traces. The
+one reversal is the write-dominated AlexNet OFMAP burst, where DDR5 (234.3 ns) beats every ReRAM track
+(1T1R SLC 353.1, 1S1R SLC 391.5, 1T1R MLC 512.0, 1S1R MLC 652.9 ns; DDR5 is 1.507x faster than 1T1R
+SLC and 1.671x faster than 1S1R SLC, 2.185x and 2.787x against the MLC tracks): DRAM reads and writes
+at the same cost, a resistive cell does not. ReRAM still loses this regime, but by less than before
+the DDR5 timing correction. **Why the projected array is faster is itself model-dependent:** of the
+41.40 ns 1T1R SLC GCC average only 11.25 ns is NVSim device time, charged once as tRCD + tCAS; the
+other 30.2 ns is NVMain's default protocol cycle counts at the assumed 800 MHz interface, so roughly
+three quarters of the ReRAM figure is an interface assumption, not a device measurement. The
+*direction* is robust (ReRAM is below DDR5 at all three measured clocks) and the *magnitude* is
+model-dependent. For the same reason the **MLC latencies are lower bounds**: this project's generator
+books NVSim's write latency as tWR and leaves tWP at zero, so the cell write pulse is off the request
+path entirely. This result is bounded by a hard condition: replaying the identical
+traces at published fabricated-chip timings (Micron/Sony's 16 Gb 1T1R [49], SanDisk/Toshiba's 32 Gb
+1S1R [48]) gives 11.9 us and 379 us under GCC, three to four orders of magnitude above the projection,
+and neither part completes the LBM window (18.2% and 1.0%). **The latency advantage belongs to the
+projected device, not to any shipped part.** Under sustained LBM streaming every ReRAM track now
+completes the whole 250 ms window (5,564,704 of 5,564,704 requests), same as DDR5; the legacy PCM
+baseline completes only 50.2%. A new `averageEndToEndLatency` statistic (trace-arrival to completion,
+vs. `averageTotalLatency`'s queue-entry to completion) is the saturation measure: where a configuration
+keeps up the two agree to a fraction of a cycle; where it does not (PCM, both silicon rows) they
+diverge by up to six orders of magnitude.
 
-**Finding 2 — Leakage-Class Separation — numbers refined, conclusion strengthened.**
-The technologies split into two sharply separated power tiers set entirely by standby physics:
-- **Transistor-gated (1T1R) family: ~50.9 W** full-DIMM (99.99% static) — infeasible ungated at
-  DIMM scale, **65–78× DDR5's floor** (corrected from the prior doc's "50–78×" — that lower bound
-  was never actually reproducible from the underlying data, in either the pre- or post-repair
-  generation; see §3 item (12) for the DDR5-side correction that prompted re-deriving this range).
-- **Selector-gated (1S1R) family: 1.12–1.30 W** full-DIMM (97–99% static) — 1.7× DDR5's 0.651 W
-  calibration floor, within 11% of parity at the vendor spec-limit ceiling.
-The 47× device-level leakage gap NVSim characterizes (794.7 mW vs. 16.9 mW per chip) propagates
-faithfully to the system level, and **is the single most consequential number in the evaluation**
-— leakage discipline, not raw cell speed, decides architectural viability. A dedicated NVSim
-sensitivity sweep (HRS held at 25×–10,000× LRS) confirmed this separation is completely insensitive
-to the exact resistance-target citation that originally motivated it — it is driven entirely by the
-access-device model (CMOS transistor vs. selector), not by the memristor's own resistance values
-(book Appendix A).
+**Finding 2, Power: there is no transistor-versus-selector leakage gap.** At the matched organization
+NVSim gives both cell types identical peripheral leakage, 108.384 mW per 1 Gb chip (NVSim assigns
+memristor cells zero leakage; chip leakage is entirely peripheral circuitry and scales with mat count).
+The full 8 GiB ReRAM DIMM draws 6.94 W under GCC, 99.96% static, against **0.797 W** for a 16 GiB DDR5
+module (the corrected current-mode background accounting, four times the figure NVMain printed):
+**about 17.4x more power per gigabyte under GCC, 12.7 to 17.4x across the suite for SLC and 6.4 to
+8.7x for MLC**. This ratio is an **upper bound**: DDR5's figure carries a real, restored JEDEC
+power-down credit, while ReRAM's power-down energy is an explicit, disclosed no-savings placeholder (no
+NVSim datapoint decomposes ReRAM leakage into gatable-periphery vs. ungatable-crossbar, and no citable
+ReRAM power-gating figure exists), so the model cannot price a gated ReRAM module at all.
+**The power argument changed direction as well as size with the DDR5 correction.** Break-even now
+needs **94.3%** of the static component gated at 22nm (80.8% at a 12nm-class port), which sits
+*inside*, not above, the 94-98% idleness implied by Malladi et al.'s reported 2-6% memory-bandwidth
+utilization for web-serving/data-analytics servers [21]: at f = 0.98 the gated module would draw
+0.142 W against DDR5's 0.399 W for the same 8 GiB, a ratio of 0.36x - *below* DDR5 - and at f = 0.94
+it would draw 0.419 W, 1.05x. **The cited band brackets break-even**, so the arithmetic no longer
+forbids parity for that deployment class; what forbids the book from claiming it is the unpriceable
+placeholder above. Two scope bounds must travel with all of this. **Both module figures count memory
+devices only** - no register clock driver, power-management IC, PHY, termination or ReRAM-side
+controller on either side. And a fixed per-module overhead O points the two statements in *opposite*
+directions: it *compresses* the ungated per-GiB ratio (17.4x falling toward an asymptote of 2x) while
+*raising* the gating fraction parity needs - 97.9% at O = 0.5 W per module, and beyond **O = 0.79 W**
+no gating fraction reaches parity at all. The overhead flatters the ratio and moves the gated
+comparison *against* ReRAM. A dedicated analytic selector layer (NVSim models no selector physics) finds the sneak-current
+budget adds **zero** to standby power at either bound and 7.56 mW/chip (present-day OTS) or 0.076
+mW/chip (best-published FAST selector [9]) during an access; but tile validity, not leakage, binds:
+the OTS bound supports only a 1,666-cell tile side, so **the simulated 2048 x 2048 organization is not
+valid at present-day selector quality**, and every 1S1R result in the book is conditional on a selector
+better than today's production ovonic threshold switch.
 
-**MLC-vs-SLC dynamic power is now workload-direction-dependent, not uniformly lower (revised from
-the prior doc's blanket claim).** With the corrected MLC latency/energy multipliers (§2.3, §3 item
-13), MLC dynamic power *exceeds* SLC's under GCC, LBM, STREAM, and AlexNet OFMAP — the corrected
-write-latency penalty (3.263×, down from the previous unsourced 4.0×) throttles MLC write
-throughput less than assumed, so more energy-costly writes complete per second even though each
-write still costs more energy per operation. MLC dynamic power stays *below* SLC's only on the two
-read-dominated workloads (GPT-2, AlexNet IFMAP), where the corrected read-energy penalty (1.1×, down
-sharply from the previous unsourced 3.0×) dominates instead. In every case, module total power
-remains anchored to its technology's leakage tier regardless of which direction the dynamic term
-moves — this is a second-order effect against the leakage-class backdrop above, not a challenge to
-it.
+**Finding 3, Efficiency (PDP): the four ReRAM tracks are within 1.2x of one another, not separated by
+29x.** Geometric-mean PDP across the six workloads: DDR5 **136.21** W·ns, legacy PCM 173.6, 1S1R SLC
+594.5, 1T1R SLC 641.0, 1S1R MLC 645.4, 1T1R MLC 722.8 W·ns. DDR5's own figure *rose* (from 103.3 in
+the 3 September version) once the corrected background accounting and the corrected JEDEC write path
+were both in it, so the gap it sets is narrower than any this book has reported: the best ReRAM
+configuration trails DDR5 by **4.4x** at module level and **4.7x to 9.4x** per gigabyte (4.7x 1S1R
+MLC, 5.3x 1T1R MLC, 8.7x 1S1R SLC, 9.4x 1T1R SLC). The gap narrowed because both terms of the DDR5
+side were corrected, not because ReRAM improved. PCM's module-level lead over ReRAM does not survive
+per-gigabyte normalization against MLC (PCM 5.1x DDR5 vs. 1S1R MLC 4.7x), and PCM's own figure rests
+on two service-limited workloads (50.2%/46.1% completion) and an inherited, uncharacterized
+configuration constant, not a characterized device.
 
-**Finding 3 — Density Advantage — unchanged.**
-1S1R's 4F² cell vs. 1T1R's 20F² still drives the density story (NVSim-characterized die area per GB
-vs. a commodity DDR5 baseline of 35 mm²/GB, **higher = denser**, DDR5 = 1.00):
-- 1S1R SLC: **1.92×** DDR5. 1S1R MLC: **3.84×** DDR5.
-- 1T1R SLC: **0.22×** DDR5 (i.e. DDR5 is 4.5× denser). 1T1R MLC: **0.44×**.
-Density is purely a NVSim die-area characterization, independent of the DDR5-timing and
-MLC-multiplier corrections in §3 items (12)/(13) — confirmed unaffected by direct diff of the
-regenerated results against the prior generation (byte-identical).
+**Finding 4, Endurance: wear leveling, not the cell, decides viability, and every figure is a
+projection.** Rating basis corrected to 10^6 cycles/cell (Chen 2020 [47]; Wong et al. [14], previously
+cited for 10^7 SLC/10^6 MLC, gives no such rating at all and has been withdrawn for that purpose). At
+64 GiB, ideal uniform leveling gives 38.6 yr (GCC), 3.6 yr (LBM), 4.3 yr (STREAM); **no leveling at all
+gives 7.7, 23.2 and 69.5 hours** (these traces are sparse: GCC touches 577 row locations out of
+131,072 at 8 GiB). A faithful, newly-added deterministic Start-Gap remapper [52] over one whole-module
+region recovers essentially none of that gap for these footprints (the hottest line fails before the
+gap rotates once); randomizing the region recovers part of it (0.20 yr LBM, 0.96 yr STREAM, still
+nothing on GCC). Required endurance for a ten-year life at 64 GiB: 2.6x10^5 (GCC), 2.8x10^6 (LBM),
+2.3x10^6 (STREAM) cycles under ideal leveling, 6.3/6.5/4.3x10^6 under randomized Start-Gap, against the
+10^6 planning value. The claim that the selector variant outlives the transistor variant is
+**withdrawn**: it was an artifact of the slower configuration completing fewer writes inside a
+service-limited window; all four tracks now wear identically (7.1 yr at 128 GiB, ideal leveling). MLC
+does not "live longer" than SLC either. AlexNet OFMAP's 132.5 M/s figure is a burst rate (a 4.5 us
+burst spread over its 1.022 ms drain time), never a sustained requirement, and is flagged as such
+wherever used.
 
-**Finding 4 — Endurance is a capacity- and workload-dependent constraint, not a categorical
-barrier — MLC lifetimes revised downward.**
-At the modeled 8 GB SLC module, worst-case sustained streaming (LBM) yields only **1.1 years** of
-projected lifetime — below the 5–10 year server-replacement target — while every other workload
-clears the target by 2× to two orders of magnitude even at 8 GB. At the 64–128 GB capacities where
-ReRAM's density advantage is actually realized, worst-case SLC lifetime reaches **9–17 years** (the
-slower-writing selector variant, 12–25 years), meeting or beating the target. MLC is harsher, and
-now measurably harsher than the prior doc reported: at the physical 16 GB module, measured LBM
-lifetimes are **0.42 years for 1T1R MLC** (was 0.54 — 1,706,535 writes per 83.33ms window, up from
-1,320,096, since the corrected write-latency multiplier throttles MLC less) and **0.75 years for
-1S1R selector MLC** (was 0.94 — 942,439 writes, up from 751,405); even at 128 GB these reach only
-**3.3 and 6.0 years** respectively (was 4.3/7.5) — still an independent argument (beyond the
-write-latency one) for restricting MLC to read-dominant deployments, now with a somewhat sharper
-edge than previously reported.
+**Finding 5, Density: the selector's density edge shrank sharply, and is now conditional.** At the
+matched organization, 1S1R delivers 1.24x DDR5's die-level density as SLC and 2.47x as MLC (down from
+the retired 1.92x/3.84x, which came from an implausibly small two-mat periphery); 1T1R lands at 0.36x
+and 0.73x (up from 0.22x/0.44x). Cell-level, node-independent bound: DRAM 6F²/bit, 1T1R 20F²/bit, 1S1R
+4F²/bit, so 1S1R SLC is 1.5x denser than DRAM and MLC 3.0x by cell arithmetic alone; the measured
+1.24x die-level SLC figure now falls *short* of that bound (sense-amp/decoder/mux overhead at a
+2048-cell tile), which is the expected, credible direction. A factor-of-two miss on the idealized 4F²
+cell area would drop 22nm SLC *below* DDR5 parity (0.62x); MLC is what carries the density case.
 
-**Finding 5 — A Simulation-Fidelity Audit found fourteen silent failure modes; twelve were
-repaired (count and three items added since the prior doc, all in §3 — items 12/13 from the
-DDR5-timing/MLC-multiplier cycle, item 14 from a later re-verification of item 13 itself).** See §3
-for the full list. In short: the toolchain — and, across two cycles, the *book's own bibliography* —
-was silently producing numbers that looked plausible but weren't measuring or citing what they
-claimed to, including a "corrected" figure that turned out to need a second correction. Two of the
-fourteen remain open (idle-power gating is simulated nowhere in the current NVMain fork; the GPT-2
-trace's SCALE-Sim provenance couldn't be confirmed against a preserved run) — both are disclosed as
-residual limitations in the book, not silently absorbed into the headline numbers.
+**Finding 6, Simulation-Fidelity Audit: fourteen silent failure modes found, thirteen repaired.** See
+Section 5 below. The one unrepaired item is the GPT-2 trace's generator configuration (its SCALE-Sim
+run was never preserved, so it is treated as a representative parallel-read pattern, not a validated
+GPT-2 capture); NVMain's power-down state machine, previously disabled, has been **restored** this
+cycle (it was open in the 2026-08-22 predecessor of this file).
 
-### 1.3 DDR5 vs. ReRAM Quantitative Conclusions (current, from book Table 6 — full-DIMM,
-repaired power model + corrected DDR5 timing + corrected MLC multipliers, ungated ReRAM /
-standard-idle DRAM & PCM)
+### 1.3 Cross-Technology Summary (book Table 7, full-DIMM)
 
-| Technology | GCC latency (ns) | GCC power (W) | Geo-mean PDP (W·ns) | Die density (× DDR5) | Worst-case lifetime @128GB | Architectural role |
+| Technology | GCC latency (ns) | GCC power (W / W per GiB) | Geo-mean PDP (W·ns) | Die density (× DDR5) | Projected lifetime @128 GiB (ideal) | Role |
 |---|---|---|---|---|---|---|
-| DDR5-4800 | 87.2 | 0.651 (44.7% refresh) | 104.3 | 1.00 | n/a (volatile) | commodity baseline |
-| PCM (Lee et al. 2009) | 6,399.2 | 0.040 | 165.3 | 1.25 | not evaluated | floor-power NVM; 4–49× latency cost |
-| 1T1R SLC | 130.9 | 50.870 | 21,350.6 | 0.22 | 17.3 yr | latency-optimized niche; infeasible ungated |
-| **1S1R SLC** | 190.3 | 1.118 | 737.1 | 1.92 | 24.8 yr | **flagship: one gating policy from DDR5 parity** |
-| 1T1R MLC | 182.6 | 50.877 | 32,567.1 | 0.44 | 3.1 yr | infeasible ungated |
-| 1S1R MLC | 288.5 | 1.130 | 1,222.4 | 3.84 | 5.2 yr | read-only capacity tier (frozen weights) |
+| DDR5-4800 | 83.1 | 0.797 / 0.0498 | 136.21 | 1.00 | n/a (volatile) | commodity baseline; sets every bar |
+| PCM (legacy) | 12,168.2 | 0.046 / 0.0115 | 173.6 | 1.25* | not evaluated | floor-power reference; two service-limited workloads; loses on latency by ~150x |
+| 1T1R SLC | 41.4 | 6.939 / 0.8674 | 641.0 | 0.36 | 7.1 yr | most write-symmetric ReRAM track |
+| **1S1R SLC** | 36.8 | 6.940 / 0.8674 | 594.5 | 1.24 | 7.1 yr | fastest reader, 3.4x smaller die; conditional on selector quality |
+| 1T1R MLC | 44.5 | 6.941 / 0.4338 | 722.8 | 0.73 | 7.1 yr | capacity tier; halves the per-GiB power penalty |
+| 1S1R MLC | 37.9 | 6.941 / 0.4338 | 645.4 | 2.47 | 7.1 yr | densest configuration; read-dominant roles only |
 
-**What changed vs. the 2026-07-22 doc (items 12/13, DDR5 timing + first MLC-multiplier fix):** DDR5's
-GCC latency rose 81.2→87.2 ns (+7.5%) and geo-mean PDP 99.5→104.3 W·ns (+4.8%) — the corrected
-`tCAS`/`tRCD`/`tRP` timing (34-34-34→40-39-39, §3 item 12) diluted into total latency once blended
-with the unaffected `tRAS`/`tWR`/refresh components. Both MLC rows dropped substantially: 1T1R MLC
-latency 330.2→223.2 ns (-32.4%) and geo-mean PDP 50,426.6→37,074.9 W·ns (-26.5%); 1S1R MLC latency
-544.4→354.2 ns (-34.9%) and geo-mean PDP 1,991.4→1,396.1 W·ns (-29.9%) — the corrected read/write
-latency multipliers (1.917×/3.263×, down from the unsourced 3.0×/4.0×, §3 item 13) throttle MLC
-access less severely than previously modeled. DDR5 power and both SLC rows are unaffected (neither
-fix touches SLC device characterization or DDR5's IDD/energy calibration) — confirmed byte-identical
-across the re-simulation.
-
-**What changed since then (item 14, 2026-08-22 — item 13's own read-latency figure was itself
-wrong):** an independent citation-verification pass found the 1.917× read-latency multiplier paired
-EMBER's own 12 ns read time with a "23 ns" figure that actually belongs to a *different* competing
-macro's 1-bit/cell measurement in the same comparison table — EMBER's ESSCIRC paper never reports a
-2-bit/cell read latency at all. Re-derived from EMBER's own JSSC 2024 data (2.4/1.6 Gbps read
-bandwidth at 1/2 bits/cell) using the same bandwidth-ratio method already validated for write-latency,
-giving a corrected **1.5×** read-latency multiplier — milder than the erroneous 1.917×, since MLC
-reads were previously over-penalized. Table values above reflect this: 1T1R MLC latency
-223.2→182.6 ns (-18.2%) and geo-mean PDP 37,074.9→32,567.1 W·ns (-12.2%); 1S1R MLC latency
-354.2→288.5 ns (-18.6%) and geo-mean PDP 1,396.1→1,222.4 W·ns (-12.4%). LBM's service-limited write
-counts also rose (faster reads let more total requests complete in the fixed window), pushing
-worst-case @128GB lifetime down slightly further: 1T1R MLC 3.3→3.1 yr, 1S1R MLC 6.0→5.2 yr. Write
-latency, read energy, and write energy (3.263×/1.1×/3.0×) were independently re-verified correct and
-unchanged. Non-MLC rows remain unaffected — confirmed byte-identical across this re-simulation too.
-
-**Headline reframe, still current:** selector-gated 1S1R SLC — not raw 1T1R latency — remains the
-flagship configuration. It trails DDR5 by only 1.7× on power at the conservative calibration floor
-(within 11% at the spec-limit ceiling), with zero refresh cost against DDR5's 33–45% refresh tax,
-and offers 1.9–3.8× DDR5's density. One credible idle-gating policy is what separates it from
-outright power parity — currently unsimulated (Finding 5 / §3, item 5).
+Under single-region Start-Gap the same lifetime projection is 23.2 hours, not 7.1 years (Table 5); the
+ideal-leveling number above is an upper bound, not the realistic case. Two published-silicon rows (11.9
+us / 379 us under GCC) are deliberately excluded from this table; no row here describes a fabricated
+part. **Power is comparable only in the per-GiB column** (the modules are 16, 8 and 4 GiB), and both
+sides count memory devices only, with no RCD, PMIC, PHY, termination or ReRAM controller (book
+Section 3.1.2). **\*** The PCM density figure is a fixed constant in the metrics pipeline with no
+device or datasheet source behind it - read it as *not characterized*, like the lifetime cell beside
+it. Source: `results/rev2026-09_primary_csv/processed_bar_chart_metrics.csv`,
+`processed_geometric_means.csv`.
 
 ---
 
-## 2. Theoretical Physics Baselines
+## 2. Method and Pipeline (as it now stands)
 
-### 2.1 Process Node & Resistance Targets — reworded (citation scope corrected, values unchanged)
-- **Node:** 22nm FinFET LOP (Low Operating Power) — LOP over HP for NVSim solver convergence and
-  thermal envelope alignment with high-capacity main memory.
-- **Resistance Targets:** LRS = 10⁵ Ω, HRS = 10⁹ Ω. The LRS floor is Matsui et al.'s [7] direct
-  recommendation for high-capacity *digital* ReRAM memory; the paired HRS value is adopted from the
-  same paper's analog Computation-in-Memory (CiM) design point as a representative high-resistance
-  target — [7] does not separately specify an HRS floor for the digital case, and the prior doc's
-  citation overstated how directly [7] supports the pair. A dedicated NVSim sensitivity sweep
-  (HRS = 25×–10,000× LRS) subsequently showed this precision doesn't matter for any result in the
-  book: modeled leakage power is bit-for-bit identical across the whole swept range for both 1T1R
-  and 1S1R, and read latency varies by at most 1.7% — the 47× leakage-class separation (§1.2 Finding
-  2) is driven entirely by the access-device model, not by HRS.
-- **Operating Voltages:** ReadVoltage = 1.4V nominal (swept ±20% in the robustness analysis, §3.1.5
-  of the book — read latency is invariant to the sweep; PDP changes <4%).
-
-### 2.2 Cell Topology — 1T1R vs. 1S1R — unchanged
-| Parameter | 1T1R | 1S1R |
-|---|---|---|
-| Cell Area | 20 F² | 4 F² |
-| Sneak-path mitigation | CMOS access transistor (full isolation) | Non-linear selector (thresholding) |
-| Commercial precedent | 22nm eReRAM in volume production (TechInsights TSMC 22ULL teardown [24]) | Crossbar Inc. 4Mb crosspoint milestone |
-
-(Commercial-precedent citation corrected this cycle: the prior doc's source, Xue et al. [8], is a
-2T2R ISSCC research macro, not a 1T1R commercial-production example — [24] is the reference that
-actually documents shipping 22nm eReRAM; the book text was reworded to drop the unconfirmed "1T1R"
-topology claim rather than assert something [24] doesn't state either.)
-
-### 2.3 SLC vs. MLC — multipliers and citations corrected across two rounds; read latency needed a second fix
-MLC (2 bits/cell) requires Iterative Step-and-Verify (ISPV) programming and ADC-precision sensing;
-NVSim's native MLC logic is non-functional at 22nm (FPE in `Mat.cpp`), so MLC metrics are
-analytically derived from the SLC baseline via four multipliers applied to latency and energy. The
-original doc's **3× read latency, 4× write latency, 3× access energy**, attributed to "EMBER-macro
-heuristics," were unsourced placeholders — that attribution does not exist in either EMBER
-publication, and the conference paper (Upton et al. [6], ESSCIRC 2023) reports no write-verify data
-split by bits-per-cell (only an aggregate, non-split SET/RESET pulse-energy estimate). A first
-correction round (2026-08-16) replaced these with figures traced to real EMBER measurements, but one
-of the four — read latency — was itself derived incorrectly and needed a second fix (2026-08-22),
-caught by an independent citation-verification pass that read the source table directly rather than
-trusting the first round's derivation:
-
-- **Read latency 1.5×** — Levy et al. [31] (IEEE JSSC 2024, Section V.A / Abstract): "1 b/cell read
-  operation with 1.0 pJ/bit energy at 2.4 Gbps, and 2 b/cell read with 1.1 pJ/bit at 1.6 Gbps" — a
-  clean bandwidth ratio (2.4/1.6 Gbps), via the same method already used for write-latency. This
-  *replaces* the first round's **1.917×**, which paired EMBER's own 12 ns read time (real, from
-  Upton et al. [6] Table I) with a "23 ns" figure mistakenly assumed to be EMBER's 2-bit/cell read
-  time — direct re-reading of Table I found that 23 ns is actually reference [9]'s (a *different*,
-  competing macro) own 1-bit/cell measurement; every entry in that table row, including EMBER's, is
-  scoped to 1-bit/cell operation, and EMBER's ESSCIRC paper never reports a 2-bit/cell read latency
-  anywhere. The corrected 1.5× is milder than the erroneous 1.917× — MLC reads were over-penalized,
-  not under-penalized, in the first round.
-- **Read energy 1.1×** — Upton et al. [6] (ESSCIRC 2023) Table I: 1b/cell vs. 2b/cell read energy
-  1.0/1.1 pJ/bit. Independently re-verified correct in both rounds.
-- **Write latency 3.263×, write energy 3.0×** — Levy et al. [31] (IEEE JSSC 2024) Section V.B: 1b/cell
-  vs. 2b/cell write-verify bandwidth 12.4/3.8 Mbps, write-verify energy 0.40/1.2 nJ/bit.
-  Independently re-verified correct in both rounds.
-
-Write energy is numerically unchanged from the original placeholder (3.0× both times, now properly
-sourced instead of unsourced); the read-energy correction (3.0×→1.1×) was the largest single change
-of the first round. The read-latency correction (1.917×→1.5×) is the second round's only change, and
-drives the further MLC latency/PDP reduction described in §1.3. The original doc's cross-reference
-to Le et al. [13] as a consistency check for the placeholder values has been dropped — [13] uses a
-different multi-level resistance-encoding scheme with no comparable SLC baseline; it remains cited
-only as general multi-bit-per-cell precedent (book §2.3 bullet), not as a multiplier source.
-
-### 2.4 Area Density Baseline — unchanged this cycle (see prior hardfork for the convention fix)
-- **DDR5 physical baseline:** 35 mm²/GB (commodity DDR5-4800 dies, Choe [18]).
-- **Formula:** `Area_Density_Ratio = DDR5_baseline_mm²/GB / (NVSim_area_mm² / capacity_GB)` — DDR5
-  divided by the technology; **higher is denser**.
-- Node-independent cell-level bound (process-agnostic sanity check, book Appendix A / §3.3):
-  DRAM 6F²/bit, 1T1R 20F²/bit, 1S1R 4F²/bit (2 bits/cell as MLC) — at any matched process node,
-  1S1R MLC is 3.0× denser than DRAM by cell arithmetic alone; the measured die-level 3.84× exceeds
-  this because DRAM carries more real peripheral/spare-area overhead than the pure-cell bound
-  ignores.
-
----
-
-## 3. Simulation-Fidelity Audit (extended across two cycles — three new items, all "found and fixed")
-
-A systematic audit of the NVSim-to-NVMain flow (book §3.1.6), conducted against the raw simulator
-sources and statistics files, found **fourteen silent failure modes** that bounded which
-conclusions the evaluation could honestly draw — items 12-13 found via a rigorous bibliography
-verification pass on the book itself, and item 14 found by re-verifying item 13's own citation work
-rather than trusting it. **Twelve of fourteen have been repaired**, with affected simulations
-re-run; every power and PDP figure in the current book derives from the resulting repaired dataset.
-
-| # | Failure mode | Status | Effect |
-|---|---|---|---|
-| 1 | Efficiency metric multiplied Watts by cycle counts from mismatched clock domains (800 MHz ReRAM vs. 2400 MHz DDR5) | **Fixed** | Biased comparison 3× against DDR5; PDP now computed in physical W·ns |
-| 2 | `StandbyPower` config field written by the generator but never read by NVMain (dead config) | **Fixed** | Device-characterized leakage never reached the simulation at all |
-| 3 | Generic standby-energy defaults (`Eactstdby`/`Eprestdby`) gave every non-volatile config the same ~68mW/rank floor | **Fixed** | This is the direct cause of the old "Power Flatline" |
-| 4 | Reported "Total System Power" was the single most-loaded rank, not the module sum | **Fixed** | ReRAM spans 8 ranks, DDR5 spans 2 — per-rank reporting wasn't comparable across technologies |
-| 5 | NVMain's power-down state machine is disabled in source (`HandleLowPower()` call site commented out) | **Open — top-priority future work** | Every ReRAM power figure in the book is worst-case *ungated*; DRAM/PCM model standard idle behavior |
-| 6 | gem5 traces generated without L1/L2 caches or warmup (raw CPU-to-memory stream, first 10M instructions) | **Documented, not fixed** | Overstates memory pressure — conservative for endurance bounds, a caveat for absolute queueing magnitudes |
-| 7 | DDR5 refresh machinery inherited unrescaled from a DDR3-1333 template | **Fixed** | Refresh fired 3.6× too often at 6.6× too little cost each; recalibrating to JEDEC JESD79-5 raised DDR5's refresh share to the final 33–45% band |
-| 8 | DDR5 supply voltage was NVMain's stock default (1.5V) rather than the JEDEC-specified 1.1V; IDD currents also uncalibrated | **Fixed** | Corrected + calibrated to published vendor IDD tables (Micron/SK hynix, run as a two-vendor band — the Micron-ceiling side of this band has an unresolved reproducibility gap, see §6) |
-| 9 | PCM baseline ran at 800 MHz — twice its cited 400 MHz basis (Lee et al. [11]) | **Fixed** | Roughly doubled PCM's reported latencies once corrected |
-| 10 | ReRAM access energies written under config keys NVMain never reads (dead keys, same class of bug as #2) | **Fixed** | Every ReRAM config had silently used identical stock access-energy constants despite a real 5.7× read-energy difference between 1T1R/1S1R |
-| 11 | Heterogeneous, unmatched host-CPU frequencies across technologies (800 MHz ReRAM host vs. 2/3 GHz others) with an unrescaled trace-admission cutoff | **Fixed** | Every technology now admits the identical request population per workload (matched-host correction: 250M-trace-cycle admission at a 3 GHz reference host, 83.33ms wall-clock for every configuration) |
-| 12 | DDR5's `tCAS`/`tRCD`/`tRP` timing (34-34-34 cycles) was an unsourced placeholder, no citation or datasheet attached | **Fixed (2026-08-16)** | Cross-referenced SK hynix's public DDR5 part-number decoders against the standard DDR5-4800 (non-3DS) speed bin: real value is 40-39-39, a 15.7% increase in the CAS+RCD+RP timing component. Re-simulated; DDR5 total latency rose 2.3-8.6% across the 6-benchmark suite (diluted from 15.7% once blended with the unaffected `tRAS`/`tWR`/refresh timing); DDR5 power unaffected (this fix is timing-only, item 8's IDD calibration is untouched) |
-| 13 | MLC read/write latency and energy penalty multipliers (3×/4×/3×/3×) were unsourced placeholders attributed to a citation ("EMBER Macro analytical heuristics") that does not support them in either of its publications | **Fixed (2026-08-16); read-latency figure itself superseded, see item 14** | Real measured multipliers located on the EMBER macro's full JSSC 2024 journal publication (missing from the ESSCIRC 2023 conference version cited alone): read latency set to 1.917× (later found wrong, item 14), write latency 3.263×, read energy 1.1×, write energy 3.0× (§2.3 above has the full derivation). All 8 MLC configurations re-simulated across all 6 benchmarks |
-| 14 | Item (13)'s own 1.917× read-latency multiplier was a data error: it paired EMBER's 12 ns read time with a "23 ns" figure actually belonging to a different, competing macro's own 1-bit/cell measurement in the same comparison table — EMBER's ESSCIRC paper never reports a 2-bit/cell read latency at all | **Fixed (2026-08-22)** | Caught by an independent citation-verification pass that read the source table directly. Re-derived from EMBER's own JSSC 2024 data (2.4/1.6 Gbps read bandwidth at 1/2 bits/cell, same bandwidth-ratio method as write-latency): corrected multiplier is **1.5×**, milder than the erroneous 1.917× (MLC reads were over-penalized, not under-penalized). All 8 MLC configurations re-simulated across all 6 benchmarks; MLC latency fell a further 5.5-18.6%, MLC PDP fell 0.7-18.6% (§1.3 above). Also caught and fixed in the same pass: 4 unrelated sentences frozen at stale pre-`system_v4` or original-placeholder-era data, never updated through either prior MLC-multiplier correction round (§3.1.1 LBM/1S1R-MLC absolute latency, the AlexNet Write-Torture IFMAP/OFMAP pair, the selector write/read device-ratio claim, and a Conclusion restatement) |
-
-**Validation discipline:** every repair was checked against device-level anchors (0.0% error) or
-exact predicted arithmetic. Items (12) and (13) were additionally checked by: re-running the full
-9-config × 6-benchmark affected slice with a gate-keeper pass confirming every output file's
-admission ceiling matched the documented matched-host methodology exactly; diffing every *untouched*
-row (SLC, PCM, 2D/3D-DRAM controls — 66 rows across 5 technologies) against the pre-fix generation
-and confirming byte-for-byte identity; and catching + correcting a genuine data-contamination bug
-found mid-validation (a stale, never-fully-processed "DDR5 Micron-calibration" data slice that would
-have corrupted the DDR5 geometric-mean PDP by ~26% instead of the real ~4.8%, had it not been
-excluded before the final CSVs were generated). Item (14) was checked the same way: the 8 MLC
-configs × 6 benchmarks were re-run and every output file's admission ceiling verified against the
-matched-host methodology, and all 72 non-MLC rows (carried forward from `system_v5_input`) were
-diffed byte-for-byte identical to `system_v5` before the corrected CSVs/figures were generated.
+- **The pipeline:** NVSim hardware characterization -> JSON extraction (`2_extract_hardware_metrics.py`)
+  -> system config generation (`3_gen_nvmain_config.py`) -> cycle-accurate NVMain trace execution
+  (`4_execute_simulation.py`) -> `process_metrics.py` -> visualizers, all gated by `mbmm_master.py`
+  (unchanged in shape from prior revisions; the Gate-Keeper rule still applies: no simulation data is
+  accepted without a complete end-to-end pass).
+- **Run provenance, added after the final review (tasks F1/F2):** `mbmm_master.py` writes
+  `results/system/run_manifest.json` (`schema: mbmm_run_manifest/1`) at the start of Stage 4, before
+  any simulation, recording the run's own flags; `process_metrics.py` carries the same axes into every
+  processed CSV as the **`Run_*` columns** (`Run_Channels`, `Run_Decoder`, `Run_Organization`,
+  `Run_Queue_Size`, `Run_Freq_MHz`, `Run_Window_ns`, `Run_DDR5_Model`), so a row can no longer be
+  read without knowing which sensitivity axis produced it. Both are live in the code as of
+  2026-09-21. Four safeguards go with them, so that a folder can never be mislabelled: the manifest
+  carries an `expected_stats_files` list and `process_metrics.py` gives the `Run_*` values ONLY to
+  stats files on that list (any other file, and every file in a folder whose manifest has no list,
+  reads `unknown` with a WARNING; the frozen `results/system_rev2026-09_*` datasets predate the
+  manifest and therefore read `unknown`); before Stage 4 the master moves a previous run's stats,
+  partial or failed outputs and old manifest out of `results/system` into
+  `results/system_previous_<timestamp>/` (never deletes); Stage 3 lists the configs it generated,
+  older generated ReRAM configs are moved aside, and Stage 4 refuses any generated model not on this
+  run's list; and `4_execute_simulation.py` writes NVMain's output to `<name>.out.partial`, renames it
+  to `.out` only on success (`.out.failed` otherwise), and first moves a pre-existing output of the
+  same name aside to `.out.superseded_<timestamp>`, so a failed re-run can never leave a
+  fresh-looking result behind.
+- **Current-mode background-power correction (task F1), and the rule that goes with it:** NVMain 2.0's
+  `EnergyModel current` path - which **only the DDR5 configs use** - accumulates each rank's
+  `backgroundEnergy` for all its devices but then divides by the device count when converting it to
+  power, while activate, burst and refresh are multiplied by it as they should be
+  (`Ranks/StandardRank/StandardRank.cpp`, ~line 992). The printed rank `backgroundPower`, and the
+  `totalPower` that sums it, therefore carry **one device's** standby draw against the whole rank's
+  other three components. **The C++ is deliberately left unpatched** (patching it would invalidate
+  `tools/golden/` and force a re-record of the frozen datasets); the correction is applied in
+  `process_metrics.py` and surfaced as the **`Background_Power_Device_Factor`** CSV column (4 for
+  `DDR5_4800_DRAM_subchannel`, 8 for `DDR5_4800_DRAM_64B`, 1 for every ReRAM and PCM row, which use
+  other energy models and never divide). **Rule: never read a rank's `backgroundPower` or its
+  `totalPower` raw from an `EnergyModel current` stats file** (recognisable by `mA*t` energy units
+  rather than `nJ`) - multiply by the rank's device count (`BusWidth / DeviceWidth`) first. **And
+  never read a rank's `totalEnergy` from such a file at all**: in current mode it double-counts one
+  device's bank energy. Both quirks are written up as items 6 and 7 of
+  `simulators/nvmain/CLAUDE.md`; nothing in the pipeline reads `totalEnergy`.
+- **DDR5 config provenance is labelled key by key:** a sweep of the baseline's 36 device and simulator
+  keys classifies each into one of **four labels** - 22 JEDEC-sourced, 9 NVMain-specific with no DDR5
+  counterpart (three of which can never bind here), 2 parsed but read by no timing code, and 3
+  short-versus-long bank-group judgements (tCCD, tWTR, tRRD) taken at the **short**, DDR5-friendly
+  value and recorded as judgements rather than transcriptions. `configs/DDR5_4800_DRAM_subchannel.config`
+  carries the JESD79-5 table and page number for every value inline, plus the disclosure that the
+  tables were read through a third-party mirror and **should be re-verified against an official copy**.
+- **Matched array organization:** both cell types forced to 2048 x 2048 subarrays at sense-amp mux 64
+  via NVSim's `-ForceBank`/`-ForceMat`/`-ForceMuxSenseAmp`, with an anchored gate that fails the run on
+  any mismatch against NVSim's own printed geometry.
+- **Module geometry:** ReRAM full DIMM 8 GiB SLC / 16 GiB MLC, 64 x 1 Gb chips, 2 channels x 4 ranks x
+  8 devices, 8 banks of 2048 x 1024 sixty-four-byte locations per device. DDR5 baseline 16 GiB, eight
+  16 Gb x8 devices, two independent 32-bit subchannels (each its own command bus, 32 banks), 64-byte
+  access as a 16-beat burst per subchannel. Every technology accessed at 64-byte granularity.
+- **Primary pipeline flags** (the exact invocation that generated Tables 1-5 and Figures 1-27):
+  `python3 mbmm_master.py --all --trace gcc_spec2017.nvt lbm_spec2017.nvt stream.nvt gpt2_ifmap.nvt
+  alexnet_layer1_ifmap.nvt alexnet_layer1_ofmap.nvt --window-ns 250000000 --ddr5-model
+  DDR5_4800_DRAM_subchannel --channels 2 --decoder StartGap --endurance-model RowModel --silicon`
+  (120 runs: 4 ReRAM cell tracks x 4 chip-count architectures x 6 traces, plus DDR5, PCM and the two
+  silicon configs). Other flags used for sensitivity axes: `--organization {2048,1024}`, `--freq`
+  (800/1333/2400 MHz), `--queue-size` (8/32/128), `--models` (scopes `4_execute_simulation.py` only,
+  not `mbmm_master.py`'s own `--models`/`--all` path).
+- **Trace tools:** `parse_gem5_memctrl.py` (new gem5 MemCtrl parser, provenance sidecar,
+  `--cpufreq-mhz 3000 --region o3 --skip-ns 10000000`); `parse_trace.py` (SCALE-Sim parser, fixed to
+  keep every address and drop padding markers); `tools/validate_trace.py` (checks monotonic timestamps,
+  64-byte alignment, span coverage, reads/writes in window; exit 1 on hard failure). Every trace ships a
+  `.sidecar.json` (generator command line, source-log hash, region boundaries, full line accounting).
+- **Endurance tools:** `endurance_sensitivity.py` (sweeps endurance rating x capacity x leveling policy
+  x write reduction, emits `results/endurance_table.csv`); `tools/aggregate_wear.py` (DIMM-wide wear
+  from a stats file: touched locations, total/max/mean writes, hot-spot factor, top 16 locations).
+- **Other new/changed tools this revision:** `selector_layer.py` (analytic 1S1R selector bounds: sneak
+  leakage, read margin, tile validity, at OTS and FAST bounds; writes `results/selector_layer.json`);
+  `tools/nvmain_regress.sh [--record]` (build/regression harness against golden stats, run as PASS x3
+  before and after every C++-touching change); `tools/check_live_configs.py` (byte-identity check
+  between `configs/*.config` and the live `simulators/nvmain/Config/` copies NVMain actually reads;
+  wired into `mbmm_master.py` stage 4, fail-fast).
+- **Frozen dataset folders (2026-09 revision):** primary run `results/system_rev2026-09_primary/` (120
+  stats files) with CSVs in `results/rev2026-09_primary_csv/`; sensitivity runs each in their own
+  `results/system_rev2026-09_<axis>/` for axis in {decoder_default, channels1, channels1_ai, ddr5_64b,
+  freq1333, freq2400, queue8, queue128, org1024}; book figures in `results/book_figures_rev2026-09/`;
+  deck charts in `results/slide_graphs_rev2026-09/`. The pre-revision dataset is preserved at
+  `results/archive_2026-09_pre_revision/`.
+- **MLC analytical model:** NVSim's native MLC logic FPEs in `Mat.cpp`'s ISPV sensing; MLC metrics are
+  derived from the SLC baseline via four multipliers, both measured on the same EMBER macro across two
+  publications (Upton et al. [6], ESSCIRC 2023, for read energy; Levy et al. [31], IEEE JSSC 2024, for
+  read latency and both write-side figures): **1.5x read latency, 3.263x write latency, 1.1x read
+  energy, 3.0x write energy**.
+- **Validation scope, restated:** internal pipeline consistency, not hardware correlation. Inputs are
+  anchored to real silicon/vendor datasheets and every repair is verified against device-level output or
+  exact arithmetic (0.0% error), but no end-to-end result is checked against a measured ReRAM DIMM or
+  instrumented DDR5 system, because no ReRAM main-memory module exists to measure.
 
 ---
 
-## 4. Pipeline Architecture (updated: results generation, config-authority notes)
+## 3. Corrected Findings and Their Binding Caveats
 
-`mbmm_master.py` remains the Gate-Keeper: no simulation data is accepted without a complete
-end-to-end pass. Architecture unchanged (`1_run_nvsim_hardware.py` → `2_extract_hardware_metrics.py`
-→ `3_gen_nvmain_config.py` → `4_execute_simulation.py` → `process_metrics.py` →
-`visualize_results.py`/`visualize_pareto.py`/`visualize_hero_graphs.py`, all through
-`logging_config.py`'s unified logger).
-
-**Known pipeline caveat found this cycle:** `mbmm_master.py`'s `--models` flag does not scope a run
-to specific models — it is only checked to decide whether to enter the `--models`/`--all` code path
-at all; once inside, the full 16-config ReRAM matrix + all 3 DRAM baselines run unconditionally for
-every `--trace` given, regardless of what `--models` lists. For a genuinely scoped re-run (e.g.
-re-simulating only the configs affected by a specific parameter fix), call `4_execute_simulation.py`
-directly — its `--models` *is* respected. `README.md` was updated with an explicit callout on this;
-the root README's own worked example previously reproduced the same wrong assumption.
-
-**Matrix size:** 20 configurations (16 ReRAM variants: 4 technologies × 4 scales, + DDR5-4800, PCM,
-2D_DRAM_example, 3D_DRAM_example) × 6 workloads = 120 stats files per full generation.
-
-**Matched-host cycle budgets (post-repair, §3 item 11):** every configuration runs to the same
-250M-trace-cycle admission at a fixed 3 GHz reference host — 83.33ms wall-clock for all (ReRAM
-66.7M memory cycles at 800 MHz, PCM 33.3M at 400 MHz, DDR5's 200M unchanged at 2400 MHz).
-
-**Current results generation: `results/system_v6/`** (supersedes `results/system_v5/`, which is
-kept, not deleted, for diffability, itself supersedes `results/system_v4/`, also kept — the
-established archival pattern in this repo). `system_v5` was produced by re-running only the 9
-configs affected by items (12)/(13) (`DDR5_4800_DRAM` + the 8 MLC configs) and carrying every other
-technology's raw stats forward byte-identical from `system_v4`. `system_v6` was produced the same
-way one level up: only the 8 MLC configs (affected by item (14)'s read-latency correction) were
-re-run, with `system_v5_input`'s other 72 rows — including `system_v5`'s own DDR5 re-simulation —
-carried forward byte-identical. This is the Global-Constraints-style scoping this repo has settled
-on for parameter fixes that don't touch every technology.
-
----
-
-## 5. Session History — Key Milestones (extended)
-
-Formal session-summary `.docx` files (`resources/session summaries/`) stop at **Session 24**
-(2026-05-22). Everything below Session 24 is reconstructed from git history, the book's own §3.1.6
-narrative, and (now-archived) scoping/audit docs — not from a formal session summary. Treat session
-*numbers* below Session 25/26 as approximate; dates and commit hashes are the reliable anchor.
-
-| Session | Date | Milestone |
-|---|---|---|
-| 1–24 | 2026-02-21 → 2026-05-22 | See archived pre-hardfork context state for full detail; ends with the ETL refactor (`process_metrics.py` as single source of truth, `logging_config.py`, Hybrid-Empirical density adopted, Area Bug identified) |
-| 25 (2026-05-26) | 2026-05-26 | Thesis Review audit: flagged OFMAP/IFMAP latency inversion, area-density convention mismatch, metric drift vs. pre-refactor pipeline, PCM-beats-DDR5 EDP inversion |
-| 26 (2026-05-29) | 2026-05-29 | Re-audit: root-caused metric drift + OFMAP/IFMAP inversion to a single bug (`extract_total_execution_cycles()` matching `averageLatency` instead of `averageTotalLatency`); patched, all CSVs regenerated |
-| — (2026-07-06, commit `9734bc0`) | 2026-07-06 | ETL latency/area-density extraction fix (queue-aware PDP, JSON-sourced area), visualizers aligned |
-| — (2026-07-06, commits `2e1d213`/`3335bd4`) | 2026-07-06 | nvsim submodule maintenance (URL rename, CLAUDE.md docs) |
-| — (2026-07-11, commit `923aa8f`) | 2026-07-11 | **The power-model repair**: real per-technology leakage derived from NVSim and wired into `Eactstdby`/`Eprestdby`; power extraction switched to module-sum across all ranks; dead `StandbyPower` config retired |
-| — (2026-07-13, commit `c728173`) | 2026-07-13 | Investigated the throughput mechanism behind the book's §3.1.1 sustained-streaming sentence; matched-host `CPUFreq` correction (§3 item 11); `results/system_v4` established as canonical |
-| — (2026-07-22/23) | 2026-07-22 | Full §3.1.6 fidelity audit completed (11 findings, 9 repaired); endurance analysis and ReadVoltage robustness sweep added; Project Book converted to a compile-verified Typst edition; this file's first hardfork regeneration |
-| — (2026-08-16, this cycle) | 2026-08-16 | **Bibliography reference-verification audit**: every citation in the book checked against its actual cited source (6 independently-dispatched research passes). Found and fixed: an eReRAM commercial-production citation pointing at the wrong (2T2R research, not 1T1R production) paper; a page-range typo; an unsupported technical claim (Optane's DDR-T interface) cited to an article that never discusses it; a misattributed bandwidth-utilization figure; an over-claimed resistance-target citation. Found, via a much longer multi-round investigation (two AI research assistants, both of which initially overreached with unverifiable claims later retracted under direct primary-source checking), that the MLC read/write penalty multipliers were unsourced placeholders — real values eventually located on a second, journal-length publication of the same source macro. Separately found the DDR5 baseline's CAS/RCD/RP timing was *also* an unsourced placeholder. Both corrected (§3 items 12/13), the affected 9-config slice re-simulated, and every table/prose paragraph/figure in the book that cited the old numbers updated (turned out to be at least 6 separate restatements of the same headline figures scattered across the Abstract, five tables, and the Conclusion, plus 26 embedded figure images regenerated). A dedicated NVSim sensitivity sweep separately confirmed the leakage-class-separation finding (§1.2 Finding 2) is completely insensitive to the disputed resistance-target citation, closing that question without needing a re-simulation. This file regenerated to match |
-| — (2026-08-22, this cycle) | 2026-08-22 | **Full 32-reference citation re-verification** (six parallel research agents, one per reference cluster), requested independently of — and skeptical toward — the 2026-08-16 audit's own fixes. Confirmed the DDR5/industry/tool citations all check out, plus two more minor precision fixes (a "20F²" figure imprecisely co-cited to [3]/[14], a "multi-megabyte" overclaim on the TechInsights teardown). But the audit's central finding: **item (13)'s own 1.917× MLC read-latency multiplier was itself a data error** — direct re-reading of EMBER's ESSCIRC Table I showed the "23 ns" it was paired against belongs to a different competing macro's own 1-bit/cell measurement, not EMBER's 2-bit/cell number, which the paper never reports. Re-derived a real 1.5× multiplier from EMBER's own JSSC bandwidth data (§2.3, §3 item 14). Re-simulated the 8 MLC configs across all 6 benchmarks (`results/system_v6/`), and — because the read-latency multiplier touches a huge number of restated figures — did a full manual line-by-line sweep of the book (not just a grep-and-replace) that also caught **4 unrelated, previously-missed stale-data bugs**: three §3.1.1 sentences and one Conclusion sentence frozen at pre-`system_v4` or original-3x/4x-placeholder-era numbers, never updated through either of the two prior MLC-multiplier correction rounds. All fixed, all 25 affected figure images regenerated, this file updated to match |
+- **Latency (ReRAM below DDR5 on CPU traces):** holds at NVSim-projected device timings **only**. Must
+  always be read alongside the published-silicon rows (11.9 us / 379 us under GCC, completing 18%/1% of
+  LBM) and the write-dominated AlexNet OFMAP burst (DDR5 wins, 234.3 vs. 353.1-652.9 ns). Never state
+  the latency win without one of these two counterweights attached.
+- **Latency magnitude is an interface assumption, not a device result:** only tRCD + tCAS come from
+  NVSim (11.25 ns of the 41.40 ns 1T1R SLC GCC average); the remaining 30.2 ns is NVMain's default
+  protocol cycle counts at the assumed 800 MHz clock, which has no ReRAM citation behind it. State the
+  direction as robust and the magnitude as model-dependent. The same mapping puts the cell write pulse
+  off the request path, so **MLC latencies are lower bounds** and MLC's near-parity with SLC is a
+  consequence of this project's generator, never a device finding.
+- **Power per GiB (12.7-17.4x DDR5 for SLC, 6.4-8.7x for MLC):** an **upper bound**, not a settled gap.
+  DDR5's number carries a real power-down credit; ReRAM's does not (disclosed no-savings placeholder).
+  Break-even needs **94.3%** gating at 22nm, which sits *inside* the 94-98% idleness the cited
+  web-serving deployment class implies - the band **brackets** break-even (0.36x DDR5 at f = 0.98,
+  1.05x at f = 0.94). Never state the power gap as closed or as unclosable; both overclaims are wrong,
+  and the parity the band brackets is arithmetic, not a result.
+- **Both module power figures are memory-device-only:** no register clock driver, PMIC, PHY,
+  termination or ReRAM-side controller on either side. Quote this scope wherever a per-module ratio is
+  quoted. A fixed per-module overhead moves the two statements in opposite directions: it *compresses*
+  the ungated per-GiB ratio toward an asymptote of 2x, and it *raises* the gating fraction parity needs
+  (97.9% at 0.5 W per module; beyond 0.79 W no gating fraction reaches parity at all). Never say an
+  overhead helps ReRAM without saying which of the two comparisons is meant.
+- **Leakage identical at matched organization:** true for the simulated 2048 x 2048 tile, but 1S1R's
+  validity at that tile size is **conditional on selector quality** (invalid at present-day OTS
+  quality, valid at the best-published FAST bound). Never cite an 1S1R result without this caveat.
+- **Endurance (projected, four leveling policies, 10-year requirement):** every lifetime is a
+  **projection**, never "measured". Burst-derived rows (AlexNet OFMAP) must carry their burst-rate
+  flag. NVMain's `wearMaxWrites` statistic is a **per-row** total (1024 lines/row) and overstates
+  per-cell wear by up to 1024x; never read it as a cell-wear figure.
+- **Scaling: channel count moves burst latency; rank depth at most 7.5%, CPU traces only.** Shown by a
+  one-channel control run (`results/system_rev2026-09_channels1_ai/`) that collapses the 8/16/64-chip
+  points onto one latency for the two AI read bursts. Static power and capacity scale exactly linearly
+  with chip count (108.384 mW/chip to six digits); latency for the three CPU traces barely moves at all
+  (6.4-10.4% across physically realizable points, no monotonic trend) because they are offered-rate
+  limited, not device limited.
+- **End-to-end latency is the saturation measure**, not total latency: total latency cannot see time a
+  request spends waiting to be admitted, so under a saturated configuration (PCM, either silicon row)
+  it stays flat while the real backlog (visible only in end-to-end latency) grows without bound.
+- **Sensitivities run this cycle, each with its own scope:** interface clock (800/1333/2400 MHz: 2.2x on
+  CPU traces, 1.7-1.8x where the queue binds, zero effect on static power); queue depth (8/32/128: zero
+  effect on CPU traces, opposite-direction movement of total vs. end-to-end latency on the write burst);
+  channels (1 vs. 2: isolates the 1.68x AI-burst gain to the second channel); DDR5 64B cross-check
+  (79.6 vs. 83.1 ns under GCC and 75.9 vs. 78.3 under LBM, a 3-4% difference, but **3.4x faster in the
+  controller and 3.3x end to end** on the dense AlexNet write burst; it is a **legacy-shape reference,
+  not a JEDEC DDR5 configuration** - a 64-bit channel serving a 64 B line in 8 beats is a DDR4 shape
+  DDR5 does not offer, and it holds tCCD at 4 cycles, below the 8-cycle JEDEC floor - so its speed
+  advantage is an optimistic upper bound and the two-subchannel model stays the primary baseline);
+  array organization 1024 x 1024 (faster device,
+  larger die, ~2x leakage vs. 2048 x 2048; module gains 4-10% latency but pays 14.3 W vs. 6.9 W).
 
 ---
 
-## 6. Current Status
+## 4. Withdrawn Wordings: Do Not Reintroduce
 
-**No known active blocking bug.** The area-density extraction failure that an earlier doc version
-described as open was fixed between Sessions 25–26; current values are the Finding 3 figures in
-§1.3.
+These phrasings appeared in earlier drafts of the 2026-09 revision and were walked back during review.
+None should be used again, even as a paraphrase, without the correction attached:
 
-**Known, disclosed residual limitations** (from the book's §3.1.6, carried forward honestly rather
-than fixed):
-1. **Idle-power gating is unsimulated** (§3 item 5) — every ReRAM power figure is worst-case
-   ungated. This is the single highest-leverage open item; restoring it is the top-priority future
-   work item (book §4.1).
-2. **gem5 trace provenance is weaker than ideal** (§3 item 6) — no L1/L2 caches, no warmup,
-   confirmed for gcc/lbm but the GPT-2 SCALE-Sim trace's provenance could not be tied to a preserved
-   run (AlexNet's TPU-v1 256×256 output-stationary configuration is confirmed; GPT-2 is not).
-3. **Open-loop trace replay**: no CPU/accelerator feedback path, so every latency figure is a
+- **"Channel count is the only latency lever."** Wrong: the interface clock (2.2x on CPU traces) and
+  the controller queue depth (1.6x end-to-end on the write burst) are separate, independently measured
+  levers. The book's actual claim is narrower: among the *module-organization* choices the chip-count
+  matrix varies (chips, ranks, channels), channel count is the one that moves burst latency.
+- **"Rank depth bought nothing."** Wrong on the CPU traces: rank depth is worth up to 7.5% there (a
+  fall in the device component of latency across the 16-to-64-chip step). It bought exactly nothing
+  only on the three AI traces, because their footprints never leave one rank.
+- **"No gating fraction closes it."** Wrong: the arithmetic does not forbid parity for the web-serving
+  deployment class Malladi et al. describe - break-even (94.3%) sits *inside* that class's 94-98%
+  idleness band, and the band brackets it. What is true is narrower: this book cannot *claim* the gap
+  is closed, because no citable ReRAM power-gating energy characterization exists to price a gated
+  module with.
+- **"PCM beats every ReRAM track" as a headline.** Only true at module level and only with three
+  attached caveats: two of PCM's six workload terms are service-limited completions (lower bounds), its
+  module is 4 GiB against ReRAM's 8-16 GiB, and per gigabyte the ordering reverses against MLC ReRAM
+  (PCM 5.1x DDR5 vs. 1S1R MLC's 4.7x).
+- **"Modeled strictly after JESD79-5"** (of the DDR5 baseline). Withdrawn in favour of a scope
+  sentence: the baseline is JEDEC-sourced *with three documented, DDR5-friendly short-versus-long
+  choices* (tCCD, tWTR, tRRD) and a handful of NVMain-specific keys, on values transcribed through a
+  public mirror that should be re-verified. See the four-label provenance in Section 2.
+- **"40 to 55x DDR5 power per GiB"** (and the 20-27x MLC companion). Retired with the background-power
+  correction: the figures are **12.7 to 17.4x** for SLC and **6.4 to 8.7x** for MLC, and they are
+  upper bounds.
+- **"Break-even needs 98.2% of the static component gated."** Retired with the same correction: it is
+  **94.3%** at 22nm (80.8% at a 12nm-class port), which lands *inside* the cited idleness band instead
+  of above it. Any sentence built on 98.2% has the direction of the power argument backwards.
+- **"MLC is barely slower than SLC"** stated as a device finding. Wrong as a device claim: it is a
+  consequence of this project's own configuration generator, which books NVSim's write latency as tWR
+  and leaves tWP at zero, so the cell write pulse never reaches request latency. The MLC latencies are
+  **lower bounds**; with the write pulse on the request path a 1T1R MLC write would cost about 63 ns
+  instead of 13.75. The MLC write penalty surfaces as endurance and energy per write instead.
+- **"A per-module overhead moves break-even in ReRAM's favour."** Wrong, and it inverts the argument.
+  A fixed overhead added to both sides *compresses the ungated per-GiB ratio* (a ratio of totals,
+  falling toward 2x) but *raises the gating fraction parity requires* - 97.9% at 0.5 W, no parity at
+  all beyond 0.79 W - because 8 GiB of ReRAM carries the same overhead as 16 GiB of DDR5. The first
+  flatters ReRAM, the second does not, and the two must never be conflated.
+
+---
+
+## 5. Simulation-Fidelity Audit (fourteen items, thirteen repaired)
+
+A systematic audit of the NVSim-to-NVMain flow (book Section 3.1.6) found fourteen silent failure
+modes across the ReRAM configurations, the metrics pipeline and both non-ReRAM baselines. Items 1-11
+were the pre-2026-09 repairs (mixed-clock-domain PDP, dead `StandbyPower` config, generic
+standby-energy defaults, single-rank power reported as system power, disabled power-down state machine,
+weak trace provenance, unrescaled DDR3-era DDR5 refresh, NVMain-default DDR5 supply voltage/uncalibrated
+IDD, PCM running at 2x its cited clock, dead ReRAM access-energy config keys, heterogeneous host-CPU
+frequencies). This revision added:
+
+- **Item 12 (fixed):** DDR5's tCAS/tRCD/tRP (34-34-34 cycles) was an unsourced placeholder; corrected
+  to 40-39-39 via SK hynix's public DDR5-4800 speed-bin decoder. DDR5 total latency rose 2.3-8.6% across
+  the suite; power unaffected.
+- **Item 13 (fixed):** the double-count in the read path (full device read latency billed into both
+  tRCD and tCAS) is the single largest correction of this revision; the generator now splits it so
+  tRCD + tCAS sums to the device read latency.
+- **Item 14 (fixed):** trace regeneration. All gem5 traces rebuilt from scratch (L1/L2 caches, documented
+  region, 10 ms warm-up discard, exact reconciliation with gem5's own request counters); SCALE-Sim
+  parser fixed to keep every address instead of one-per-row and drop padding markers instead of writing
+  them in as addresses; STREAM switched from a hand-written synthetic stand-in to the real benchmark.
+  **The one item not repaired**, and the sole disclosed permanent limitation on this list: the GPT-2
+  trace's original SCALE-Sim generator configuration was never preserved, so it is a representative
+  parallel-read pattern, not a validated GPT-2 capture (AlexNet's TPU-v1 256x256 output-stationary run
+  is confirmed and reproducible).
+
+**Two further DDR5 defects were found AFTER this audit list had been closed** (tasks F1 and F4,
+2026-09-21) and are therefore *not* items of it; they are recorded in the book's Appendix A under
+"DDR5 Timing and Power Corrections of This Revision". (a) The current-mode background-power accounting
+described in Section 2 above, which had DDR5 static power 4x too low; corrected in post-processing to
+a static 0.724 W inside a 0.797 W module total under GCC, with the sanity bound that the uncorrected
+figure sat *below* the 0.412 W floor the configuration's own EIDD2P0 current allows. (b) The DDR5
+write path, power-down path and activate window, still DDR3-1333 template cycle counts, now taken from
+JESD79-5 for the DDR5-4800 bin (tCWD 7->38, tWR 10->72, tRTP 5->18, tWTR 5->6, tPD and tXP 6->18,
+tRRD 5->8, tFAW 20->32), raising DDR5's average total latency by 6.4 to 47.5% across the six traces
+while moving module power by at most 3%. **Both move DDR5 only**: every ReRAM and PCM row is
+byte-identical before and after, which is itself the check that they are confined to where they
+belong. Regression coverage lives in `tests/test_ddr5_jedec_timings.py`.
+
+Note: the item numbering above (12-14) is this context file's own grouping of "what changed this
+cycle" for readability; the book's own Section 3.1.6 numbers these as items (12), (13) and (14) too,
+but with different content boundaries (its item 13 is the first MLC-multiplier correction round, and
+its item 14 is a second, independent fix to that round's own read-latency figure). Consult the book
+directly for the authoritative item-by-item text before citing a specific number to a specific item.
+
+Idle-power gating (`MemoryController::HandleLowPower()`), previously disabled in source and an open
+item in the 2026-08-22 predecessor of this file, has been **restored** and is live for every
+technology: DDR5 realizes real, JEDEC-backed savings from it; ReRAM's power-down energy remains a
+disclosed no-savings placeholder (no ReRAM figure claims a gating benefit); PCM shows no power-down
+activity at all (plausibly its `FRFCFS-WQF` write-queue-flush controller keeps its queue non-empty,
+starving the power-down entry condition; not yet root-caused to full confidence).
+
+---
+
+## 6. Known Limitations and Open Items
+
+1. **GPT-2 trace provenance** (Section 5 above): unconfirmed generator configuration; treated as a
+   representative pattern, not a validated model trace.
+2. **ReRAM power-down energy is a disclosed no-savings placeholder**, not a real characterization: no
+   NVSim datapoint splits ReRAM leakage into gatable-periphery vs. ungatable-crossbar, and no citable
+   ReRAM power-gating figure exists in the literature searched. It is what stops the book pricing a
+   gated ReRAM module at all, and therefore what keeps the bracketed gated parity of Section 3 an
+   arithmetic statement rather than a result - but with the corrected DDR5 baseline it is **no longer
+   the item on which the power verdict turns** (book Sections 3.3 and 4.1).
+3. **DDR5 IDD figures are vendor specification limits, not measured typicals**; no typical-current
+   datasheet column was found for either vendor checked. A typical-current module would sit *below*
+   the figures used here, widening rather than narrowing the ReRAM power deficit.
+4. **Open-loop trace replay**: no CPU/accelerator feedback path, so every latency figure is a
    memory-subsystem quantity, not a projected end-to-end application slowdown.
-4. **DDR5 power is reported as a two-vendor calibration band** (Micron ceiling / SK hynix floor)
-   rather than a single point value. **The Micron-ceiling side of this band's reproducibility gap is
-   now resolved** (2026-08-16 housekeeping): `simulators/nvmain/Config/DDR5_4800_DRAM_micron.config`
-   was reconstructed from the original documented Micron current-magnitude derivation (`results/
-   cycle6c_ddr5_calibration_and_provenance_report.md`'s own "Run B" table — no data was re-derived,
-   only re-entered from that report), re-run under the item (12) corrected timing across all 6
-   benchmark traces (`results/system_v5_micron/`), and reprocessed. The corrected Micron-ceiling PDP
-   is **158.1 W·ns** (was the stale, pre-timing-fix 150.9), a ~4.8% increase — matching the same
-   relative shift the hynix-floor figure carried (99.5→104.3), an independent consistency check that
-   passed. The book's headline-reframe paragraph now quotes the verified figure.
+5. **mcf is parked**, not evaluated: gem5 panics inside the benchmark's own input reader ~0.13 ms into
+   the detailed region on both the March and September attempts. Needs a rebuilt benchmark binary from
+   the Lead and a new, explicit SPEC2017 access grant; the launch script
+   `benchmarks/raw_logs/mcf/run_mcf.sh` is ready, but there is currently no grant in force
+   (`/home/yuvalk/CLAUDE.md` and `/home/yuvalk/MBMM/CLAUDE.md` both close the 2026-09-18 exception as
+   of 2026-09-20).
+6. **The ReadVoltage sensitivity sweep (Figure 19, book Section 3.1.5) was not re-run** at either the
+   power-model repair or the matched 2048 x 2048 organization; its absolute numbers (32.13 ns read
+   latency, <4% PDP movement) belong to the pre-revision dataset and are not comparable to Tables 2-5.
+   Its qualitative conclusion (read-latency invariance, small PDP movement) is argued to survive a
+   fortiori, since static power's share of the module total is now 99.96%, but this has not been
+   measured at the current organization.
+7. **All endurance figures are projections from a measured write distribution**, never measured
+   lifetimes; wear-leveling policies (Start-Gap, randomized Start-Gap) are modeled analytically, not
+   simulated end to end (a 250 ms window completes ~10^-5 of one whole-module Start-Gap rotation, so
+   the simulator cannot show leveling actually working within any feasible window).
+8. **Density projections beyond 22nm (16nm/12nm columns of Table 6) are bounding geometry, not
+   measurements**, and are linear in the assumed cell area, which is itself an assumption (20F² for
+   1T1R, 4F² for 1S1R) rather than a measured value; a factor-of-two miss on cell area would drop
+   22nm SLC 1S1R below DDR5 parity.
+9. **No known active blocking bug** in the pipeline itself as of this hardfork.
 
 ---
 
-## 7. Pending Documentation / Narrative Items
+## 7. Where Things Live
 
-**Resolved (2026-08-16 housekeeping):**
-1. ~~Micron-calibration DDR5 config reconstruction~~ — done, see §6 item 4 above.
-2. ~~This file's own prior version needs archiving~~ — done; the 2026-07-22 hardfork is now at
-   `archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-08-16.md`.
-
-**Resolved (2026-08-22, this cycle):**
-3. ~~Uncommitted nvmain submodule source fix~~ — the `src/SubArray.cpp` negative-activate-energy
-   clamp (recovered from the un-popped git stash) has been committed to the `nvmain` submodule
-   (commit `ed06ca4`, pushed to `origin/master`) alongside the reconstructed Micron config, and the
-   parent repo's submodule pointer bumped accordingly. Also documented in `nvmain/CLAUDE.md`'s
-   "Applied Repairs" section per that file's own convention.
-4. ~~`archive/README.md` missing a dated entry for the DDR5-timing/MLC-multiplier cycle~~ — added,
-   plus a further dated entry for this cycle's item (14) read-latency correction and the 4 bonus
-   stale-data fixes.
-
-No pending documentation items are currently tracked in this file.
+- **Book (source of truth):** `documents/MBMM_Book_Typst/Project_Book.typ` (105 pages, compiles clean).
+  Key sections: Abstract; 1 Introduction; 2 Infrastructure & Methodology; 3.1.1-3.1.6 latency/power/PDP
+  /endurance/robustness/fidelity-audit; 3.2 scaling; 3.3 global viability; 4 Conclusion & Future Work;
+  Appendix A (simulation parameters and literature grounding); Appendix B (pipeline CLI); Appendix C
+  (reproducibility); Appendix D (what changed since 3 September, the only place old headline values are
+  tabulated).
+- **Revision tracker:** `documents/MBMM_Book_Typst/Revision_Workflow_2026-09.md` (task list plus dated
+  session log; source for the operational facts, pipeline flags and folder names in Section 2 above).
+- **Orchestration:** `mbmm_master.py` (7-stage ETL, the Gate-Keeper).
+- **Config generation:** `3_gen_nvmain_config.py`, `1_run_nvsim_hardware.py`,
+  `2_extract_hardware_metrics.py`; forced-organization configs `configs/reram_22nm_*_slc.cfg` (+
+  `_1024` variants); DDR5 configs `configs/DDR5_4800_DRAM_subchannel.config` (primary) and
+  `configs/DDR5_4800_DRAM_64B.config` (cross-check); stale `configs/DDR5_4800_DRAM.config` (34-34-34,
+  never read by the pipeline) deleted this revision.
+- **Metrics/post-processing:** `process_metrics.py`, `visualize_results.py`, `visualize_pareto.py`,
+  `visualize_hero_graphs.py`, `visualize_slides.py`, `logging_config.py`.
+- **Selector layer, endurance, regression, config-liveness:** `selector_layer.py`,
+  `endurance_sensitivity.py`, `tools/aggregate_wear.py`, `tools/nvmain_regress.sh`,
+  `tools/check_live_configs.py`, `tools/validate_trace.py`.
+- **Trace parsers:** `parse_gem5_memctrl.py`, `parse_trace.py`.
+- **Results:** see Section 2's "Frozen dataset folders" bullet for the full 2026-09 layout;
+  `results/archive_2026-09_pre_revision/` preserves the pre-revision dataset for diffability.
+- **Correction-round backups (2026-09-21):** each of the three post-final-review rounds snapshotted the
+  artefacts it was about to regenerate, with the round's tag appended - `*_before_F1` (the
+  background-power correction), `*_before_F4` and `*_before_F4b` (the DDR5 JEDEC timing rounds). They
+  exist for `results/rev2026-09_primary_csv`, `results/_live_csv`, `results/book_figures_rev2026-09`,
+  `results/slide_graphs_rev2026-09`, `results/final_graphs` and the per-axis sensitivity folders
+  under `results/system_rev2026-09_*`. Use them to diff what a round actually moved; the unsuffixed
+  folder is always the current one.
+- **DDR5 timing regression test:** `tests/test_ddr5_jedec_timings.py` (guards the JESD79-5 DDR5-4800
+  write-path, power-down and activate-window values in both DDR5 configs against regression).
+- **Subdirectory CLAUDE.md files** (domain knowledge, still the right first stop before reading source):
+  `simulators/nvsim/CLAUDE.md`, `simulators/nvmain/CLAUDE.md`, `configs/CLAUDE.md`.
+- **Deck / one-pager:** `documents/MBMM_Book_Typst/presentation_deck.html` (rebuilt this cycle on the
+  corrected book: 60 slides, 15 data-driven charts from `visualize_slides.py`, guarded by
+  `tests/test_presentation_deck.py`; outline in `Presentation_Outline.md`); `Shahar_Review_Evidence.typ`/`.pdf` (one-pager, rewritten and
+  reviewed this cycle); `Note_to_Shahar_2026-09.md` (drafted, reviewed, not sent).
 
 ---
 
-*Document regenerated via `mbmm_hardfork` from: `documents/MBMM_Book_Typst/Project_Book.typ`
-(canonical, compile-verified, post-reference-audit edition). Cross-referenced against: git log,
-`results/cycle8_matched_host_report.md`, `docs/superpowers/plans/2026-07-29-book-reference-fixes.md`
-(this cycle's working plan, with full task-by-task execution notes), and the prior (2026-07-22)
-version of this file. Updated in place 2026-08-22 (not a full hardfork regeneration) following item
-(14)'s MLC read-latency correction and the bonus stale-data sweep — see `archive/README.md`'s
-matching dated entry for the full record.*
+## 8. Operating Rules for AI Assistants on This Project (carried forward, updated where facts changed)
+
+- **Every number cited about this project's results must trace to `Project_Book.typ` (the 2026-09
+  revision) or to a file it cites** (a `results/rev2026-09_*` CSV, `results/system_rev2026-09_*` stats,
+  a `.sidecar.json`), never to memory or to a prior version of this context file.
+- **Projected endurance figures are projections, never "measured".** Say "projected lifetime" or
+  "required endurance", not "measured lifetime" or "the cell survives X years".
+- **Never state a 1S1R result without its selector-quality conditional attached**, and never state a
+  latency-win result without one of its two counterweights (published-silicon timings, or the
+  write-dominated AlexNet OFMAP trace) attached.
+- **Never cite the withdrawn wordings of Section 4** above, even loosely paraphrased, without their
+  correction.
+- **`mbmm_master.py` remains the Gate-Keeper**: no Python modification affecting simulation output is
+  considered verified until run through it (per `/home/yuvalk/MBMM/CLAUDE.md` guardrail 2).
+- **SPEC2017 quarantine is back in full force** as of 2026-09-20: do not read, list, search or modify
+  anything under `/home/yuvalk/spec2017/`. The 2026-09-18 exception closed when the regenerated gcc and
+  lbm traces were validated and accepted; mcf remains parked and needs a fresh, explicit grant.
+- **No em-dashes anywhere this project's assistants write** (project-wide style rule, independent of the
+  book's own typography).
+- **Git discipline** (per `/home/yuvalk/MBMM/CLAUDE.md` guardrail 1): no `git commit`/`git push`/history
+  changes on `main`/`master` or any branch other than a Lead-confirmed `autoresearch/<tag>` branch; the
+  Lead Researcher handles all commits and pushes everywhere else, always.
+
+---
+
+## 9. Recent History (this cycle)
+
+The 2026-09 revision replaced the entire "3 September" dataset: regenerated traces (gem5 and
+SCALE-Sim), a matched 2048 x 2048 array organization for both cell types, a corrected DDR5
+subchannel/64-byte baseline, a corrected read-latency double-count, a corrected endurance rating basis
+and four-policy wear-leveling projection, a restored idle-power-gating mechanism, an analytic 1S1R
+selector layer, and a full sensitivity suite (organization, interface clock, queue depth, channels,
+DDR5 granularity). The book was rewritten end to end (105 pages, compiles clean, Appendix D added as the
+single place retired values are tabulated) and re-reviewed (13/13 number mismatches fixed in the final
+pass). The deck was rebuilt on the corrected book (T6.2) and this file regenerated (T6.4) in the same
+cycle.
+
+A **final internal review on 2026-09-21** then found two more defects, both at the source of the DDR5
+data, and three follow-up tasks repaired them and propagated the result. **F1** corrected NVMain's
+current-mode background-power accounting in post-processing (DDR5 static power had been 4x too low),
+added the `Background_Power_Device_Factor` CSV column and wrote the two upstream quirks up as items 6
+and 7 of `simulators/nvmain/CLAUDE.md`; **F2** added the run-provenance manifest and the `Run_*` CSV
+columns; **F4** (in two rounds, F4 and F4b) brought the DDR5 write path, power-down path and activate
+window to JESD79-5 DDR5-4800 and re-simulated DDR5, with `tests/test_ddr5_jedec_timings.py` guarding
+the values. Together they moved every DDR5 latency, power, PDP and ratio in the book - and reversed
+the direction of the power argument, since break-even now sits inside the cited idleness band rather
+than above it - while leaving every ReRAM and PCM figure byte-identical. **F3** then brought the
+downstream documents into line with the corrected book: F3a the book's own dependent text, and F3c
+(2026-09-21) the one-pager `Shahar_Review_Evidence.typ`, the draft `Note_to_Shahar_2026-09.md` and
+this context file.
+
+Earlier session history (Sessions 1-26, the 2026-07-22 fidelity audit, the
+2026-08-16/08-22 bibliography-verification cycles that produced the *previous* hardfork of this file)
+is preserved in `archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-08-16.md` and
+`archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-09-20.md` (this file's immediate
+predecessor) and is not restated here, since the 2026-09 revision supersedes essentially everything
+those sessions established about the book's numbers.
+
+---
+
+*Document regenerated via a hardfork task (T6.4) from: `documents/MBMM_Book_Typst/Project_Book.typ`
+(the 2026-09, compile-verified, corrected revision) and
+`documents/MBMM_Book_Typst/Revision_Workflow_2026-09.md` (operational facts: pipeline flags, dataset
+folders, tool names, the mcf parking note). Cross-referenced against the immediately prior version of
+this file, now archived at `archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-09-20.md`.*
