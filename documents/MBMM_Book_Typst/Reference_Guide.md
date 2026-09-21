@@ -1,6 +1,6 @@
-# Reference Guide — MBMM Project Book
+# Reference Guide - MBMM Project Book
 
-A quick-reference summary of all 46 sources cited in `Project_Book.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts.
+A quick-reference summary of all 54 sources cited in `Project_Book.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts.
 
 The book's MLC penalty multipliers are: **1.5x read latency, 3.263x write latency, 1.1x read energy, 3.0x write energy** (2 bits/cell vs. 1 bit/cell), all sourced from the EMBER macro's two publications, [6] and [31] below.
 
@@ -9,10 +9,10 @@ The book's MLC penalty multipliers are: **1.5x read latency, 3.263x write latenc
 ## Market / Industry Context
 
 **[1] Ahmad, "NAND Flash's Reversal of Fortune Amid the AI Boom," EE Times, 2026**
-A NAND-market recovery story; cited here only for a secondary point it makes about Samsung/SK Hynix reallocating fab capacity from DRAM to HBM. Supporting/context citation, not the article's main topic — worth knowing when you re-read the abstract's "DRAM-to-HBM reallocation" claim.
+A NAND-market recovery story; cited here only for a secondary point it makes about Samsung/SK Hynix reallocating fab capacity from DRAM to HBM. Supporting/context citation, not the article's main topic - worth knowing when you re-read the abstract's "DRAM-to-HBM reallocation" claim.
 
 **[2] Fleischer, "How AI Broke the Memory Market," Octopart Pulse, 2026**
-The book's more central source for the AI-driven memory shortage premise. Verified via direct fetch of a mirrored copy (Octopart itself blocks fetches with bot protection) — confirms the article is real and on-topic (data centers consuming up to 70% of high-end memory chips in 2026, Samsung/SK Hynix wafer output declines, sharp DRAM price spikes), and it directly backs the book's only claim drawn from it: DRAM-to-HBM wafer reallocation causing a supply-demand gap (Project_Book.typ lines 26, 178 — both stated qualitatively, no numbers). An earlier annotation here cited "~3x HBM wafer capacity" and "40% advanced-capacity reallocation" figures attributed to this article; neither appears in it (the 3x figure traces to an unrelated, uncited Substack post) and neither is used in the book text, so no book fix was needed — this was a reference-guide-only error, now corrected.
+The book's more central source for the AI-driven memory shortage premise. Verified via direct fetch of a mirrored copy (Octopart itself blocks fetches with bot protection) - confirms the article is real and on-topic (data centers consuming up to 70% of high-end memory chips in 2026, Samsung/SK Hynix wafer output declines, sharp DRAM price spikes), and it directly backs the book's only claim drawn from it: DRAM-to-HBM wafer reallocation causing a supply-demand gap (Project_Book.typ lines 26, 178 - both stated qualitatively, no numbers). An earlier annotation here cited "~3x HBM wafer capacity" and "40% advanced-capacity reallocation" figures attributed to this article; neither appears in it (the 3x figure traces to an unrelated, uncited Substack post) and neither is used in the book text, so no book fix was needed - this was a reference-guide-only error, now corrected.
 
 **[16] "Data Center Hardware Refresh Cutback by Microsoft," Data Center Knowledge, 2022**
 Cited for exactly one statistic: enterprise servers now average 5.4 years of useful life, trending toward 6-7 years. This sets the endurance/lifetime bar the book's ReRAM configs are judged against.
@@ -27,16 +27,16 @@ A real die-teardown comparison giving actual measured die sizes for 16Gb DDR5 fr
 Confirms Samsung's public roadmap for vertical-channel-transistor DRAM (2nd half of this decade) and true 3D-stacked DRAM after that. Used as the counterpoint showing DRAM's escape route from capacitor scaling is real but still years out.
 
 **[22] Gholami et al., "AI and Memory Wall," IEEE Micro, 2024**
-The paper that coined "AI and Memory Wall" — peak hardware FLOPS have scaled 3.0x per two years vs. DRAM bandwidth's 1.6x. Both numbers quoted exactly correctly in the book.
+The paper that coined "AI and Memory Wall" - peak hardware FLOPS have scaled 3.0x per two years vs. DRAM bandwidth's 1.6x. Both numbers quoted exactly correctly in the book.
 
 **[23] "Intel Kills Optane Memory Business Entirely," Tom's Hardware, 2022**
-Intel's 2022 exit from 3D XPoint/Optane, a $559M write-off. Used as precedent: a scaled selector-gated memory reached mass production and was killed by cost economics, not physics — relevant to the book's own 1S1R selector discussion.
+Intel's 2022 exit from 3D XPoint/Optane, a $559M write-off. Used as precedent: a scaled selector-gated memory reached mass production and was killed by cost economics, not physics - relevant to the book's own 1S1R selector discussion.
 
 **[25] "Neo Semiconductor's 3D X-DRAM...Passed Proof-of-Concept Validation," Tom's Hardware, 2026**
-A very recent (Apr. 2026) challenger DRAM technology: sub-10ns access, >1 second retention (~15x longer refresh interval — the book correctly notes this is refresh *reduction*, not elimination; it's still charge-based DRAM).
+A very recent (Apr. 2026) challenger DRAM technology: sub-10ns access, >1 second retention (~15x longer refresh interval - the book correctly notes this is refresh *reduction*, not elimination; it's still charge-based DRAM).
 
 **[34] Intel Corp., "Ultra High Bandwidth Memory with Backend Transistors," U.S. Patent Application Pub. No. US 2026/0191095 A1, filed 2024, published Jul. 2026**
-Intel's real, publicly filed patent for "Cross-Batch Memory" (XBM): moves the 1T1C DRAM cell into back-end-of-line thin-film transistors and replaces HBM's silicon interposer with direct die-to-die UCIe links, targeting HBM4's footprint at lower packaging cost. A third DRAM-roadmap front alongside [19]/[25] — this one attacks packaging economics, not cell density. Patent-stage only: no independent performance data, not targeted for commercialization before 2030.
+Intel's real, publicly filed patent for "Cross-Batch Memory" (XBM): moves the 1T1C DRAM cell into back-end-of-line thin-film transistors and replaces HBM's silicon interposer with direct die-to-die UCIe links, targeting HBM4's footprint at lower packaging cost. A third DRAM-roadmap front alongside [19]/[25] - this one attacks packaging economics, not cell density. Patent-stage only: no independent performance data, not targeted for commercialization before 2030.
 
 **[35] TrendForce, "Intel Patent Reveals XBM Matching HBM4 Footprint Without Interposers...," 2026**
 Trade-press corroboration of [34]'s technical claims (32 GT/s UCIe links, 0.5–5GB per die, 8/16-high stacks) and the post-2030 commercialization timeline, independently of the patent text itself.
@@ -46,19 +46,19 @@ Trade-press corroboration of [34]'s technical claims (32 GT/s UCIe links, 0.5–
 ## Core Simulation Tools & Benchmarks
 
 **[3] Dong et al., "NVSim," IEEE TCAD, 2012**
-The device-level circuit simulator (area/energy/timing) this project uses for hardware characterization. One soft spot: it's co-cited with [14] for a "~20F²" bit-cell area figure that neither paper actually states as a specific number — the wording has been softened to reflect this.
+The device-level circuit simulator (area/energy/timing) this project uses for hardware characterization. One soft spot: it's co-cited with [14] for a "~20F²" bit-cell area figure that neither paper actually states as a specific number - the wording has been softened to reflect this.
 
 **[4] Poremba, Zhang, Xie, "NVMain 2.0," IEEE CAL, 2015**
 The architectural (system-level) memory simulator paired with NVSim. NVSim answers "how good is one memory array"; NVMain answers "how does a full memory system with many arrays and ranks behave."
 
 **[12] Samajdar et al., "SCALE-Sim," ISPASS 2020**
-A cycle-accurate systolic-array DNN accelerator simulator, used purely as a trace generator — produces realistic AI-inference memory-access patterns (e.g., AlexNet layers) to stress-test the memory systems.
+A cycle-accurate systolic-array DNN accelerator simulator, used purely as a trace generator - produces realistic AI-inference memory-access patterns (e.g., AlexNet layers) to stress-test the memory systems.
 
 **[26] Binkert et al., "The gem5 Simulator," ACM SIGARCH CAN, 2011**
 The well-known general-purpose CPU+memory architecture simulator used to run SPEC CPU2017 and capture memory traces.
 
 **[27] McCalpin, "Memory Bandwidth and Machine Balance," TCCA Newsletter, 1995**
-The origin paper of the STREAM benchmark — the standard synthetic test for *sustained* (not burst) memory bandwidth. Used as the book's pure-bandwidth baseline workload.
+The origin paper of the STREAM benchmark - the standard synthetic test for *sustained* (not burst) memory bandwidth. Used as the book's pure-bandwidth baseline workload.
 
 **[28] SPEC CPU2017 Benchmark Suite**
 The industry-standard real-world compute benchmark suite. The book picks two sub-benchmarks as opposite ends of a spectrum: 602.gcc (irregular, branch-heavy, compute-bound) and 619.lbm (regular, bandwidth-heavy).
@@ -68,22 +68,22 @@ The industry-standard real-world compute benchmark suite. The book picks two sub
 ## ReRAM Device Physics (the load-bearing group)
 
 **[7] Matsui et al., "ReRAM resistance design of LRS and HRS...," IEICE Trans. Fundamentals, 2026**
-Derives the book's HRS/LRS resistance targets (10⁵Ω / 10⁹Ω). Verified precisely: the paper gives 10⁵Ω as its direct recommendation for *digital* memory, but only pairs a 10⁹Ω HRS with its *analog computation-in-memory* design point — it never gives a companion HRS for the digital case. The book is transparent about this mixed provenance, and a dedicated NVSim sensitivity sweep (Appendix A) shows the exact HRS value doesn't actually matter for any headline finding.
+Derives the book's HRS/LRS resistance targets (10⁵Ω / 10⁹Ω). Verified precisely: the paper gives 10⁵Ω as its direct recommendation for *digital* memory, but only pairs a 10⁹Ω HRS with its *analog computation-in-memory* design point - it never gives a companion HRS for the digital case. The book is transparent about this mixed provenance, and a dedicated NVSim sensitivity sweep (Appendix A) shows the exact HRS value doesn't actually matter for any headline finding.
 
 **[9] Jo et al. (Crossbar Inc.), "3D-stackable crossbar resistive memory...FAST selector," IEDM 2014**
-Real industrial evidence (not just academic) that selector-based crossbar arrays scale to real multi-megabit capacities and support 3D stacking — Crossbar Inc.'s own press materials confirm the exact 4Mb array claimed in the book.
+Real industrial evidence (not just academic) that selector-based crossbar arrays scale to real multi-megabit capacities and support 3D stacking - Crossbar Inc.'s own press materials confirm the exact 4Mb array claimed in the book.
 
 **[13] Le et al., "Resistive RAM With Multiple Bits Per Cell: 3 Bits Per Cell," IEEE TED, 2019**
 First array-level (not just single-cell) demonstration of 3-bit-per-cell ReRAM, using 7,746 real cells. Cited purely to establish that multi-bit-per-cell ReRAM has real, measured precedent in the literature.
 
 **[14] Wong et al., "Metal-Oxide RRAM," Proc. IEEE, 2012**
-The single most-cited comprehensive RRAM review paper. Correctly sourced for: endurance-range variability, 10×10nm HfOx switching demonstrations, and device-to-device variability as RRAM's chief scaling barrier (all near-verbatim matches to the book's phrasing). The "20F²" cell-area number is *not* stated in this paper — only the qualitative "transistor-limited scaling" reasoning is; treat 20F² as a rule-of-thumb, not a number quoted from Wong et al.
+The single most-cited comprehensive RRAM review paper. Correctly sourced for: endurance-range variability, 10×10nm HfOx switching demonstrations, and device-to-device variability as RRAM's chief scaling barrier (all near-verbatim matches to the book's phrasing). The "20F²" cell-area number is *not* stated in this paper - only the qualitative "transistor-limited scaling" reasoning is; treat 20F² as a rule-of-thumb, not a number quoted from Wong et al.
 
 **[20] Yang et al., "A 14nm-FinFET 1Mb Embedded 1T1R RRAM with 0.022µm² Cell Size," ISSCC 2021**
-A real, commercial-grade 14nm 1T1R macro. Its actual cell size (0.022 µm² ≈ 112F² at that node) is used as a reality check showing the book's 20F² assumption is generous/conservative for 1T1R *relative to planar/FinFET logic-transistor integration* — see [33] for the counter-case where it isn't generous at all.
+A real, commercial-grade 14nm 1T1R macro. Its actual cell size (0.022 µm² ≈ 112F² at that node) is used as a reality check showing the book's 20F² assumption is generous/conservative for 1T1R *relative to planar/FinFET logic-transistor integration* - see [33] for the counter-case where it isn't generous at all.
 
 **[33] Fackenthal et al., "A 16Gb ReRAM with 200MB/s Write and 1GB/s Read in 27nm Technology," ISSCC 2014**
-Verified real: DOI 10.1109/ISSCC.2014.6757460, confirmed via three independent sources. The commercial Micron/Sony 16Gb ReRAM chip — uses a DRAM-process **buried recessed-channel access transistor** (not a planar/FinFET logic transistor) to hit a **6F² 1T1R cell**, i.e. parity with DRAM's own 6F². Added as the counterpoint to [20]: it shows 1T1R density is architecture-dependent, not that 20F² is wrong. Two caveats keep it from being a substitute data point for this book's own 1T1R track: (1) it's a Cu-filament CBRAM cell, not the HfOx/TaOx oxide-RRAM family this book simulates; (2) NVSim as configured here (`configs/reram_22nm_1t1r_slc.cell`) only supports width-driven CMOS or diode access devices — no recessed-channel model — so no simulated numbers for this architecture are claimed anywhere in the book. Discussed in Project_Book.typ Appendix A (Bit-Cell Area) and Section 4.2 (future work).
+Verified real: DOI 10.1109/ISSCC.2014.6757460, confirmed via three independent sources. The commercial Micron/Sony 16Gb ReRAM chip - uses a DRAM-process **buried recessed-channel access transistor** (not a planar/FinFET logic transistor) to hit a **6F² 1T1R cell**, i.e. parity with DRAM's own 6F². Added as the counterpoint to [20]: it shows 1T1R density is architecture-dependent, not that 20F² is wrong. Two caveats keep it from being a substitute data point for this book's own 1T1R track: (1) it's a Cu-filament CBRAM cell, not the HfOx/TaOx oxide-RRAM family this book simulates; (2) NVSim as configured here (`configs/reram_22nm_1t1r_slc.cell`) only supports width-driven CMOS or diode access devices - no recessed-channel model - so no simulated numbers for this architecture are claimed anywhere in the book. Discussed in Project_Book.typ Appendix A (Bit-Cell Area) and Section 4.2 (future work).
 
 ---
 
@@ -103,23 +103,23 @@ The full journal follow-up to [6], same team, with room for data the conference 
 IEEE's official semiconductor industry roadmap. Its DRAM section states planar capacitor scaling is nearing its practical limit and the industry must pivot to 3D-stacked cells. The book's "no remaining capacitor runway" phrasing is a fair paraphrase, not a verbatim quote.
 
 **[10] JEDEC JESD79-5D, "DDR5 SDRAM Standard," 2025**
-The authoritative DDR5 spec. Genuinely paywalled (confirmed via direct 403 on JEDEC's own site) — the book honestly discloses it couldn't be consulted directly and used a public vendor decoder as a substitute for the specific timing numbers. This disclosure is accurate, not a cover story.
+The authoritative DDR5 spec. Genuinely paywalled (confirmed via direct 403 on JEDEC's own site) - the book honestly discloses it couldn't be consulted directly and used a public vendor decoder as a substitute for the specific timing numbers. This disclosure is accurate, not a cover story.
 
 **[24] TechInsights, "Advanced TSMC 22ULL Embedded RRAM Chip Unveiled"**
-Confirms TSMC's 22nm eRRAM is real and commercially shipping (in Nordic Semiconductor's nRF54L chips). One soft spot: the article itself gives no capacity numbers, so "megabyte-scale" (revised down from an overstated "multi-megabyte") is the accurate framing — the real chip is ~1.5MB.
+Confirms TSMC's 22nm eRRAM is real and commercially shipping (in Nordic Semiconductor's nRF54L chips). One soft spot: the article itself gives no capacity numbers, so "megabyte-scale" (revised down from an overstated "multi-megabyte") is the accurate framing - the real chip is ~1.5MB.
 
 **[29] Micron, "16Gb DDR5 SDRAM Addendum"**
-Micron's manufacturer datasheet giving guaranteed maximum IDD/IPP current specs by speed grade — one half of the book's two-vendor power-calibration band.
+Micron's manufacturer datasheet giving guaranteed maximum IDD/IPP current specs by speed grade - one half of the book's two-vendor power-calibration band.
 
 **[30] SK hynix, "16Gb DDR5 SDRAM" datasheet**
-SK hynix's equivalent datasheet — the other half of the two-vendor band, and the source of this book's headline (conservative-floor) DDR5 power numbers.
+SK hynix's equivalent datasheet - the other half of the two-vendor band, and the source of this book's headline (conservative-floor) DDR5 power numbers.
 
 ---
 
 ## Miscellaneous (PCM baseline, endurance, workload profiling)
 
 **[8] Xue et al., "22nm 4Mb ReRAM Computing-in-Memory Macro," ISSCC 2021**
-Real, fabricated, working 22nm ReRAM silicon — direct evidence the book's chosen process node isn't hypothetical.
+Real, fabricated, working 22nm ReRAM silicon - direct evidence the book's chosen process node isn't hypothetical.
 
 **[11] Lee, Ipek, Mutlu, Burger, "Architecting PCM as a Scalable DRAM Alternative," ISCA 2009**
 The seminal PCM architecture paper (Persistent Impact Prize winner). Provides the book's PCM baseline model, its 400 MHz clock reference point, and precedent that smart write-buffering can offset a new memory technology's write weaknesses.
@@ -128,12 +128,12 @@ The seminal PCM architecture paper (Persistent Impact Prize winner). Provides th
 A field-standards paper arguing most published RRAM endurance numbers are measured from too few devices to trust. Justifies the book's choice of conservative endurance targets.
 
 **[21] Malladi et al., "Towards Energy-Proportional Datacenter Memory with Mobile DRAM," ISCA 2012**
-Real Microsoft server profiling data (Bing, Cosmos): 67-97% CPU utilization but only 2-6% memory bandwidth utilization. The book's "under 6%" web-search figure is an exact, verified quote (an earlier draft's "3%" was the wrong number — now correctly fixed).
+Real Microsoft server profiling data (Bing, Cosmos): 67-97% CPU utilization but only 2-6% memory bandwidth utilization. The book's "under 6%" web-search figure is an exact, verified quote (an earlier draft's "3%" was the wrong number - now correctly fixed).
 
 **[32] Izraelevitz et al., "Basic Performance Measurements of the Intel Optane DC PMM," arXiv, 2019**
 Confirms Optane's real DDR-T interface: electrically DDR4-compatible but running a different, latency-tolerant protocol. Used as industry precedent that even a major NVM product didn't try to match the newest DRAM PHY generation.
 
-## Related Work (Section 1.3 — academic prior art)
+## Related Work (Section 1.3 - academic prior art)
 
 **[36] B. C. Lee, E. Ipek, O. Mutlu, D. Burger, "Architecting Phase Change Memory as a Scalable DRAM Alternative," ISCA 2009**
 One of the three founding ISCA 2009 NVM-main-memory papers. Narrows PCM's raw 1.6x delay / 2.2x energy deficit vs DRAM to within 1.2x / 1.0x via row-buffer reorganization and partial writes. Cited in §1.3 as the origin of the field's template (hide the write penalty, level the wear, buy density). Verified: pp. 2-13, DOI 10.1145/1555754.1555758.
@@ -145,24 +145,24 @@ The hybrid-memory founding paper: large PCM store fronted by a small DRAM buffer
 The durability-focused member of the ISCA 2009 trio: redundant-bit-write removal, row shifting, and segment-swapping wear leveling extend projected PCM lifetime to 13-22 years. Cited in §1.3. Verified: pp. 14-23, DOI 10.1145/1555754.1555759.
 
 **[39] C. Xu et al., "Overcoming the Challenges of Crossbar Resistive Memory Architectures," HPCA 2015**
-The closest prior work to this whole book: crossbar ReRAM as main memory, modeling circuit-level IR-drop/sneak-current-induced data-dependent RESET latency, recovering to within ~10% of an ideal DRAM-only system via split-phase RESET and compression-based encoding. §1.3 explicitly contrasts its circuit-level write timing with this book's calibrated array-level abstraction — complementary levels of analysis. Verified: pp. 476-488, DOI 10.1109/HPCA.2015.7056056.
+The closest prior work to this whole book: crossbar ReRAM as main memory, modeling circuit-level IR-drop/sneak-current-induced data-dependent RESET latency, recovering to within ~10% of an ideal DRAM-only system via split-phase RESET and compression-based encoding. §1.3 explicitly contrasts its circuit-level write timing with this book's calibrated array-level abstraction - complementary levels of analysis. Verified: pp. 476-488, DOI 10.1109/HPCA.2015.7056056.
 
 **[40] E. Kültürsay, M. Kandemir, A. Sivasubramaniam, O. Mutlu, "Evaluating STT-RAM as an Energy-Efficient Main Memory Alternative," ISPASS 2013**
 The parallel evaluation for the competing NVM: unmodified STT-RAM main memory is not competitive with DRAM, but partial writes + row-buffer bypass make it performance-comparable at ~60% lower memory energy. Cited in §1.3. Verified: pp. 256-267, DOI 10.1109/ISPASS.2013.6557176.
 
-*(Note: §1.3 also cites the pre-existing [23] (Optane business exit) and [32] (Optane DC PMM measurements) — [32] now does double duty as the field's only real-hardware datapoint.)*
+*(Note: §1.3 also cites the pre-existing [23] (Optane business exit) and [32] (Optane DC PMM measurements) - [32] now does double duty as the field's only real-hardware datapoint.)*
 
 **[41] Y. Choi et al., "A 20nm 1.8V 8Gb PRAM with 40MB/s Program Bandwidth," ISSCC 2012**
-Added 2026-09-01 to close a citation gap found during meeting prep: the book's PCM baseline (§2.3) is named for Lee et al. [11]'s architectural framing, but PCM was never run through this project's own NVSim pipeline — its actual timing/energy numbers are inherited unmodified from NVMain's bundled `pcm_microsoft_2009.config`, whose own header comment attributes those specific numbers to this Samsung ISSCC 2012 PRAM paper, not to Lee et al. [11] is the "why PCM as a DRAM alternative" citation; [41] is the "where these specific numbers came from" citation — different questions, both now answered. Verified via web search (IEEE Xplore, pp. 46-48); not independently re-derived or checked against the paper's own tables.
+Added 2026-09-01 to close a citation gap found during meeting prep: the book's PCM baseline (§2.3) is named for Lee et al. [11]'s architectural framing, but PCM was never run through this project's own NVSim pipeline - its actual timing/energy numbers are inherited unmodified from NVMain's bundled `pcm_microsoft_2009.config`, whose own header comment attributes those specific numbers to this Samsung ISSCC 2012 PRAM paper, not to Lee et al. [11] is the "why PCM as a DRAM alternative" citation; [41] is the "where these specific numbers came from" citation - different questions, both now answered. Verified via web search (IEEE Xplore, pp. 46-48); not independently re-derived or checked against the paper's own tables.
 
 **[42] D. Kau et al., "A Stackable Cross Point Phase Change Memory," IEDM 2009**
 Added 2026-09-05 (Shahar-notes items 1, 3&9): Intel/Numonyx's own device paper confirming that the shipped PCM product line (3D XPoint/Optane) is a selector-gated 1S1R cross-point design - an Ovonic Threshold Switch in series with the phase-change element, no access transistor. Cited in §2.3 to separate that real architecture from the book's PCM baseline, which specifies no access device at all. pp. 617-620, DOI 10.1109/IEDM.2009.5424263.
 
 **[43] International Technology Roadmap for Semiconductors, 2011 Edition, PIDS chapter**
-Added 2026-09-05 (Shahar-notes item 6): the 22nm Low Operating Power logic subthreshold-leakage design target (5 nA/µm), one of two independent sources for the transistor side of the 47x leakage ratio. Cited in Appendix A ("Access-Device Leakage Model"). A roadmap target, not a measurement - [44] supplies the measured counterpart.
+Added 2026-09-05 (Shahar-notes item 6): the 22nm Low Operating Power logic subthreshold-leakage design target (5 nA/µm). It was added as one of two independent sources for the transistor side of a large transistor-versus-selector leakage separation that the September revision has since **withdrawn**: NVSim assigns memristor cells zero leakage and charges chip leakage entirely to peripheral circuitry, so that separation was an artifact of two different array organizations and was never computed from [43] at all. Now cited in Appendix A under "Array Organization (and the withdrawal of the leakage-gap figure)", as a correct external statement about transistor leakage that the simulator does not use; the appendix entry it was originally cited in ("Access-Device Leakage Model") no longer exists. A roadmap target, not a measurement - [44] supplies the measured counterpart.
 
 **[44] C. Auth et al., "A 22nm High Performance and Low-Power CMOS Technology Featuring Fully-Depleted Tri-Gate Transistors, Self-Aligned Contacts and High Density MIM Capacitors," VLSI Technology 2012**
-Added 2026-09-05 (Shahar-notes item 6): Intel's measured off-state leakage on fabricated 22nm FinFET silicon, 5-20 nA/µm for the mid-power variant. [43]'s 5 nA/µm LOP target sits inside this measured band, so the transistor-leakage input is corroborated by real silicon. Cited in Appendix A. Corroborating evidence, not a re-derivation of NVSim's internal constant (NVSim [3] itself was not accessible to confirm it). pp. 131-132.
+Added 2026-09-05 (Shahar-notes item 6): Intel's measured off-state leakage on fabricated 22nm FinFET silicon, 5-20 nA/µm for the mid-power variant. [43]'s 5 nA/µm LOP target sits inside this measured band. As with [43], the leakage separation this pair was added to corroborate has been **withdrawn** in the September revision, and NVSim never used either figure: chip leakage in NVSim is peripheral circuitry and scales with mat count. Cited in Appendix A, "Array Organization (and the withdrawal of the leakage-gap figure)", as context for the open physical question of what an unselected 1T1R access transistor actually leaks in a real array, which NVSim does not model. pp. 131-132.
 
 **[45] Y. Y. Chen et al., "Balancing SET/RESET Pulse for >10^10 Endurance in HfO2/Hf 1T1R Bipolar RRAM," IEEE Trans. Electron Devices, 2012**
 Added 2026-09-13 (Shahar-notes item 8): a real, peer-reviewed >10^10-cycle demonstration on a 40 nm HfO2/Hf 1T1R cell - the kind of figure behind a recalled "~10^9" endurance rating. Cited in §3.1.4 as the high end of the literature, next to [15]'s caution that such single-device, sparsely sampled claims overestimate lifetime. Also appears in [15]'s own bibliography. vol. 59, no. 12, pp. 3243-3249, DOI 10.1109/TED.2012.2218607.
@@ -173,3 +173,31 @@ Added 2026-09-13 (Shahar-notes item 8): a company-by-company industry survey sho
 ---
 
 *This guide reflects the current state of `Project_Book.typ`.*
+
+---
+
+## Added in the 2026-09 revision (see Project_Book.typ Appendix D)
+
+**[47] Y. Chen, "ReRAM: History, Status, and Future," IEEE TED 67(4), 2020**
+An invited review. It is the book's new endurance-rating basis: it states 10^6 cycles as the typical spec for storage-class memory and 10^4 as the typical lower limit for embedded 1T1R. It replaces [14] for this purpose, because [14] gives no SLC or MLC rating at all - the single most consequential citation correction of the revision.
+
+**[48] T.-y. Liu et al., "A 130.7-mm2 2-Layer 32-Gb ReRAM Memory Device in 24-nm Technology," IEEE JSSC 49(1), 2014**
+SanDisk/Toshiba's shipped 32 Gb cross-point: the book's primary 1S1R ground truth. Two uses: its 2K-bitline x 4K-wordline block anchors the 2048-cell subarray side, and its Table II read/write timings (40 / 230 us) generate the 1S1R SILICON sensitivity configuration.
+
+**[49] J. Zahurak et al., "Process Integration of a 27nm, 16Gb Cu ReRAM," IEDM 2014**
+Micron/Sony's 16 Gb 1T1R part: the primary 1T1R ground truth, with a buried recessed-channel access transistor at 6F2. Its Table 1 read/write timings (2.3 / 11.7 us) generate the 1T1R SILICON sensitivity configuration. Note it is the same device family as [33].
+
+**[50] C.-C. Chou et al., "A 22nm 96Kx144 RRAM Macro...," VLSI 2020**
+TSMC's 22nm macro, the only primary 22nm 1T1R organization located (768 cells per bitline, 64 bitlines per sense amp). Cited in the book for its qualification endurance, 10K SET+RESET cycles, which is the array-level floor beneath the 10^6 planning value.
+
+**[51] J. Zhou, K.-H. Kim, W. Lu, "Crossbar RRAM Arrays: Selector Device Requirements During Read Operation," IEEE TED 61(5), 2014**
+The read model behind the book's analytic selector layer. The paper publishes no closed-form equation (it runs HSPICE), so the layer implements a reduced network solve validated against 13 points of its Fig. 3(b) and the array power of its Fig. 8(a). Its Table I also supplies the OTS nonlinearity bound.
+
+**[52] M. K. Qureshi et al., "Enhancing Lifetime and Security of PCM-Based Main Memory with Start-Gap Wear Leveling," MICRO 2009**
+The wear-leveling scheme implemented faithfully in NVMain for this revision (one gap line, rotation every 100 writes). The book's finding is that its reported 97%-of-ideal result does not transfer to the sparse footprints these traces produce, because the hot line fails before the gap rotates once.
+
+**[53] J. Yang, J. Kim, M. Hoseinzadeh, J. Izraelevitz, S. Swanson, "An Empirical Guide to the Behavior and Use of Scalable Persistent Memory," USENIX FAST 2020**
+The other real-Optane measurement paper beside [32], and the one that resolves [32]'s internal inconsistency over 81 vs 101 ns DRAM latency. Cited for the DDR4-2666 electrical interface precedent and in the Optane future-work item.
+
+**[54] Intel Corporation, "Intel Optane Persistent Memory 200 Series Brief"**
+The product brief supplying the only published endurance (PBW by access size and mix), bandwidth envelope and maximum TDP for a shipped NVM DIMM. Cited only for the scoped Optane reference row in Section 4.2; the brief publishes no media timing, idle power or energy per operation, which is why no NVMain configuration in this book is called Optane.
