@@ -4355,7 +4355,7 @@ data, has been made publicly available.
 
 #blockquote[
 #strong[Project Repository:]
-#link("https://github.com/uvKogan/MBMM")[#underline[https:\/\/github.com/uvKogan/MBMM]]
+#link("https://github.com/uvKogan/Memristor-based-dram")[#underline[https:\/\/github.com/uvKogan/Memristor-based-dram]]
 ]
 
 #pagebreak()
@@ -5075,16 +5075,27 @@ and emits `results/endurance_table.csv`.
 
 == Appendix C: Reproducibility Statement
 <appendix-c-reproducibility-statement>
-Repository: https:\/\/github.com/uvKogan/MBMM. The complete simulation
-stack (NVSim 22nm FinFET LOP models, NVMain 2.0 configurations, workload
-traces, and all post-processing scripts) is available under the MIT
-License.
+Repository: the superproject is
+https:\/\/github.com/uvKogan/Memristor-based-dram (branch `master`). The
+complete simulation stack (NVSim 22nm FinFET LOP models, NVMain 2.0
+configurations, workload traces, and all post-processing scripts) is
+available under the MIT License.
 
-Software versions: NVSim (patched, submodule commit `9a90d44`), NVMain
-2.0 (patched, submodule commit `53cea70`), gem5 v25.1, SCALE-Sim v2,
-Python 3.10+, matplotlib 3.9, pandas 2.2. Both simulators are carried as
-git submodules of the repository above, so the commits are pinned by the
-superproject rather than quoted from a file.
+Software versions: NVSim (patched; fork
+https:\/\/github.com/uvKogan/MBMM, branch `master`, commit `9a90d44`),
+NVMain 2.0 (patched; fork https:\/\/github.com/uvKogan/NVmain, branch
+`ddr5-timing-fix`, commit `c89988d`), gem5 v25.1, SCALE-Sim v2, Python
+3.10+, matplotlib 3.9, pandas 2.2. Both simulators are carried as git
+submodules of the superproject, whose `.gitmodules` names the two forks,
+so the commits are pinned by the superproject rather than quoted from a
+file. Neither commit exists in the upstream SEAL-UCSB repositories: both
+trees carry this project's patches. The NVMain pin is `c89988d`, not the
+`53cea70` quoted in earlier copies of this appendix. The two commits hold
+the same C++ sources and differ only in the DDR5 configuration files
+(the JEDEC DDR5-4800B timing corrections of 2026-09-21, Appendix D), so
+the ReRAM and PCM results, run at `53cea70`, and the DDR5 results, run
+with the corrected configurations committed as `c89988d`, are all
+reproduced from `c89988d`.
 
 #strong[Pipeline interface.] The master orchestration script
 mbmm\_master.py takes the replay window in #emph[nanoseconds]

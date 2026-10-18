@@ -177,7 +177,12 @@ def setup_output_directories():
 # ============================================================================
 
 def format_benchmark_name(benchmark):
-    """Format benchmark name for display."""
+    """Format benchmark name for display.
+
+    "AlexNet Layer 1" is SCALE-Sim's zero-indexed `layer1` folder, i.e. AlexNet's
+    second convolution layer (Conv2); the book declares that convention once
+    (Section 2.4) and the label is kept so the frozen figures stay consistent.
+    """
     BENCHMARK_TITLES = {
         'alexnet_layer1_ifmap': 'AlexNet Layer 1 (IFMAP)',
         'alexnet_layer1_ofmap': 'AlexNet Layer 1 (OFMAP)',

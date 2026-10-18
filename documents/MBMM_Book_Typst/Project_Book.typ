@@ -1463,7 +1463,7 @@ result datasets this book reports, is publicly available.
 
 #blockquote[
 #strong[Project Repository:]
-#link("https://github.com/uvKogan/MBMM")[#underline[https:\/\/github.com/uvKogan/MBMM]]
+#link("https://github.com/uvKogan/Memristor-based-dram")[#underline[https:\/\/github.com/uvKogan/Memristor-based-dram]]
 ]
 
 #pagebreak(weak: true)

@@ -108,6 +108,10 @@ TECHNOLOGY_CONFIGS = {
 
 # Display names for figure titles (same table as visualize_results.py's
 # format_benchmark_name; kept as a per-script copy like the other tables here).
+# "AlexNet Layer 1" is SCALE-Sim's zero-indexed `layer1` folder, i.e. AlexNet's
+# second convolution layer (Conv2). The label is kept because the book declares
+# that convention once (Section 2.4) and every frozen figure carries it;
+# changing it here means regenerating every figure the book embeds.
 BENCHMARK_TITLES = {
     'alexnet_layer1_ifmap': 'AlexNet Layer 1 (IFMAP)',
     'alexnet_layer1_ofmap': 'AlexNet Layer 1 (OFMAP)',

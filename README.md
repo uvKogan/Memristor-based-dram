@@ -16,7 +16,11 @@ Tables 1-9, 48 references). This file is only how to run the thing.
    - CPU workloads: gem5 with `--debug-flags=MemCtrl`, X86O3CPU, L1/L2 caches, against
      SPEC CPU2017 binaries (gcc, lbm) and STREAM.
    - AI/ML workloads: SCALE-Sim DRAM traces (GPT-2 GEMM, AlexNet layer 1 input and
-     output maps).
+     output maps). "Layer 1" is SCALE-Sim's zero-indexed `layer1` output folder, which
+     is AlexNet's *second* convolution layer (Conv2: 27x27x96 in, 5x5 filters, 256 out,
+     stride 1; the 135,424 OFMAP writes are exactly 23x23x256). Every MBMM result, in
+     this and every earlier version, used that layer; the name is kept for continuity
+     and is recorded in each trace's sidecar (`layer_note`).
 2. **Trace parsing** - two different parsers, one per source:
    - `parse_gem5_memctrl.py` for **gem5 MemCtrl logs** (exact 3 GHz cycles, per-controller
      retry drops, full line accounting).
@@ -191,7 +195,8 @@ purpose so the frozen stats stay exactly what NVMain printed.
       sidecars and a validator; mcf is parked (gem5 panics inside its input reader).
 - [x] 1T1R and 1S1R crossbar tracks, SLC and MLC, at a forced 2048x2048 mux-64
       organization, with a 1024x1024 sensitivity.
-- [x] AI/LLM workloads (GPT-2 GEMM, AlexNet layer 1) via SCALE-Sim.
+- [x] AI/LLM workloads (GPT-2 GEMM, AlexNet "layer 1" = SCALE-Sim's zero-indexed folder,
+      i.e. Conv2) via SCALE-Sim.
 - [x] DDR5-4800 baseline (two 32-bit subchannels, 64 B per access) with JEDEC write-path
       and power-down timings, plus a legacy Microsoft PCM 2009 baseline.
 - [x] Start-Gap wear-leveling decoder and per-location wear counters in NVMain, with an
