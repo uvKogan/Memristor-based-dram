@@ -1,6 +1,8 @@
-# Reference Guide - MBMM Project Book
+# Reference Guide - Technical_Report.typ
 
-A quick-reference summary of all 54 sources cited in `Project_Book.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts.
+This guide covers `Technical_Report.typ`'s reference list only. As of the 2026-09 short-book revision, the document set has two separate books with two separate, independent reference numberings: `Technical_Report.typ` (122 pages, the complete technical report and knowledge base, 100 references, [1]-[100]) and `Project_Book.typ` (the short, reader-facing book, 26 printed pages, 48 references, [1]-[48], its own numbering - a citation like "book [12]" always needs the book named, the two [12]s are different sources). This guide's per-reference entries below are Technical_Report numbering.
+
+A quick-reference summary of all 100 sources cited in `Technical_Report.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts; [55]-[100] were added by the September 2026 revision's Section 3.4 (Near and Far Memory) and the bit-errors-and-ECC subsection of 3.1.2, and are summarized more briefly below in three themed groups rather than individually re-verified against their full texts (most are used for a single named figure, quoted directly from the reference entry's own parenthetical in `Technical_Report.typ`).
 
 The book's MLC penalty multipliers are: **1.5x read latency, 3.263x write latency, 1.1x read energy, 3.0x write energy** (2 bits/cell vs. 1 bit/cell), all sourced from the EMBER macro's two publications, [6] and [31] below.
 
@@ -12,7 +14,7 @@ The book's MLC penalty multipliers are: **1.5x read latency, 3.263x write latenc
 A NAND-market recovery story; cited here only for a secondary point it makes about Samsung/SK Hynix reallocating fab capacity from DRAM to HBM. Supporting/context citation, not the article's main topic - worth knowing when you re-read the abstract's "DRAM-to-HBM reallocation" claim.
 
 **[2] Fleischer, "How AI Broke the Memory Market," Octopart Pulse, 2026**
-The book's more central source for the AI-driven memory shortage premise. Verified via direct fetch of a mirrored copy (Octopart itself blocks fetches with bot protection) - confirms the article is real and on-topic (data centers consuming up to 70% of high-end memory chips in 2026, Samsung/SK Hynix wafer output declines, sharp DRAM price spikes), and it directly backs the book's only claim drawn from it: DRAM-to-HBM wafer reallocation causing a supply-demand gap (Project_Book.typ lines 26, 178 - both stated qualitatively, no numbers). An earlier annotation here cited "~3x HBM wafer capacity" and "40% advanced-capacity reallocation" figures attributed to this article; neither appears in it (the 3x figure traces to an unrelated, uncited Substack post) and neither is used in the book text, so no book fix was needed - this was a reference-guide-only error, now corrected.
+The book's more central source for the AI-driven memory shortage premise. Verified via direct fetch of a mirrored copy (Octopart itself blocks fetches with bot protection) - confirms the article is real and on-topic (data centers consuming up to 70% of high-end memory chips in 2026, Samsung/SK Hynix wafer output declines, sharp DRAM price spikes), and it directly backs the book's only claim drawn from it: DRAM-to-HBM wafer reallocation causing a supply-demand gap (Technical_Report.typ Abstract and Section 1.1 "Economic Drivers" - both stated qualitatively, no numbers). An earlier annotation here cited "~3x HBM wafer capacity" and "40% advanced-capacity reallocation" figures attributed to this article; neither appears in it (the 3x figure traces to an unrelated, uncited Substack post) and neither is used in the book text, so no book fix was needed - this was a reference-guide-only error, now corrected.
 
 **[16] "Data Center Hardware Refresh Cutback by Microsoft," Data Center Knowledge, 2022**
 Cited for exactly one statistic: enterprise servers now average 5.4 years of useful life, trending toward 6-7 years. This sets the endurance/lifetime bar the book's ReRAM configs are judged against.
@@ -83,7 +85,7 @@ The single most-cited comprehensive RRAM review paper. Correctly sourced for: en
 A real, commercial-grade 14nm 1T1R macro. Its actual cell size (0.022 µm² ≈ 112F² at that node) is used as a reality check showing the book's 20F² assumption is generous/conservative for 1T1R *relative to planar/FinFET logic-transistor integration* - see [33] for the counter-case where it isn't generous at all.
 
 **[33] Fackenthal et al., "A 16Gb ReRAM with 200MB/s Write and 1GB/s Read in 27nm Technology," ISSCC 2014**
-Verified real: DOI 10.1109/ISSCC.2014.6757460, confirmed via three independent sources. The commercial Micron/Sony 16Gb ReRAM chip - uses a DRAM-process **buried recessed-channel access transistor** (not a planar/FinFET logic transistor) to hit a **6F² 1T1R cell**, i.e. parity with DRAM's own 6F². Added as the counterpoint to [20]: it shows 1T1R density is architecture-dependent, not that 20F² is wrong. Two caveats keep it from being a substitute data point for this book's own 1T1R track: (1) it's a Cu-filament CBRAM cell, not the HfOx/TaOx oxide-RRAM family this book simulates; (2) NVSim as configured here (`configs/reram_22nm_1t1r_slc.cell`) only supports width-driven CMOS or diode access devices - no recessed-channel model - so no simulated numbers for this architecture are claimed anywhere in the book. Discussed in Project_Book.typ Appendix A (Bit-Cell Area) and Section 4.2 (future work).
+Verified real: DOI 10.1109/ISSCC.2014.6757460, confirmed via three independent sources. The commercial Micron/Sony 16Gb ReRAM chip - uses a DRAM-process **buried recessed-channel access transistor** (not a planar/FinFET logic transistor) to hit a **6F² 1T1R cell**, i.e. parity with DRAM's own 6F². Added as the counterpoint to [20]: it shows 1T1R density is architecture-dependent, not that 20F² is wrong. Two caveats keep it from being a substitute data point for this book's own 1T1R track: (1) it's a Cu-filament CBRAM cell, not the HfOx/TaOx oxide-RRAM family this book simulates; (2) NVSim as configured here (`configs/reram_22nm_1t1r_slc.cell`) only supports width-driven CMOS or diode access devices - no recessed-channel model - so no simulated numbers for this architecture are claimed anywhere in the book. Discussed in Technical_Report.typ Appendix A (Bit-Cell Area) and Section 4.2 (future work).
 
 ---
 
@@ -172,11 +174,11 @@ Added 2026-09-13 (Shahar-notes item 8): a company-by-company industry survey sho
 
 ---
 
-*This guide reflects the current state of `Project_Book.typ`.*
+*This guide reflects the current state of `Technical_Report.typ`.*
 
 ---
 
-## Added in the 2026-09 revision (see Project_Book.typ Appendix D)
+## Added in the 2026-09 revision (see Technical_Report.typ Appendix D)
 
 **[47] Y. Chen, "ReRAM: History, Status, and Future," IEEE TED 67(4), 2020**
 An invited review. It is the book's new endurance-rating basis: it states 10^6 cycles as the typical spec for storage-class memory and 10^4 as the typical lower limit for embedded 1T1R. It replaces [14] for this purpose, because [14] gives no SLC or MLC rating at all - the single most consequential citation correction of the revision.
@@ -201,3 +203,151 @@ The other real-Optane measurement paper beside [32], and the one that resolves [
 
 **[54] Intel Corporation, "Intel Optane Persistent Memory 200 Series Brief"**
 The product brief supplying the only published endurance (PBW by access size and mix), bandwidth envelope and maximum TDP for a shipped NVM DIMM. Cited only for the scoped Optane reference row in Section 4.2; the brief publishes no media timing, idle power or energy per operation, which is why no NVMain configuration in this book is called Optane.
+
+---
+
+## Added in the September 2026 short-book revision (Section 3.4 and the bit-errors subsection of 3.1.2)
+
+### MLC write-iteration characterization ([55]-[59]), cited in 3.1.1's bounding-run and Appendix A's smart-write discussion
+
+**[55] Program-and-verify pulse-count characterization of MLC 1T1R RRAM, arXiv:2108.07879**
+Average 49 pulses per level move, median 36 - the measured cost of an iterative program-and-verify MLC write, cited as the "how bad could the write iteration really be" upper end.
+
+**[56] Self-terminating single-pulse MLC RRAM write technique, DATE 2022 (ACM DL 10.5555/3539845.3540141)**
+The counterpoint to [55]: a single-pulse, non-iterative MLC write scheme, showing the iterative multiplier this book uses is not the only published approach and may overstate the real write cost.
+
+**[57] Program-and-verify MLC PCM characterization, PMC6680789**
+More than 70 program-and-verify iterations for a 9.7 us total write, under 1.6 us with the verify step skipped - the same iterative-write question as [55]/[56], for PCM rather than ReRAM.
+
+**[58] Kawahara et al., "An 8Mb multi-layered cross-point ReRAM macro with 443MB/s write throughput," ISSCC 2012**
+Source of the 17.2 ns write-cycle figure quoted in Section 3.1.1. Flagged in its own reference entry: the figure is taken from the published abstract only, the full text was requested and has not been read.
+
+**[59] Kim et al. (SK hynix), "High-performance, cost-effective 2z nm two-deck cross-point memory...for 128 Gb SCM," IEDM 2018**
+Source of array-level set/read timing figures quoted secondhand in Section 3.1.1. Flagged in its own reference entry: the full text was requested and has not been read.
+
+### Bit errors, ECC and reliability ([60]-[83]), cited in the "Bit errors and error correction" subsection of 3.1.2
+
+**[60] Channel-model bit error rates for a 1S1R cross-point array, arXiv:1912.02963**
+The core source behind the book's BER answer: read BER from 4.29e-4 (best-positioned cell) to worse, write BER 3.35e-4 to 1.75e-2, for a 1024x1024 array at 10 ohm per junction with an ideal selector. This is the "channel model, not a measured device" the book's finding rests on - no measured 1S1R RBER exists in the literature it could find.
+
+**[61] BCH coding over 128- and 256-bit blocks applied to [60]'s channel model, arXiv:2104.14011**
+The coding layer built directly on [60]'s raw rates, with location-dependent interleaving.
+
+**[62] Raw bit error rate of 1T1R HfO2 RRAM arrays under cycling (incl. a 2T2R variant), arXiv:1902.02528**
+A measured 1T1R cycling BER data point, distinct from [60]'s 1S1R channel model.
+
+**[63] Weebit Nano, smart-write algorithm technical resource**
+The source of the "1T1R macros below 1e-7 with smart write" fact: a 128 kb 1T1R macro with a smart-write scheme reports under 1e-7 after 1e6 cycles at a 28.1 dB read margin.
+
+**[64] Error-rate analysis of embedded RRAM, ICCAD 2023**
+Raw BER about 1e-6, corrected to an uncorrectable rate of 2e-15 by a 2-bit-per-128-bit code - an embedded-RRAM (not main-memory-array) data point for the same ECC-overhead question.
+
+**[65] Endurance of TSMC 28 nm embedded RRAM under 2-bit and 3-bit error correction, IEEE Xplore 9830374**
+500,000 cycles at 2-bit correction, 1,000,000 at 3-bit - ties ECC strength directly to endurance rating for embedded RRAM.
+
+**[66] Reliability of a 1S1R selector stacked with STT-MRAM, IEDM 2023**
+1e-9 per-read disturb rate, 1e9 read-disturb-free cycles - a selector-reliability data point, not itself an array BER.
+
+**[67] IBM Research, 3D XPT/SOM reliability strategies, IMW 2025**
+Cell failure rate 9% falling to 0.02% after read-endurance optimization - shows the scale of improvement achievable engineering effort buys, not a number this book adopts directly.
+
+**[68] Alfaro Robayo et al. (CEA-Leti), OxRAM-plus-OTS 1S1R reliability, IEDM 2019**
+Five decades of selectivity, more than 1e6 program cycles, 1e8 read cycles, 1e9 read-disturb-free cycles - another 1S1R selector reliability data point.
+
+**[69] Subthreshold-read reliability of OTS phase-change cross-point cells, ScienceDirect S0167931724000807**
+1e12 disturb-free reads under subthreshold read bias.
+
+**[70] Read-disturb model for 28 nm embedded RRAM, IRPS 2020**
+Per-bit read-disturb rate below about 1e-18 - the most optimistic read-disturb figure in the reliability group.
+
+**[71] Review of threshold-voltage drift in ovonic threshold switches, J. Semiconductors**
+Under 40 mV per decade in typical material stacks - an OTS-selector aging figure.
+
+**[72] Saturation of OTS threshold-voltage drift near 1e3 seconds, arXiv:2102.07264**
+Shows the drift characterized in [71] saturates rather than growing unbounded.
+
+**[73] imec, "The promise of OTS-only memories for next-gen compute system architectures"**
+Half-bias nonlinearity in the low thousands, up to about 1e4 - an industrial-lab selector-quality figure, cited alongside the book's own selector-layer analytic bound (Section 3.1.2, "every 1S1R number in this book is conditional on a selector better than today's production OTS").
+
+**[74] Zhang, Sridharan, and Jian, chipkill-correct for persistent memory, MICRO 2018 (via ar5iv:2309.00304)**
+The single most load-bearing reference in this group: the book's design-point BER answer is "2e-4 with BCH(2312,2048,22)," and both numbers come directly from here - the 2e-4 raw design point and the BCH(2312,2048,22) code at about 27% coding overhead.
+
+**[75] ArchShield, DRAM architecture for high bit-error rates (via ar5iv:1704.03991)**
+DRAM on-die SECDED tolerates about 1e-6 raw - the comparison point the book uses to show how much worse ReRAM's raw rate is than DRAM's.
+
+**[76] Gugnani et al., Proc. VLDB Endowment 14, 2021**
+Documents Intel Optane's real, shipped 256-byte "XPLine" error-correction block - the one instance of a shipped NVM product's own ECC granularity in this reference group.
+
+**[77] Intel Optane SSD 905P series product specifications**
+Uncorrectable bit error rate under 1 sector per 1e17 bits - a shipped-product UBER figure, several orders of magnitude better than any raw ReRAM rate in this group, illustrating how much correction a real product applies.
+
+**[78] Schechter et al., "Use ECP, Not ECC, for Hard Failures in Resistive Memories," ISCA 2010**
+Argues resistive-memory hard failures need error-correcting pointers (ECP), not ECC, since ECC is built for soft (transient) errors. Cited to keep the book's three-category framing (hard failures, soft/read-disturb errors, sneak-path/array-level effects) honest about which correction scheme answers which category.
+
+**[79] Yoon et al., "FREE-p: Protecting Non-Volatile Memory against Both Hard and Soft Errors," HPCA 2011**
+A combined hard-and-soft-error protection scheme for NVM, cited alongside [78] as the other half of the hard-versus-soft error-correction literature.
+
+**[80] Read-margin analysis of 1R against 1S1R crossbar arrays, arXiv:2407.10466**
+Establishes the 10% minimum read-margin criterion used throughout the book's selector-layer analysis (also cited, under its own [48], by `Project_Book.typ` - same source, independent numbering in the two books).
+
+**[81] Flocke and Noll, "Fundamental analysis of resistive nano-crossbars," ESSCIRC 2007**
+Flagged in its own reference entry: consulted only through its bibliographic record, the full proceedings text was requested and has not been read.
+
+**[82] A. Chen, crossbar-array model resolving line resistance and nonlinear device characteristics, IEEE TED 2013**
+Identifies line resistance, not the selector alone, as the binding constraint on read margin in a large crossbar - a caveat on how far the book's selector-only analytic model can be trusted at scale.
+
+**[83] "Effect of threshold switching selectors on one-selector one-resistor crossbar arrays," ResearchGate 351467888**
+A 10% read margin needs a half-bias nonlinearity around 8,000 and an on/off window of 5 - a second, independent source for the selector-quality bar the book's own analytic layer is checked against.
+
+### Far memory, CXL and Optane ([84]-[100]), cited in Section 3.4 (Near and Far Memory)
+
+**[84] Measured idle latency of local and remote-socket DDR5 and of CXL-attached DRAM devices, arXiv:2409.14317**
+A primary measured-latency source behind the far-memory window the book quotes (device-level idle latencies, local versus remote-socket versus CXL-attached).
+
+**[85] "Pond": CXL-based memory pooling for cloud platforms (Microsoft Azure), arXiv:2203.00241**
+Local DDR5 platform baselines, pooling latency overheads and a workload latency-acceptability study - the production-deployment half of the far-memory evidence.
+
+**[86] Sun et al., "Demystifying CXL Memory with Genuine CXL-Ready Systems and Devices," arXiv:2303.15375**
+Measurements from real, shipped CXL hardware rather than simulation - corroborates [84]/[85] on real silicon.
+
+**[87] Compute Express Link Consortium, "About CXL"**
+The protocol-level reference (CXL.io, CXL.cache, CXL.mem; Type 3 memory devices) - what CXL actually is, cited for definitional grounding.
+
+**[88] Linux kernel documentation, "NUMA performance"**
+ACPI HMAT latency and bandwidth attributes exposed per initiator-target pair - how the OS would actually see a far-memory device's advertised performance.
+
+**[89] Linux kernel documentation, sysctl reference**
+`numa_balancing` mode 2 and its page-promotion rate limit - the kernel mechanism that would migrate hot pages off a far-memory device.
+
+**[90] LWN.net, "Memory tiering"**
+Abstract distance of 512, demotion disabled by default - further detail on how the Linux tiering machinery [88]/[89] actually behaves out of the box.
+
+**[91] Meta Platforms, Transparent Page Placement for CXL-enabled tiered memory, arXiv:2206.02878**
+CXL adds about 50 to 100 ns over local DRAM, FPGA-based cards about 250 ns higher - the other primary source (with [84]) behind the book's quoted far-memory latency window; a production-scale (Meta) rather than benchmark-scale study.
+
+**[92] Micron Technology, CXL 2.0 memory expansion module portfolio launch, Aug. 2023**
+CZ120, x8, up to 36 GB/s - a real, shipped CXL memory-expansion product, cited as evidence the far-memory category is commercially real, not hypothetical.
+
+**[93] Intel Corporation, 4th Gen Intel Xeon Scalable processor overview**
+Eight DDR5-4800 channels per socket - the near-memory (local DDR5) channel-count baseline the far-memory numbers are compared against.
+
+**[94] Izraelevitz et al., performance measurements of the Intel Optane DC PMM, arXiv:1903.05714**
+305 ns idle random read, 169 ns sequential read, 6.6/2.3 GB/s read/write per module - real, measured Optane numbers (same paper as [32] in the pre-revision numbering) used as the shipped-precedent data point in 3.4.4.
+
+**[95] Intel Corporation, 2nd-gen Intel Xeon Scalable processor family technical overview**
+Optane PMem Memory Mode and App Direct mode; 64-byte byte-addressable lines - how the one shipped near/far-memory-adjacent precedent (Optane) was actually exposed to software.
+
+**[96] Intel Corporation, discontinuation of Intel Optane persistent memory 300 series, Jan. 2023**
+The formal end-of-product-life notice for Optane PMem.
+
+**[97] The Register, report on Intel's Optane wind-down and inventory write-off, Jul. 2022**
+Trade-press corroboration and additional detail (financial write-off) on the same exit covered by [96].
+
+**[98] Google Research, software-defined far memory in warehouse-scale computers**
+Single-digit microsecond tolerance for far memory in a real hyperscale fleet - the production-workload latency-tolerance bar the book's far-memory verdict is checked against.
+
+**[99] Astera Labs, CM5162 Leo smart memory controller product page**
+CXL 1.1/2.0, x16 at 32 GT/s, two DDR5 channels, up to 2 TB; no published latency figure - a current commercial CXL controller product, cited to show the category is actively shipping while also flagging that vendors do not publish the one number (latency) this book's far-memory discussion needs most.
+
+**[100] Intel Corporation and Micron Technology, 3D XPoint technology announcement, Jul. 2015**
+The original 3D XPoint (later marketed as Optane) announcement - historical anchor for when the one shipped 1S1R-adjacent main-memory-class NVM product was introduced.

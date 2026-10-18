@@ -4,9 +4,11 @@ A full-stack, cross-layer simulation pipeline for evaluating 22 nm ReRAM as a co
 main-memory replacement for DRAM: NVSim for the device and array, NVMain 2.0 for the
 memory system, Python for the ETL between them and for the analysis.
 
-**Results are in the book, not here.** `documents/MBMM_Book_Typst/Project_Book.typ`
-(and its compiled PDF) carries every number, its caveats and its provenance. This file
-is only how to run the thing.
+**Results are in the book, not here.** `documents/MBMM_Book_Typst/Technical_Report.typ`
+(and its compiled PDF) is the complete technical report and knowledge base: it carries
+every number, its caveats and its provenance. `documents/MBMM_Book_Typst/Project_Book.typ`
+is the short, reader-facing project book (24 printed pages, Chapters 1-6, Figures 1-6,
+Tables 1-9, 48 references). This file is only how to run the thing.
 
 ## 🏗️ Data flow
 
@@ -64,7 +66,10 @@ matrix's settings. Stage 4 writes `results/system/run_manifest.json` recording t
 command line, the git commits of the superproject and both submodules, every flag's
 effective value, the traces with their sidecar checksums and the sha256 of every config it
 is about to simulate; `process_metrics.py` carries the key flags into every CSV as
-`Run_*` columns.
+`Run_*` columns. Those columns describe the **run**, not the individual config, so
+`Run_Write_Pulse_On_Path` reads `true` on the DDR5 and PCM rows too although the flag never
+reaches their static configs - as `Run_Queue_Size`, `Run_Decoder` and `Run_Freq_MHz` already
+do.
 
 ### Sensitivity axes
 
@@ -80,10 +85,31 @@ flags, changing one thing:
 | Interface clock | `--freq 1333`, `--freq 2400` |
 | Queue depth | `--queue-size 8`, `--queue-size 128` |
 | Subarray organization | `--organization 1024` |
+| Cell write pulse on the write's own completion (bounding mode) | `--write-pulse-on-path` (generated ReRAM/silicon configs get `tWP` = the cell write cycles and `tWR 1`, instead of `tWR` = those cycles and no `tWP`; see the note below) |
 
-`--freq`, `--queue-size`, `--channels`, `--decoder` and `--endurance-model` reach the
-**generated ReRAM and silicon configs only**; the DDR5 and PCM configs are static tracked
-files.
+`--freq`, `--queue-size`, `--channels`, `--decoder`, `--endurance-model` and
+`--write-pulse-on-path` reach the **generated ReRAM and silicon configs only**; the DDR5
+and PCM configs are static tracked files.
+
+`--write-pulse-on-path` is a **bounding** mode, and what it changes depends on the branch
+each write takes. These timers are per **subarray**, not per bank (`nextActivate`,
+`nextPrecharge`, `nextRead` and `nextWrite` are `SubArray` members, `SubArray.h:137-140`,
+and a bank holds `ROWS / MATHeight` subarrays, `DDR3Bank.cpp:129`: one for the SLC full DIMM,
+two for MLC). In default mode the cell write time sits in `tWR` and reaches the request path
+only when a write closes its row. These configs are close-page (`ClosePage 1`,
+`UsePrecharge true`), so a write that is the last queued request to its row becomes
+`WRITE_PRECHARGE` and NVMain adds `tWR` to the subarray's next activation
+(`SubArray.cpp:625-633`), making the next read or write to that subarray wait for it; a
+write followed by another queued request to the same open row takes the plain `WRITE` branch
+(`SubArray.cpp:648-660`), where `tWR` reaches only `nextPrecharge` and nothing beyond the
+burst and the write-to-read turnaround (`tWTR`, NVMain's default, identical in both modes)
+is charged. In neither branch does the cell write time delay the write's own completion
+event. Bounding mode moves the same cycle count to `tWP`: every write's completion carries
+the pulse, row-hit writes additionally charge it to `nextRead` and `nextWrite` on that
+subarray, and close-page subarray occupancy is unchanged to within one cycle. The delta
+between the modes is therefore that completion latency plus, for open-row writes, the
+subarray time default mode did not charge - **an upper end of the write-path cost, not a
+prediction**, mixed in a proportion set by the trace's row locality and the queue depth.
 
 ### Scoping a re-run
 

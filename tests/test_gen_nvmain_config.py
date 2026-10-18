@@ -31,23 +31,29 @@ def test_validate_rejects_clk_above_cpufreq():
     # I4: validate_config now also checks the tRCD + tCAS read split, so tCAS
     # and read_latency_ns are required keys. At CLK 4000 the cycle is 0.25 ns,
     # so 13 + 13 = 26 = ceil(6.5 / 0.25): this cfg's split is CORRECT, and CLK
-    # is the only violation reported.
+    # is the only violation reported. T2 added the write-mode keys: tWR 30 =
+    # ceil(7.4 / 0.25) is the correct default-mode write charge, with no tWP.
     v = gen.validate_config({"CLK": 4000, "CPUFreq": 3000, "tBURST": 4, "tCCD": 4,
                              "tRAS": 30, "tRCD": 13, "tCAS": 13,
-                             "read_latency_ns": 6.5})
+                             "read_latency_ns": 6.5,
+                             "tWR": 30, "write_latency_ns": 7.4,
+                             "write_pulse_on_path": False})
     assert any("CLK" in s for s in v)
     assert not any("tRCD + tCAS" in s for s in v)
+    assert not any("tWR" in s or "tWP" in s for s in v)
 
 
 # --- I4: the read-latency split the book says validation enforces -----------
 
 def test_validate_refuses_a_hand_corrupted_read_split():
     """tRCD + tCAS must equal ceil(read_ns / cycle_ns); a hand-edited split is
-    refused (Project_Book.typ:961-965, Appendix B.1 :3843-3845, Appendix D :3982)."""
+    refused (Technical_Report.typ:961-965, Appendix B.1 :3843-3845, Appendix D :3982)."""
     good = gen.compute_timings(read_ns=10.12, write_ns=15.26, freq_mhz=800)
     base = {"CLK": 800, "CPUFreq": 3000, "tBURST": good["tBURST"],
             "tCCD": good["tCCD"], "tRAS": good["tRAS"], "tRCD": good["tRCD"],
-            "tCAS": good["tCAS"], "read_latency_ns": 10.12}
+            "tCAS": good["tCAS"], "read_latency_ns": 10.12,
+            "tWR": good["tWR"], "tWP": good["tWP"], "write_latency_ns": 15.26,
+            "write_pulse_on_path": False}
     assert gen.validate_config(base) == []
     for delta in (-1, +1, +5):
         bad = dict(base, tCAS=base["tCAS"] + delta)
@@ -83,7 +89,9 @@ def test_every_generated_config_passes_the_read_split_check(tmp_path, cell, suba
         cfg = {"CLK": freq, "CPUFreq": gen.CPU_FREQ_MHZ, "tBURST": timings["tBURST"],
                "tCCD": timings["tCCD"], "tRAS": timings["tRAS"],
                "tRCD": timings["tRCD"], "tCAS": timings["tCAS"],
-               "read_latency_ns": read_ns}
+               "read_latency_ns": read_ns,
+               "tWR": timings["tWR"], "tWP": timings["tWP"],
+               "write_latency_ns": write_ns, "write_pulse_on_path": False}
         assert gen.validate_config(cfg) == [], (cell, subarray_rows, freq, arch)
         # And end to end: generation must not sys.exit on any of them.
         out = tmp_path / f"{cell}_{subarray_rows}_{freq}_{arch}"
@@ -134,7 +142,282 @@ def test_silicon_timing_configs_pass_the_read_split_check(tmp_path, silicon_key,
         "tCCD": int(re.search(r"(?m)^tCCD (\d+)$", text).group(1)),
         "tRAS": int(re.search(r"(?m)^tRAS (\d+)$", text).group(1)),
         "tRCD": t_rcd, "tCAS": t_cas,
-        "read_latency_ns": entry["read_ns"]}) == []
+        "read_latency_ns": entry["read_ns"],
+        "tWR": int(re.search(r"(?m)^tWR (\d+)$", text).group(1)),
+        "write_latency_ns": entry["write_ns"], "write_pulse_on_path": False}) == []
+    # default mode: no tWP key at all in the written file
+    assert re.search(r"(?m)^tWP ", text) is None
+
+
+# --- T2: the --write-pulse-on-path bounding mode ----------------------------
+
+# The real 2026-09 hardware metrics for the four tracks, shared by the tests
+# below and by test_every_generated_config_passes_the_read_split_check above
+# (same numbers, kept beside each other deliberately).
+_T2_CELL_METRICS = {
+    "1t1r_slc": (10.12, 15.26, 0.375512, 0.913376),
+    "1t1r_mlc": (15.18, 49.79338, 0.4130632, 2.740128),
+    "selector_slc": (4.702, 24.589, 0.328591, 1.078),
+    "selector_mlc": (7.053, 80.233907, 0.36145010, 3.234),
+}
+
+
+def _t2_hw(cell, subarray_rows):
+    read_ns, write_ns, r_nj, w_nj = _T2_CELL_METRICS[cell]
+    return {"capacity_gb": 0.25 if cell.endswith("mlc") else 0.125,
+            "read_latency_ns": read_ns, "write_latency_ns": write_ns,
+            "read_energy_nj": r_nj, "write_energy_nj": w_nj,
+            "leakage_mw": 108.384, "subarray_rows": subarray_rows}
+
+
+@pytest.mark.parametrize("freq", [800, 1333, 2400])
+@pytest.mark.parametrize("subarray_rows", [1024, 2048])
+@pytest.mark.parametrize("cell", sorted(_T2_CELL_METRICS))
+def test_bounding_mode_configs_put_the_write_pulse_on_the_path(tmp_path, cell,
+                                                                subarray_rows, freq):
+    """Every config --write-pulse-on-path produces must validate and must carry
+    tWP = ceil(write_ns / cycle_ns) with tWR 1, for all four cell types, both
+    organizations and the three clocks the revision uses."""
+    hw = _t2_hw(cell, subarray_rows)
+    read_ns, write_ns = hw["read_latency_ns"], hw["write_latency_ns"]
+    expected_wp = math.ceil(write_ns / (1000.0 / freq))
+    assert expected_wp == gen.write_pulse_cycles(write_ns, freq)
+    for arch in ("single", "8chip", "16chip", "full_dimm"):
+        timings = gen.compute_timings(read_ns, write_ns, freq, write_pulse_on_path=True)
+        cfg = {"CLK": freq, "CPUFreq": gen.CPU_FREQ_MHZ, "tBURST": timings["tBURST"],
+               "tCCD": timings["tCCD"], "tRAS": timings["tRAS"],
+               "tRCD": timings["tRCD"], "tCAS": timings["tCAS"],
+               "read_latency_ns": read_ns,
+               "tWR": timings["tWR"], "tWP": timings["tWP"],
+               "write_latency_ns": write_ns, "write_pulse_on_path": True}
+        assert gen.validate_config(cfg) == [], (cell, subarray_rows, freq, arch)
+
+        out = tmp_path / f"{cell}_{subarray_rows}_{freq}_{arch}"
+        out.mkdir()
+        name = gen.generate_nvmain_config(f"reram_22nm_{cell}", hw, freq, out, arch,
+                                           write_pulse_on_path=True)
+        text = (out / f"{name}.config").read_text()
+        assert int(re.search(r"(?m)^tWP (\d+)$", text).group(1)) == expected_wp
+        assert int(re.search(r"(?m)^tWR (\d+)$", text).group(1)) == 1
+        assert "write pulse on the request path (bounding mode)" in text
+        # the read split is untouched by the mode
+        t_rcd = int(re.search(r"(?m)^tRCD (\d+)$", text).group(1))
+        t_cas = int(re.search(r"(?m)^tCAS (\d+)$", text).group(1))
+        assert t_rcd + t_cas == gen.read_latency_cycles(read_ns, freq)
+
+
+@pytest.mark.parametrize("freq", [800, 1333, 2400])
+@pytest.mark.parametrize("subarray_rows", [1024, 2048])
+@pytest.mark.parametrize("cell", sorted(_T2_CELL_METRICS))
+def test_default_mode_configs_carry_no_write_pulse(tmp_path, cell, subarray_rows, freq):
+    """Default mode is unchanged: no tWP key anywhere, and tWR carries the write
+    cycles that bounding mode would put in tWP."""
+    hw = _t2_hw(cell, subarray_rows)
+    read_ns, write_ns = hw["read_latency_ns"], hw["write_latency_ns"]
+    expected_wr = math.ceil(write_ns / (1000.0 / freq))
+    for arch in ("single", "8chip", "16chip", "full_dimm"):
+        assert gen.compute_timings(read_ns, write_ns, freq)["tWP"] is None
+        out = tmp_path / f"{cell}_{subarray_rows}_{freq}_{arch}"
+        out.mkdir()
+        name = gen.generate_nvmain_config(f"reram_22nm_{cell}", hw, freq, out, arch)
+        text = (out / f"{name}.config").read_text()
+        assert "tWP" not in text
+        assert "bounding mode" not in text
+        assert int(re.search(r"(?m)^tWR (\d+)$", text).group(1)) == expected_wr
+
+
+def test_the_two_modes_differ_only_in_the_write_lines(tmp_path):
+    """The bounding flag must move the write time and change nothing else."""
+    hw = _t2_hw("1t1r_mlc", 2048)
+    default_dir, bounding_dir = tmp_path / "default", tmp_path / "bounding"
+    default_dir.mkdir()
+    bounding_dir.mkdir()
+    gen.generate_nvmain_config("reram_22nm_1t1r_mlc", hw, 800, default_dir, "full_dimm",
+                                channels=2, decoder="StartGap")
+    gen.generate_nvmain_config("reram_22nm_1t1r_mlc", hw, 800, bounding_dir, "full_dimm",
+                                channels=2, decoder="StartGap", write_pulse_on_path=True)
+    name = "reram_22nm_1t1r_mlc_full_dimm.config"
+    a = (default_dir / name).read_text().splitlines()
+    b = (bounding_dir / name).read_text().splitlines()
+    only_a = [line for line in a if line not in b]
+    only_b = [line for line in b if line not in a]
+    expected_wp = gen.write_pulse_cycles(hw["write_latency_ns"], 800)
+    assert only_a == [f"tWR {expected_wp}"]
+    assert only_b == [
+        "tWR 1",
+        "; write pulse on the request path (bounding mode): tWP carries the NVSim "
+        "write latency, tWR is 1 cycle",
+        f"tWP {expected_wp}",
+    ]
+
+
+@pytest.mark.parametrize("delta", [-1, +1])
+def test_validate_refuses_a_hand_corrupted_write_pulse(delta):
+    """An off-by-one tWP in bounding mode is refused, as a corrupted read split is."""
+    good = gen.compute_timings(read_ns=10.12, write_ns=15.26, freq_mhz=800,
+                                write_pulse_on_path=True)
+    base = {"CLK": 800, "CPUFreq": 3000, "tBURST": good["tBURST"],
+            "tCCD": good["tCCD"], "tRAS": good["tRAS"], "tRCD": good["tRCD"],
+            "tCAS": good["tCAS"], "read_latency_ns": 10.12,
+            "tWR": good["tWR"], "tWP": good["tWP"], "write_latency_ns": 15.26,
+            "write_pulse_on_path": True}
+    assert gen.validate_config(base) == []
+    bad = dict(base, tWP=base["tWP"] + delta)
+    assert any("tWP" in s for s in gen.validate_config(bad)), delta
+    # and a bounding-mode config that kept the write time in tWR too (the
+    # double-charge the ruling forbids) is refused
+    doubled = dict(base, tWR=base["tWP"])
+    assert any("tWR" in s for s in gen.validate_config(doubled))
+    # so is a bounding-mode config with no tWP at all: it would silently be a
+    # default-mode run
+    missing = dict(base)
+    del missing["tWP"]
+    assert any("tWP" in s for s in gen.validate_config(missing))
+
+
+def test_validate_refuses_a_default_mode_config_that_carries_a_write_pulse():
+    good = gen.compute_timings(read_ns=10.12, write_ns=15.26, freq_mhz=800)
+    base = {"CLK": 800, "CPUFreq": 3000, "tBURST": good["tBURST"],
+            "tCCD": good["tCCD"], "tRAS": good["tRAS"], "tRCD": good["tRCD"],
+            "tCAS": good["tCAS"], "read_latency_ns": 10.12,
+            "tWR": good["tWR"], "tWP": good["tWP"], "write_latency_ns": 15.26,
+            "write_pulse_on_path": False}
+    assert gen.validate_config(base) == []
+    stray = dict(base, tWP=13)
+    assert any("tWP" in s for s in gen.validate_config(stray))
+    # and a default-mode tWR that is not the write cycles
+    assert any("tWR" in s for s in gen.validate_config(dict(base, tWR=1)))
+
+
+@pytest.mark.parametrize("silicon_key", sorted(gen.SILICON_TIMINGS))
+def test_silicon_configs_take_the_bounding_mode_too(tmp_path, silicon_key):
+    entry = gen.SILICON_TIMINGS[silicon_key]
+    parent_metrics = {
+        "reram_22nm_1t1r_slc": _t2_hw("1t1r_slc", 2048),
+        "reram_22nm_selector_slc": _t2_hw("selector_slc", 2048),
+    }
+    name = gen.generate_silicon_config(silicon_key, entry, parent_metrics, 800, tmp_path,
+                                        channels=2, decoder="StartGap",
+                                        write_pulse_on_path=True)
+    text = (tmp_path / f"{name}.config").read_text()
+    assert int(re.search(r"(?m)^tWP (\d+)$", text).group(1)) == \
+        gen.write_pulse_cycles(entry["write_ns"], 800)
+    assert int(re.search(r"(?m)^tWR (\d+)$", text).group(1)) == 1
+
+
+# --- M1 (T2 review fix round 1): validation runs on the RENDERED text ---------
+
+def _rendered(tmp_path, write_pulse_on_path):
+    hw = _t2_hw("1t1r_mlc", 2048)
+    out = tmp_path / ("wp" if write_pulse_on_path else "def")
+    out.mkdir()
+    name = gen.generate_nvmain_config("reram_22nm_1t1r_mlc", hw, 800, out, "full_dimm",
+                                       write_pulse_on_path=write_pulse_on_path)
+    return (out / f"{name}.config").read_text(), hw
+
+
+def test_config_check_from_text_reads_the_rendered_keys(tmp_path):
+    text, hw = _rendered(tmp_path, True)
+    cfg = gen.config_check_from_text(text, hw["read_latency_ns"], hw["write_latency_ns"], True)
+    assert set(gen.CONFIG_CHECK_KEYS).issubset(cfg)
+    assert cfg["tWP"] == gen.write_pulse_cycles(hw["write_latency_ns"], 800)
+    assert cfg["tWR"] == 1
+    assert cfg["CLK"] == 800
+    assert gen.validate_config(cfg) == []
+
+    text_default, _ = _rendered(tmp_path, False)
+    cfg_default = gen.config_check_from_text(text_default, hw["read_latency_ns"],
+                                              hw["write_latency_ns"], False)
+    assert cfg_default["tWP"] is None
+    assert gen.validate_config(cfg_default) == []
+
+
+def test_a_rendering_bug_that_drops_the_write_pulse_line_is_refused(tmp_path):
+    """The gap M1 names: suppressing the tWP line in bounding mode used to pass
+    validation because the check read the in-memory dict, not the text."""
+    text, hw = _rendered(tmp_path, True)
+    mutated = "\n".join(line for line in text.splitlines()
+                        if not line.startswith("tWP "))
+    cfg = gen.config_check_from_text(mutated, hw["read_latency_ns"],
+                                      hw["write_latency_ns"], True)
+    assert cfg["tWP"] is None
+    assert any("tWP" in v for v in gen.validate_config(cfg))
+
+
+def test_a_rendering_bug_in_the_read_split_is_refused(tmp_path):
+    """The same guard covers the pre-existing I4 read split."""
+    text, hw = _rendered(tmp_path, False)
+    t_rcd = int(re.search(r"(?m)^tRCD (\d+)$", text).group(1))
+    mutated = re.sub(r"(?m)^tRCD \d+$", f"tRCD {t_rcd + 1}", text)
+    cfg = gen.config_check_from_text(mutated, hw["read_latency_ns"],
+                                      hw["write_latency_ns"], False)
+    assert any("tRCD + tCAS" in v for v in gen.validate_config(cfg))
+
+
+@pytest.mark.parametrize("key", ["tCAS", "tWR", "CLK"])
+def test_config_check_from_text_refuses_a_duplicated_key(tmp_path, key):
+    """R3: NVMain's parser takes the LAST occurrence, a re.search would have
+    taken the first, so a key rendered twice must be a loud error naming it."""
+    text, hw = _rendered(tmp_path, False)
+    value = int(re.search(rf"(?m)^{key} (\d+)$", text).group(1))
+    duplicated = text.replace(f"{key} {value}\n", f"{key} {value}\n{key} {value + 7}\n", 1)
+    assert len(re.findall(rf"(?m)^{key} \d+$", duplicated)) == 2
+    with pytest.raises(ValueError, match=key):
+        gen.config_check_from_text(duplicated, hw["read_latency_ns"],
+                                    hw["write_latency_ns"], False)
+
+
+def test_config_check_from_text_refuses_a_duplicated_write_pulse(tmp_path):
+    """The optional key needs the same guard: absence is legal, ambiguity is not."""
+    text, hw = _rendered(tmp_path, True)
+    value = int(re.search(r"(?m)^tWP (\d+)$", text).group(1))
+    duplicated = text.replace(f"tWP {value}\n", f"tWP {value}\ntWP {value + 1}\n", 1)
+    with pytest.raises(ValueError, match="tWP"):
+        gen.config_check_from_text(duplicated, hw["read_latency_ns"],
+                                    hw["write_latency_ns"], True)
+
+
+def test_every_generated_config_has_each_checked_key_exactly_once(tmp_path):
+    """The guard above must not be able to fire on the real template."""
+    for write_pulse in (False, True):
+        root = tmp_path / f"once_{write_pulse}"
+        root.mkdir()
+        text, _ = _rendered(root, write_pulse)
+        for key in gen.CONFIG_CHECK_KEYS:
+            assert len(re.findall(rf"(?m)^{key} \d+$", text)) == 1, key
+        assert len(re.findall(r"(?m)^tWP \d+$", text)) == (1 if write_pulse else 0)
+
+
+def test_config_check_from_text_names_a_missing_template_key(tmp_path):
+    text, hw = _rendered(tmp_path, False)
+    mutated = "\n".join(line for line in text.splitlines()
+                        if not line.startswith("tCCD "))
+    with pytest.raises(ValueError, match="tCCD"):
+        gen.config_check_from_text(mutated, hw["read_latency_ns"],
+                                    hw["write_latency_ns"], False)
+
+
+def test_stage3_manifest_records_the_bounding_flag(tmp_path):
+    """--manifest-out records write_pulse_on_path, in both modes."""
+    import json
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    metrics = {"reram_22nm_1t1r_slc": _t2_hw("1t1r_slc", 2048)}
+    metrics_path = tmp_path / "hardware_metrics.json"
+    metrics_path.write_text(json.dumps(metrics))
+
+    for flag, expected in ((None, False), ("--write-pulse-on-path", True)):
+        out_dir = tmp_path / f"cfg_{expected}"
+        manifest = tmp_path / f"manifest_{expected}.json"
+        cmd = [sys.executable, str(root / "3_gen_nvmain_config.py"),
+               "--input", str(metrics_path), "--output-dir", str(out_dir),
+               "--manifest-out", str(manifest)]
+        if flag:
+            cmd.append(flag)
+        proc = subprocess.run(cmd, cwd=root, capture_output=True, text=True)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+        assert json.loads(manifest.read_text())["write_pulse_on_path"] is expected
 
 
 # --- I5: required hardware-metric keys --------------------------------------

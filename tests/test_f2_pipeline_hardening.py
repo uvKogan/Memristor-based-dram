@@ -373,6 +373,7 @@ class _Args:
     organization = 2048
     queue_size = 32
     freq = 800
+    write_pulse_on_path = False
     trace = ["gpt2_ifmap.nvt"]
 
 
@@ -394,14 +395,16 @@ def test_write_run_manifest_is_complete(tmp_path):
     assert out.exists()
     on_disk = json.loads(out.read_text())
     assert on_disk == manifest
-    assert on_disk["schema"] == "mbmm_run_manifest/1"
+    # /2 since T2 (review fix round 1, M3) added the write_pulse_on_path flag.
+    assert on_disk["schema"] == "mbmm_run_manifest/2"
     assert on_disk["command_line"][0] == sys.executable
     assert on_disk["date"]
     for flag, value in (("window_ns", 250000000), ("channels", 2),
                         ("decoder", "StartGap"), ("endurance_model", "RowModel"),
                         ("ddr5_model", "DDR5_4800_DRAM_subchannel"),
                         ("silicon", True), ("organization", 2048),
-                        ("queue_size", 32), ("freq_mhz", 800)):
+                        ("queue_size", 32), ("freq_mhz", 800),
+                        ("write_pulse_on_path", False)):
         assert on_disk["flags"][flag] == value
     assert set(on_disk["git"]) == {"superproject", "simulators/nvmain", "simulators/nvsim"}
     for entry in on_disk["git"].values():

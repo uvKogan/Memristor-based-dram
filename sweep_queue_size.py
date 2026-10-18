@@ -52,6 +52,14 @@ def setup_args():
                              "expresses as --window-ns 250000000 and converts per model; pass "
                              "the matching cycle count explicitly for a comparable sweep.")
     parser.add_argument("--freq", type=int, default=800, help="Target frequency in MHz.")
+    parser.add_argument("--write-pulse-on-path", action="store_true",
+                        help="Passthrough to 3_gen_nvmain_config.py --write-pulse-on-path, so "
+                             "a queue-depth sweep can be run in the same write-timing mode as "
+                             "the study around it (without this the sweep is silently "
+                             "default-mode whatever the surrounding study used). This script "
+                             "writes no run manifest, so its CSVs carry no Run_* provenance "
+                             "and a reader cannot tell the two modes apart from the CSV "
+                             "alone: record the mode beside the sweep's output yourself.")
     parser.add_argument("--timeout", type=int, default=240,
                         help="Per-run wall-clock timeout in seconds.")
     return parser.parse_args()
@@ -100,12 +108,17 @@ def run_sweep():
         out_dir.mkdir(parents=True, exist_ok=True)
 
         print(f"\n>>> Generating configs for QueueSize={qs}")
-        gen_proc = subprocess.run(
-            [sys.executable, "3_gen_nvmain_config.py",
-             "--freq", str(args.freq), "--queue-size", str(qs),
-             "--output-dir", str(out_dir)],
-            cwd=root, capture_output=True, text=True,
-        )
+        gen_cmd = [sys.executable, "3_gen_nvmain_config.py",
+                   "--freq", str(args.freq), "--queue-size", str(qs),
+                   "--output-dir", str(out_dir)]
+        # M2 (T2 review fix round 1): this is the only in-repo caller of the
+        # generator besides mbmm_master.py, and it used to drop the flag, so a
+        # sweep run alongside a bounding-mode study was silently default-mode.
+        # Note no --manifest-out here: this script writes no run manifest, so
+        # nothing downstream records which mode produced these CSVs.
+        if args.write_pulse_on_path:
+            gen_cmd.append("--write-pulse-on-path")
+        gen_proc = subprocess.run(gen_cmd, cwd=root, capture_output=True, text=True)
         if gen_proc.returncode != 0:
             print(f"    [!] Config generation failed: {gen_proc.stderr[-500:]}")
             continue

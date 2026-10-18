@@ -11,12 +11,20 @@ counts). **Both move DDR5 only** - every ReRAM and PCM figure in this file is un
 but they move every DDR5 latency, power, PDP and ratio, and they reverse the direction of the
 power argument, so every such number below was re-read from the corrected book. Both are recorded
 in the book's Appendix A, "DDR5 Timing and Power Corrections of This Revision", and in Appendix D.
-Regenerated from the 2026-09 revision of
-`documents/MBMM_Book_Typst/Project_Book.typ`, the corrected, compile-verified edition of the Project
-Book that closes out the "3 September" version. This is a full hardfork, not an in-place update: the
-2026-09 revision changed the book's central architectural verdict (the transistor-versus-selector
-leakage gap that the prior edition treated as its deciding fact does not exist as a device effect), so
-almost nothing in the prior context file carries forward unchanged.
+**Updated 2026-09-23 (task E9)** for the short-book plan: the write-pulse bounding run's bracket
+numbers (task T3), the corrected branch-conditional write-path mechanism wording, Section 3.4 (Near
+and Far Memory) and the bit-errors-and-ECC subsection added to `Technical_Report.typ` (task E3), and
+the new `Project_Book.typ` short book (tasks E4-E7). Regenerated from the 2026-09 revision of
+`documents/MBMM_Book_Typst/Technical_Report.typ`, the corrected, compile-verified edition of the
+Project Book that closes out the "3 September" version. This is a full hardfork, not an in-place
+update: the 2026-09 revision changed the book's central architectural verdict (the
+transistor-versus-selector leakage gap that the prior edition treated as its deciding fact does not
+exist as a device effect), so almost nothing in the prior context file carries forward unchanged.
+
+**Repointed 2026-09-23 (task E1):** the long book was renamed `Technical_Report.typ`; it is the
+project's complete technical report and knowledge base. **Updated 2026-09-23 (task E9):** the new,
+short, reader-facing `Project_Book.typ` (tasks E4-E7) is now written, reviewed and part of the
+document set - see Section 7 below.
 
 **Supersedes:** the 2026-08-22 version of this file, now archived byte-identical at
 `archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-09-20.md`. Do not cite that file, or
@@ -111,9 +119,33 @@ the DDR5 timing correction. **Why the projected array is faster is itself model-
 other 30.2 ns is NVMain's default protocol cycle counts at the assumed 800 MHz interface, so roughly
 three quarters of the ReRAM figure is an interface assumption, not a device measurement. The
 *direction* is robust (ReRAM is below DDR5 at all three measured clocks) and the *magnitude* is
-model-dependent. For the same reason the **MLC latencies are lower bounds**: this project's generator
-books NVSim's write latency as tWR and leaves tWP at zero, so the cell write pulse is off the request
-path entirely. This result is bounded by a hard condition: replaying the identical
+model-dependent. **The cell write time is branch-conditional, never simply "off the request path":**
+in default mode it is charged to `tWR`, which reaches the request path only when a write closes its
+row (`WRITE_PRECHARGE`, the last queued request to that row, charges `tWR` to the subarray's next
+activation); a plain `WRITE` that is not the last request to its row charges nothing to the subarray's
+next read or write. `mbmm_master.py --write-pulse-on-path` is the **bounding mode** that puts the pulse
+on every write's own completion instead (`tWP` = the write cycles, `tWR 1`), giving an upper bound
+rather than a lower one, and every Table 2 latency on a write-bearing trace is therefore **a bracket**
+(default value, bounding value), not a single number. Measured on the four projected tracks, full DIMM:
+GCC default -> bounding 41.40 -> 48.31 ns (1T1R SLC), 44.53 -> 65.77 (1T1R MLC), 36.77 -> 47.39 (1S1R
+SLC), 37.87 -> 72.40 (1S1R MLC); the AlexNet OFMAP write burst 353.11 -> 696.61 ns (1T1R SLC), 512.00
+-> 1,649.9 (1T1R MLC), 391.48 -> 916.57 (1S1R SLC), 652.95 -> 2,498.7 (1S1R MLC). **Which mechanism
+produced the bracket differs by trace, and the row-buffer hit share explains why:** on GCC, LBM and
+STREAM, row-closing writes dominate (row-buffer hit share 0.026%, 0.00002% and 0.0% respectively), so
+the measured bracket equals the pure write-completion term (write fraction of requests x the cell
+pulse) to within 1% on every track - a **CPU-trace bracket that is almost entirely the write's own
+completion latency**. On the AlexNet OFMAP write burst, 76.36% of accesses hit an open row in default
+mode, so three quarters of its writes take the branch default mode left uncharged; the measured bracket
+there is **21x to 23x the pure per-write pulse term** (21.1x to 22.8x across the four tracks), because
+subarray blocking, not the write's own completion, dominates. **This bracket is an upper end of the
+write-path cost inside this model, not a prediction of a real device**, and it does not decompose
+row-hit from row-closing writes beyond that aggregate share. **"Below DDR5 on the CPU traces" survives
+the bracket**: in bounding mode all four projected tracks stay below DDR5 on GCC, LBM and STREAM; the
+worst case is 1S1R MLC on GCC at 72.40 ns against DDR5's 83.11 ns, i.e. **0.871x**, still a ReRAM win.
+Power is unchanged to six decimals on GCC/LBM/STREAM and falls 0.9-2.4% on the output map (same
+requests over more time); endurance (`Wear_Max_Writes`) is identical on every trace for all four
+projected tracks, since the flag changes no completed-request count for them. This result is bounded by
+a hard condition: replaying the identical
 traces at published fabricated-chip timings (Micron/Sony's 16 Gb 1T1R [49], SanDisk/Toshiba's 32 Gb
 1S1R [48]) gives 11.9 us and 379 us under GCC, three to four orders of magnitude above the projection,
 and neither part completes the LBM window (18.2% and 1.0%). **The latency advantage belongs to the
@@ -198,6 +230,51 @@ run was never preserved, so it is treated as a representative parallel-read patt
 GPT-2 capture); NVMain's power-down state machine, previously disabled, has been **restored** this
 cycle (it was open in the 2026-08-22 predecessor of this file).
 
+**Finding 7, Far Memory (added 2026-09-23, book Section 3.4): device physics is not the obstacle to a
+far-memory role; the interface, ECC and controller are, and this book cannot demonstrate any of the
+three.** One vocabulary rule governs the whole section and the whole document set: **a media number
+describes the storage element and its array (NVSim's array time carried through an NVMain protocol
+model, no controller, no coding block, no PHY); a device number describes a whole shipped product
+(media plus controller, plus error correction, plus interface, plus, in some designs, a DRAM cache in
+front of it) - the two are never compared as if they were the same measurement, and every latency this
+book reports for ReRAM is a media number.** The measured far-memory window is real and narrow: shipped
+CXL-attached DRAM expanders measure about **214, 239 and 271 ns** idle load-to-use for ASIC-based
+devices and about **394 ns** for an FPGA-based one [84], [86]; local DRAM idle latency (111 to 114 ns
+measured DDR5 on two-socket servers) sits far below that band, so the two are often confused in
+discussion but must not be. **This book's projected media numbers are not comparable to that window,
+in either direction**: the four ReRAM tracks project 36.8 to 44.5 ns under GCC, below the entire window
+with room to spare for a controller and an ECC stack, while the published-silicon counterweights are
+11.9 us and 379 us under GCC, 30x to 1,000x above the window and slower even than the ~6 us tolerance
+of Google's page-fault-based software-defined far memory [98]. **The conditional statement the section
+lands on:** ReRAM could serve as far memory only if a *device* built on it - controller, error
+correction and a DRAM cache in front of it, as in Optane's Memory Mode - landed in the same
+few-hundred-nanosecond class as the measured CXL-attached DRAM devices; no published ReRAM silicon
+does. What the projected media numbers do say is which half of that problem is open: at 36.8 to 44.5 ns
+of media latency under CPU traffic, with 1.24x to 2.47x DDR5's die-level density on the selector track,
+the device physics is not the obstacle - the interface, the error-correction stack and the controller
+are, and that is a different research programme from the one this book ran (Section 4.2 names its
+first two pieces). Table 10 (Section 3.4.5) is the one place in the book where modeled media tracks sit
+beside measured device hardware, every row labelled which kind of number it is; Figure 28 sketches
+density against latency with the measured window shown as a shaded band, and is a sketch of position,
+not a cost model.
+
+**Finding 8, Bit Errors and Error Correction (added 2026-09-23, book Section 3.1.2): a design-point
+answer exists, but no measured 1S1R array rate does.** Neither NVSim nor NVMain models a bit error
+anywhere in this pipeline, so this is a literature result set, kept to three non-conflated categories
+(retention, endurance, read-disturb). **For the 1S1R cross-point track this book models, no measured
+array bit error rate is published at all - the only figure is a channel model** (1024 x 1024, ideal
+selector, 10 ohm per junction): read BER 4.29e-4 (best-positioned cell) to 7.33e-2 (worst), write BER
+3.35e-4 to 1.75e-2 [60], and it must never be read as silicon. **The 1T1R track does have measured
+macros, spanning six orders of magnitude by write scheme**, from about 1.2% raw at low programming
+current up to a raw rate above 1e-3, down to **1T1R macros reporting below 1e-7 after 1e6 cycles with a
+smart-write scheme** [63] - the usable statement is a band, roughly 1e-7 at the best published write
+scheme to 1e-2 under adverse cycling, a write-algorithm and margin decision, not a material property.
+**The design point an NVM main memory actually uses**, and this book's answer to "does the BER rule out
+a memory system": the standard design point in the persistent-memory architecture literature is a raw
+rate of **2e-4 corrected with BCH(2312,2048,22), at about 27% coding overhead** [74] - a main memory
+built on published raw ReRAM error rates is possible, but needs SSD-class rather than DRAM-class
+correction (DRAM's on-die SECDED tolerates only about 1e-6 raw [75]), at roughly that 27% cost in bits.
+
 ### 1.3 Cross-Technology Summary (book Table 7, full-DIMM)
 
 | Technology | GCC latency (ns) | GCC power (W / W per GiB) | Geo-mean PDP (W·ns) | Die density (× DDR5) | Projected lifetime @128 GiB (ideal) | Role |
@@ -229,7 +306,8 @@ it. Source: `results/rev2026-09_primary_csv/processed_bar_chart_metrics.csv`,
   (unchanged in shape from prior revisions; the Gate-Keeper rule still applies: no simulation data is
   accepted without a complete end-to-end pass).
 - **Run provenance, added after the final review (tasks F1/F2):** `mbmm_master.py` writes
-  `results/system/run_manifest.json` (`schema: mbmm_run_manifest/1`) at the start of Stage 4, before
+  `results/system/run_manifest.json` (`schema: mbmm_run_manifest/2`, the `write_pulse_on_path` flag
+  was added) at the start of Stage 4, before
   any simulation, recording the run's own flags; `process_metrics.py` carries the same axes into every
   processed CSV as the **`Run_*` columns** (`Run_Channels`, `Run_Decoder`, `Run_Organization`,
   `Run_Queue_Size`, `Run_Freq_MHz`, `Run_Window_ns`, `Run_DDR5_Model`), so a row can no longer be
@@ -246,6 +324,10 @@ it. Source: `results/rev2026-09_primary_csv/processed_bar_chart_metrics.csv`,
   to `.out` only on success (`.out.failed` otherwise), and first moves a pre-existing output of the
   same name aside to `.out.superseded_<timestamp>`, so a failed re-run can never leave a
   fresh-looking result behind.
+- **Write-pulse-on-path bounding run (task T3):** the NVSim cell write latency normally goes to `tWR`
+  (write recovery) - or, with `mbmm_master.py --write-pulse-on-path`, to `tWP` with `tWR 1`, giving
+  upper-bound rather than lower-bound write completion latencies. The bounding dataset from this flag
+  is frozen at `results/system_rev2026-09_writepulse/`.
 - **Current-mode background-power correction (task F1), and the rule that goes with it:** NVMain 2.0's
   `EnergyModel current` path - which **only the DDR5 configs use** - accumulates each rank's
   `backgroundEnergy` for all its devices but then divides by the device count when converting it to
@@ -301,8 +383,11 @@ it. Source: `results/rev2026-09_primary_csv/processed_bar_chart_metrics.csv`,
 - **Frozen dataset folders (2026-09 revision):** primary run `results/system_rev2026-09_primary/` (120
   stats files) with CSVs in `results/rev2026-09_primary_csv/`; sensitivity runs each in their own
   `results/system_rev2026-09_<axis>/` for axis in {decoder_default, channels1, channels1_ai, ddr5_64b,
-  freq1333, freq2400, queue8, queue128, org1024}; book figures in `results/book_figures_rev2026-09/`;
-  deck charts in `results/slide_graphs_rev2026-09/`. The pre-revision dataset is preserved at
+  freq1333, freq2400, queue8, queue128, org1024}; **the write-pulse bounding run (task T3, added
+  2026-09-22) at `results/system_rev2026-09_writepulse/` (120 stats files, CSVs in its own `_csv/`,
+  `run_manifest.json`) - the source of every bracket number in Findings 1 and the withdrawn-wordings
+  entry above**; book figures in `results/book_figures_rev2026-09/`; deck charts in
+  `results/slide_graphs_rev2026-09/`. The pre-revision dataset is preserved at
   `results/archive_2026-09_pre_revision/`.
 - **MLC analytical model:** NVSim's native MLC logic FPEs in `Mat.cpp`'s ISPV sensing; MLC metrics are
   derived from the SLC baseline via four multipliers, both measured on the same EMBER macro across two
@@ -321,13 +406,18 @@ it. Source: `results/rev2026-09_primary_csv/processed_bar_chart_metrics.csv`,
 - **Latency (ReRAM below DDR5 on CPU traces):** holds at NVSim-projected device timings **only**. Must
   always be read alongside the published-silicon rows (11.9 us / 379 us under GCC, completing 18%/1% of
   LBM) and the write-dominated AlexNet OFMAP burst (DDR5 wins, 234.3 vs. 353.1-652.9 ns). Never state
-  the latency win without one of these two counterweights attached.
+  the latency win without one of these two counterweights attached. **It also survives the write-pulse
+  bounding run**: in bounding mode all four projected tracks stay below DDR5 on GCC, LBM and STREAM; the
+  worst case is 1S1R MLC on GCC at 72.40 ns against DDR5's 83.11 ns (0.871x), still a win.
 - **Latency magnitude is an interface assumption, not a device result:** only tRCD + tCAS come from
   NVSim (11.25 ns of the 41.40 ns 1T1R SLC GCC average); the remaining 30.2 ns is NVMain's default
   protocol cycle counts at the assumed 800 MHz clock, which has no ReRAM citation behind it. State the
-  direction as robust and the magnitude as model-dependent. The same mapping puts the cell write pulse
-  off the request path, so **MLC latencies are lower bounds** and MLC's near-parity with SLC is a
-  consequence of this project's generator, never a device finding.
+  direction as robust and the magnitude as model-dependent. **The cell write time is branch-conditional**
+  (default mode charges it to `tWR`, which reaches the request path only when a write closes its row -
+  never state this as the pulse being simply "off the request path"), so **MLC latencies are lower
+  bounds** and MLC's near-parity with SLC is a consequence of this project's generator, never a device
+  finding. See Section 1.2 Finding 1 for the measured bracket (default value, bounding value) on all
+  four projected tracks.
 - **Power per GiB (12.7-17.4x DDR5 for SLC, 6.4-8.7x for MLC):** an **upper bound**, not a settled gap.
   DDR5's number carries a real power-down credit; ReRAM's does not (disclosed no-savings placeholder).
   Break-even needs **94.3%** gating at 22nm, which sits *inside* the 94-98% idleness the cited
@@ -401,11 +491,17 @@ None should be used again, even as a paraphrase, without the correction attached
 - **"Break-even needs 98.2% of the static component gated."** Retired with the same correction: it is
   **94.3%** at 22nm (80.8% at a 12nm-class port), which lands *inside* the cited idleness band instead
   of above it. Any sentence built on 98.2% has the direction of the power argument backwards.
-- **"MLC is barely slower than SLC"** stated as a device finding. Wrong as a device claim: it is a
-  consequence of this project's own configuration generator, which books NVSim's write latency as tWR
-  and leaves tWP at zero, so the cell write pulse never reaches request latency. The MLC latencies are
-  **lower bounds**; with the write pulse on the request path a 1T1R MLC write would cost about 63 ns
-  instead of 13.75. The MLC write penalty surfaces as endurance and energy per write instead.
+- **"MLC is barely slower than SLC"** stated as a device finding, and **"the cell write pulse is not on
+  the request path at all"** as its mechanism. Both wrong. The mechanism is **branch-conditional**: in
+  default mode the write time is charged to `tWR`, which reaches the request path only when a write
+  closes its row (`WRITE_PRECHARGE`); a plain `WRITE` that is not the row's last queued request charges
+  nothing to the subarray's next read or write. The MLC latencies in Table 2 are **lower bounds**, and
+  the write-pulse bounding run (`--write-pulse-on-path`, `results/system_rev2026-09_writepulse/`)
+  measures the upper end directly rather than predicting it: the MLC-to-SLC latency ratio on GCC rises
+  from 1.076x (1T1R) / 1.030x (1S1R) in default mode to 1.362x / 1.528x in bounding mode, and on the
+  AlexNet OFMAP write burst from 1.450x / 1.668x to 2.368x / 2.726x. Corrected: MLC costs up to 1.53x
+  SLC on CPU traffic and up to 2.73x on a write burst - an upper end from a bounding run, not a
+  prediction. The MLC write penalty also surfaces as endurance and energy per write.
 - **"A per-module overhead moves break-even in ReRAM's favour."** Wrong, and it inverts the argument.
   A fixed overhead added to both sides *compresses the ungated per-GiB ratio* (a ratio of totals,
   falling toward 2x) but *raises the gating fraction parity requires* - 97.9% at 0.5 W, no parity at
@@ -508,12 +604,27 @@ starving the power-down entry condition; not yet root-caused to full confidence)
 
 ## 7. Where Things Live
 
-- **Book (source of truth):** `documents/MBMM_Book_Typst/Project_Book.typ` (105 pages, compiles clean).
+- **Book (source of truth):** `documents/MBMM_Book_Typst/Technical_Report.typ` (122 pages, compiles
+  clean; the complete technical report and knowledge base, 100 references).
   Key sections: Abstract; 1 Introduction; 2 Infrastructure & Methodology; 3.1.1-3.1.6 latency/power/PDP
-  /endurance/robustness/fidelity-audit; 3.2 scaling; 3.3 global viability; 4 Conclusion & Future Work;
-  Appendix A (simulation parameters and literature grounding); Appendix B (pipeline CLI); Appendix C
-  (reproducibility); Appendix D (what changed since 3 September, the only place old headline values are
-  tabulated).
+  /endurance/robustness/fidelity-audit (3.1.1 also holds the write-pulse bounding-run subsection and
+  Table 9; 3.1.2 also holds the "Bit errors and error correction" subsection); 3.2 scaling; 3.3 global
+  viability; **3.4 Near and Far Memory (added 2026-09-23: 5 subsections, Table 10, Figure 28)**; 4
+  Conclusion & Future Work; Appendix A (simulation parameters and literature grounding); Appendix B
+  (pipeline CLI); Appendix C (reproducibility); Appendix D (what changed since 3 September, the only
+  place old headline values are tabulated).
+- **Short, reader-facing book (added 2026-09-23):** `documents/MBMM_Book_Typst/Project_Book.typ` (26
+  printed pages / 25 sheets, Chapters 1-6, Figures 1-6, Tables 1-9, 48 references - its own, separate
+  numbering from the technical report's). Reviewed with 336 numeric claims traced to source, zero
+  mismatches. Uses the same media-versus-device labelling and write-pulse-bracket conventions as this
+  file (see Findings 1, 7 above). Start here for a new reader; come to `Technical_Report.typ` for full
+  depth, Section 3.4 and the bit-errors subsection, neither of which the short book carries.
+- **Outside-reviewer research note (added 2026-09-23):**
+  `documents/MBMM_Book_Typst/research_notes/reviewer_notes_golander_2026-09.md` - how an outside
+  reviewer's (Dr. Amit Golander's) informal system-level suggestions (near versus far memory,
+  media-versus-device honesty, the BER question, MLC honesty) were checked against primary sources
+  before being allowed to shape Section 3.4 and the bit-errors subsection; his direction held up, his
+  specific recalled numbers mostly did not and appear nowhere in either book.
 - **Revision tracker:** `documents/MBMM_Book_Typst/Revision_Workflow_2026-09.md` (task list plus dated
   session log; source for the operational facts, pipeline flags and folder names in Section 2 above).
 - **Orchestration:** `mbmm_master.py` (7-stage ETL, the Gate-Keeper).
@@ -550,7 +661,7 @@ starving the power-down entry condition; not yet root-caused to full confidence)
 
 ## 8. Operating Rules for AI Assistants on This Project (carried forward, updated where facts changed)
 
-- **Every number cited about this project's results must trace to `Project_Book.typ` (the 2026-09
+- **Every number cited about this project's results must trace to `Technical_Report.typ` (the 2026-09
   revision) or to a file it cites** (a `results/rev2026-09_*` CSV, `results/system_rev2026-09_*` stats,
   a `.sidecar.json`), never to memory or to a prior version of this context file.
 - **Projected endurance figures are projections, never "measured".** Say "projected lifetime" or
@@ -560,6 +671,11 @@ starving the power-down entry condition; not yet root-caused to full confidence)
   write-dominated AlexNet OFMAP trace) attached.
 - **Never cite the withdrawn wordings of Section 4** above, even loosely paraphrased, without their
   correction.
+- **Media versus device, always labelled, never blended:** a *media* number describes the storage
+  element and its array (this project's own simulated NVSim/NVMain output - no controller, no coding
+  block, no PHY); a *device* number describes a whole shipped product, measured (Optane, CXL
+  expanders, DDR5 servers). The two are never compared as if they were the same measurement; every
+  latency this project reports for ReRAM is a media number (Section 1.2 Finding 7).
 - **`mbmm_master.py` remains the Gate-Keeper**: no Python modification affecting simulation output is
   considered verified until run through it (per `/home/yuvalk/MBMM/CLAUDE.md` guardrail 2).
 - **SPEC2017 quarantine is back in full force** as of 2026-09-20: do not read, list, search or modify
@@ -599,6 +715,21 @@ downstream documents into line with the corrected book: F3a the book's own depen
 (2026-09-21) the one-pager `Shahar_Review_Evidence.typ`, the draft `Note_to_Shahar_2026-09.md` and
 this context file.
 
+**The short-book plan (2026-09-22/23)** added two things this file's earlier hardfork did not carry:
+a write-pulse bounding run (task T3, `--write-pulse-on-path`, `results/system_rev2026-09_writepulse/`)
+measuring the upper end of the write-path cost directly instead of leaving it a stated-but-unmeasured
+lower bound, with its bracket findings folded into Section 1.2 Finding 1 and the withdrawn-wordings
+list above; and a new short, reader-facing `Project_Book.typ` (task E4-E7, 24 printed pages, reviewed
+with 336 numeric claims traced) built from the corrected `Technical_Report.typ`, which itself grew by
+about 900 lines to 122 pages (task E3: Section 3.4 Near and Far Memory, the bit-errors-and-ECC
+subsection, 46 new references [55]-[100]). An outside reviewer's (Dr. Amit Golander's) informal
+system-level suggestions were checked against primary sources first and, where they held up, shaped
+Section 3.4 and the bit-errors subsection; the check is recorded in
+`research_notes/reviewer_notes_golander_2026-09.md`. This file, the document-set guides
+(`README.md`, `Reading_Guide.md`, `Reference_Guide.md`) and one stale value in
+`Technical_Report.typ` (a rounding slip at the "2.4 to 6.5x" endurance-ratio sentence, corrected to
+"2.3 to 6.5x" against `results/endurance_table.csv`) were updated to match (task E9, 2026-09-23).
+
 Earlier session history (Sessions 1-26, the 2026-07-22 fidelity audit, the
 2026-08-16/08-22 bibliography-verification cycles that produced the *previous* hardfork of this file)
 is preserved in `archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-08-16.md` and
@@ -608,7 +739,7 @@ those sessions established about the book's numbers.
 
 ---
 
-*Document regenerated via a hardfork task (T6.4) from: `documents/MBMM_Book_Typst/Project_Book.typ`
+*Document regenerated via a hardfork task (T6.4) from: `documents/MBMM_Book_Typst/Technical_Report.typ`
 (the 2026-09, compile-verified, corrected revision) and
 `documents/MBMM_Book_Typst/Revision_Workflow_2026-09.md` (operational facts: pipeline flags, dataset
 folders, tool names, the mcf parking note). Cross-referenced against the immediately prior version of

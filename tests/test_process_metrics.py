@@ -786,3 +786,82 @@ def test_f1_current_mode_file_with_unresolvable_config_is_a_reported_failure(
     assert raw == []
     assert [name for name, _ in failures] == [bad.name]
     assert "never_written.config" in failures[0][1]
+
+
+# ---------------------------------------------------------------------------
+# T2: the Run_Write_Pulse_On_Path provenance column
+#
+# A default-mode run and a --write-pulse-on-path bounding-mode run differ in
+# nothing a stats filename shows, so this column is the only thing inside a CSV
+# that tells the two apart.
+# ---------------------------------------------------------------------------
+
+_T2_COLUMN = "Run_Write_Pulse_On_Path"
+
+
+def _t2_manifest(tmp_path, **flag_overrides):
+    import json
+    flags = {"channels": 2, "decoder": "StartGap", "organization": 2048,
+             "queue_size": 32, "freq_mhz": 800, "window_ns": 250000000,
+             "ddr5_model": "DDR5_4800_DRAM_subchannel"}
+    flags.update(flag_overrides)
+    (tmp_path / pm.RUN_MANIFEST_NAME).write_text(
+        json.dumps({"date": "2026-09-22T00:00:00", "flags": flags}))
+    return pm.run_provenance_fields(pm.load_run_manifest(tmp_path))
+
+
+def test_write_pulse_column_exists_and_is_last():
+    assert _T2_COLUMN in pm.RUN_PROVENANCE_COLUMN_NAMES
+    assert pm.RUN_PROVENANCE_COLUMN_NAMES[-1] == _T2_COLUMN
+    assert dict(pm.RUN_PROVENANCE_COLUMNS)[_T2_COLUMN] == "write_pulse_on_path"
+
+
+def test_write_pulse_column_reads_true_when_the_manifest_says_so(tmp_path):
+    fields = _t2_manifest(tmp_path, write_pulse_on_path=True)
+    assert fields[_T2_COLUMN] == "true"
+
+
+def test_write_pulse_column_reads_false_when_the_manifest_says_so(tmp_path):
+    """False is a real value, not a missing one: a default-mode run says so."""
+    fields = _t2_manifest(tmp_path, write_pulse_on_path=False)
+    assert fields[_T2_COLUMN] == "false"
+
+
+def test_write_pulse_column_is_unknown_without_a_manifest(tmp_path):
+    """The ten frozen 2026-09 datasets have no manifest and must not get one
+    invented for them."""
+    fields = pm.run_provenance_fields(pm.load_run_manifest(tmp_path))
+    assert fields[_T2_COLUMN] == pm.RUN_PROVENANCE_UNKNOWN
+    assert pm.unknown_run_provenance_fields()[_T2_COLUMN] == pm.RUN_PROVENANCE_UNKNOWN
+
+
+def test_write_pulse_column_is_unknown_when_the_manifest_predates_the_flag(tmp_path):
+    """A manifest from before T2 carries no write_pulse_on_path key at all."""
+    fields = _t2_manifest(tmp_path)
+    assert fields[_T2_COLUMN] == pm.RUN_PROVENANCE_UNKNOWN
+    # the other columns are unaffected
+    assert fields["Run_Channels"] == 2
+
+
+def test_write_pulse_column_is_written_to_the_csvs(tmp_path, monkeypatch):
+    monkeypatch.setattr(pm, "OUTPUT_DIR", str(tmp_path))
+    row = {
+        'Technology': '1T1R_SLC', 'Architecture': 'full_dimm', 'Benchmark': 'gpt2_ifmap',
+        'Total_Execution_Cycles': 1.0, 'HW_Latency_Cycles': 1.0, 'Queue_Latency_Cycles': 1.0,
+        'Latency_ns': 1.0, 'HW_Latency_ns': 1.0, 'Queue_Latency_ns': 1.0,
+        'Power': 1.0, 'Dynamic_Power': 1.0, 'Static_Power': 1.0, 'Refresh_Power': 1.0,
+        'Unattributed_Power': 1.0, 'PDP': 1.0,
+        'Area_Density_Ratio': 1.0,
+        'E2E_Latency_ns': 2187.5, 'Delivered_BW_MBps': 9.6,
+        'Wear_Max_Writes': 50, 'Wear_HotSpot_Factor': 5.357142857142857,
+        'Completed_Requests': 150,
+        'Background_Power_Device_Factor': 1,
+        **{name: pm.RUN_PROVENANCE_UNKNOWN for name in pm.RUN_PROVENANCE_COLUMN_NAMES},
+        _T2_COLUMN: "true",
+    }
+    import pandas as pd
+    pm.save_bar_chart_metrics(pd.DataFrame([row]))
+    lines = (tmp_path / "processed_bar_chart_metrics.csv").read_text().splitlines()
+    header, values = lines[0].split(','), lines[1].split(',')
+    assert header[-1] == _T2_COLUMN
+    assert values[-1] == "true"

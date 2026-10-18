@@ -191,3 +191,111 @@ def test_reram_factory_bases_1024_do_not_collide_with_2048_key_prefixes():
 def test_should_duplicate_stage1_cfg_only_at_2048():
     assert master.should_duplicate_stage1_cfg(2048) is True
     assert master.should_duplicate_stage1_cfg(1024) is False
+
+
+# ---------------------------------------------------------------------------
+# T2: --write-pulse-on-path reaches the generator command and the run manifest.
+#
+# These drive mbmm_master.main() against a throwaway project root in tmp_path
+# with run_subprocess stubbed, reusing the harness the F2 hardening tests
+# already built for exactly this (no live file is read or written, and no
+# simulator runs).
+# ---------------------------------------------------------------------------
+
+import json as _json
+import sys as _sys
+
+from test_f2_pipeline_hardening import _fake_root, _Recorder, _run_master
+
+
+def _gen_config_command(recorder):
+    """The one 3_gen_nvmain_config.py command the stubbed run recorded."""
+    calls = [c for c in recorder.calls
+             if any("3_gen_nvmain_config.py" in str(x) for x in c)]
+    assert len(calls) == 1, calls
+    return [str(x) for x in calls[0]]
+
+
+def _full_run(tmp_path, monkeypatch, argv_extra):
+    root = _fake_root(tmp_path)
+    models = [f"{base}_{arch}"
+              for base in master.reram_factory_bases(2048)
+              for arch in ("single", "8chip", "16chip", "full_dimm")]
+    rec = _Recorder(stage3_models=models, root=root)
+    rc = _run_master(monkeypatch, root, rec, argv_extra=argv_extra)
+    manifest_path = root / "results" / "system" / "run_manifest.json"
+    return rc, rec, _json.loads(manifest_path.read_text())
+
+
+def test_write_pulse_flag_reaches_the_generator_and_the_manifest(tmp_path, monkeypatch):
+    rc, rec, manifest = _full_run(tmp_path, monkeypatch, ("--write-pulse-on-path",))
+    assert rc == 0
+    assert "--write-pulse-on-path" in _gen_config_command(rec)
+    assert manifest["flags"]["write_pulse_on_path"] is True
+
+
+def test_without_the_flag_the_generator_and_manifest_say_default_mode(tmp_path, monkeypatch):
+    rc, rec, manifest = _full_run(tmp_path, monkeypatch, ())
+    assert rc == 0
+    assert "--write-pulse-on-path" not in _gen_config_command(rec)
+    assert manifest["flags"]["write_pulse_on_path"] is False
+
+
+def test_write_pulse_flag_does_not_reach_any_other_stage(tmp_path, monkeypatch):
+    """Like --queue-size, it is a Stage 3 generator flag only: no other
+    sub-script may be handed it (the DDR5 and PCM configs are static files)."""
+    _, rec, _ = _full_run(tmp_path, monkeypatch, ("--write-pulse-on-path",))
+    for call in rec.calls:
+        joined = " ".join(str(x) for x in call)
+        if "3_gen_nvmain_config.py" in joined:
+            continue
+        assert "--write-pulse-on-path" not in joined, call
+
+
+def test_write_pulse_flag_is_off_by_default_in_the_parser(monkeypatch):
+    monkeypatch.setattr(_sys, "argv", ["mbmm_master.py", "--all"])
+    assert master.setup_args().write_pulse_on_path is False
+    monkeypatch.setattr(_sys, "argv",
+                        ["mbmm_master.py", "--all", "--write-pulse-on-path"])
+    assert master.setup_args().write_pulse_on_path is True
+
+
+def test_readme_and_sims_texts_mention_the_flag(capsys):
+    master.print_readme()
+    assert "--write-pulse-on-path" in capsys.readouterr().out
+    master.print_simulator_info()
+    assert "--write-pulse-on-path" in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# T2 review fix round 1, M2: sweep_queue_size.py is the only in-repo caller of
+# the generator besides the master, and it used to drop the flag, so a sweep run
+# alongside a bounding-mode study was silently default-mode.
+# ---------------------------------------------------------------------------
+
+def _sweep_module():
+    import importlib.util as _ilu
+    spec = _ilu.spec_from_file_location(
+        "sweep_queue_size_for_test",
+        pathlib.Path(__file__).resolve().parents[1] / "sweep_queue_size.py")
+    mod = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_sweep_queue_size_parser_has_the_flag_and_defaults_off(monkeypatch):
+    sweep = _sweep_module()
+    monkeypatch.setattr(_sys, "argv", ["sweep_queue_size.py"])
+    assert sweep.setup_args().write_pulse_on_path is False
+    monkeypatch.setattr(_sys, "argv", ["sweep_queue_size.py", "--write-pulse-on-path"])
+    assert sweep.setup_args().write_pulse_on_path is True
+
+
+def test_sweep_queue_size_forwards_the_flag_to_the_generator():
+    """The generator command is built inline in run_sweep(); pin the passthrough
+    on the source so the two branches cannot be dropped again silently."""
+    src = (pathlib.Path(__file__).resolve().parents[1] / "sweep_queue_size.py").read_text()
+    assert 'gen_cmd.append("--write-pulse-on-path")' in src
+    assert "if args.write_pulse_on_path:" in src
+    # and the command really is the one handed to subprocess.run
+    assert "subprocess.run(gen_cmd" in src

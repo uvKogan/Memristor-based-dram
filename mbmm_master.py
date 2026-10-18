@@ -533,7 +533,11 @@ def write_run_manifest(manifest_path, args, root, models_to_simulate, config_dir
 
     hw_metrics_path = root / "results" / "hardware_metrics.json"
     manifest = {
-        "schema": "mbmm_run_manifest/1",
+        # Bumped to /2 by T2 (review fix round 1, M3): `flags` gained
+        # `write_pulse_on_path`, so the schema string is what separates "this run
+        # predates the flag" from "this run's manifest is incomplete" when
+        # process_metrics.py writes Run_Write_Pulse_On_Path as `unknown`.
+        "schema": "mbmm_run_manifest/2",
         "command_line": [sys.executable] + sys.argv,
         "date": datetime.now().astimezone().isoformat(),
         "project_root": str(root),
@@ -553,6 +557,7 @@ def write_run_manifest(manifest_path, args, root, models_to_simulate, config_dir
             "organization": args.organization,
             "queue_size": args.queue_size,
             "freq_mhz": args.freq,
+            "write_pulse_on_path": bool(args.write_pulse_on_path),
         },
         "traces": [trace_sidecar_info(root, t) for t in args.trace],
         # F2 fix round 1 (review Important-1): the stats files THIS run is
@@ -607,6 +612,18 @@ PROJECT STATUS (2026-09 revision):
 - [DONE] Split-view visualization for Latency and Power comparison.
 - [DONE] Every stage fails loudly: stages 1 to 3 abort the run before Stage 4, and
         Stage 4 refuses to simulate a config this run's Stage 3 did not generate.
+- [NEW]  --write-pulse-on-path: a bounding mode that also charges the NVSim cell
+        write latency to the write's own completion (generated ReRAM/silicon
+        configs get tWP = the write cycles and tWR 1, instead of tWR = the write
+        cycles and no tWP). In default mode that time is write recovery and
+        reaches the request path only when a write closes its row; it never
+        delays the write's own completion. So bounding mode puts the pulse on
+        every write's completion, and for row-hit writes also on the next read
+        and write to that subarray, while close-page subarray occupancy moves by
+        one cycle. It is an upper end of the write-path cost, not a prediction
+        (the timers are per subarray, not per bank; see --sims). Off by
+        default, and the default is byte-for-byte unchanged; recorded in
+        run_manifest.json and in Run_Write_Pulse_On_Path.
 
 PIPELINE ARCHITECTURE:
 Stage 1: Hardware Simulation (1_run_nvsim_hardware.py) - Skipped for MLC/DRAM.
@@ -653,7 +670,40 @@ NVMAIN (System-Level):
 - Config sources: the ReRAM and T2.8 silicon configs are GENERATED per run by
   3_gen_nvmain_config.py; the DDR5 and PCM configs are static files (configs/*.config
   and simulators/nvmain/Config/pcm_microsoft_2009.config), so generator flags such as
-  --queue-size do not reach them.
+  --queue-size and --write-pulse-on-path do not reach them.
+- Where the cell write time is charged, and which requests feel it. By default it
+  is write recovery (tWR), and it reaches the request path ONLY WHEN A WRITE
+  CLOSES ITS ROW. Note the scope of every timer below: nextActivate,
+  nextPrecharge, nextRead and nextWrite are SubArray members (SubArray.h:137-140)
+  and a bank holds ROWS/MATHeight subarrays (DDR3Bank.cpp:129), one for the SLC
+  full DIMM and two for MLC, so a write blocks its own SUBARRAY, not the bank.
+  Which branch a write takes is decided by MemoryController::IsLastRequest
+  (MemoryController.cpp:1114-1144): under ClosePage 1 it returns false as soon as
+  another queued request hits the same rank/bank/row/subarray.
+    * Last queued request to its row -> FLAG_LAST_REQUEST -> WRITE_PRECHARGE
+      (MakeImplicitPrechargeRequest :1055-1063, called at :1596 and :1658 under
+      the guards at :1594 and :1653). NVMain adds tWR to the subarray's next
+      activation (SubArray.cpp:625-629) and MAXes nextPrecharge/nextRead/nextWrite
+      against it (:631-633), so the next read or write to that subarray waits
+      for it.
+    * Another queued request to the same open row -> plain WRITE branch
+      (SubArray.cpp:648-660). tWR reaches only nextPrecharge (:648-651); nextRead
+      (:653-656) and nextWrite (:658-660) carry writeTimer but no tWR, so nothing
+      beyond the burst and the write-to-read turnaround (tWTR, NVMain's default
+      of 5 because these configs never emit the key, identical in both modes) is
+      charged.
+  In NEITHER branch does the cell write time delay the write's own completion
+  event (writeEventTime :671-672 carries writeTimer alone).
+  --write-pulse-on-path moves the same cycle count to tWP (WriteCellData returns
+  p->tWP, :991, which becomes writeTimer at :581) and sets tWR to 1: every
+  write's completion now carries the pulse, in the plain WRITE branch nextRead
+  and nextWrite on that subarray carry it too, and in the WRITE_PRECHARGE branch
+  the subarray's next activation is unchanged to within one cycle.
+  So the delta between the modes is the write's own completion latency with the
+  pulse excluded versus included, PLUS, for open-row writes, the subarray time
+  that default mode did not charge. It is an UPPER END of the write-path cost,
+  not a prediction, and the mix of the two effects in any run is set by the
+  trace's row locality and the queue depth.
 - Two upstream caveats a reader of raw stats must know: DDR5 (EnergyModel current)
   prints rank backgroundPower PER DEVICE, corrected in post-processing by
   process_metrics.py; never quote a current-mode rank's raw backgroundPower or
@@ -733,6 +783,28 @@ def setup_args():
                              "Stage 1 NVSim and all four Stage 4 ReRAM architectures/tracks "
                              "(SLC and MLC, 1T1R and 1S1R); DDR5 and PCM are unaffected. "
                              "Behavior at the default is byte-for-byte unchanged.")
+    parser.add_argument("--write-pulse-on-path", action="store_true",
+                        help="Bounding mode: passthrough to 3_gen_nvmain_config.py "
+                             "--write-pulse-on-path, which charges the NVSim cell write "
+                             "latency to the write's own completion as well (tWP = the write "
+                             "cycles, tWR 1) instead of to write recovery alone (tWR = the "
+                             "write cycles, no tWP). In default mode that recovery time "
+                             "reaches the request path only when a write closes its row (a "
+                             "close-page WRITE_PRECHARGE charges the subarray's next "
+                             "activation; a write to a still-wanted open row charges "
+                             "nextPrecharge alone, so nothing beyond the burst and the tWTR "
+                             "turnaround, which is identical in both modes), and it never "
+                             "delays the write's own completion. So bounding mode puts the "
+                             "pulse on every write's completion, and for row-hit writes also "
+                             "on the next read and write to that subarray; it is an upper end "
+                             "of the write-path cost, not a prediction (see --sims for the two "
+                             "branches and for why these timers are per subarray). Reaches "
+                             "the GENERATED ReRAM/silicon "
+                             "configs only, like --queue-size: the DDR5 and PCM configs are "
+                             "static tracked files. Behavior at the default (off) is "
+                             "byte-for-byte unchanged; the flag is recorded in "
+                             "results/system/run_manifest.json and in the "
+                             "Run_Write_Pulse_On_Path column of the processed CSVs.")
     return parser.parse_args()
 
 # Minor-3 (final review 2026-09): the module-level run_pipeline() helper that
@@ -868,6 +940,8 @@ def main():
             ]
             if args.silicon:
                 gen_config_cmd.append("--silicon")
+            if args.write_pulse_on_path:
+                gen_config_cmd.append("--write-pulse-on-path")
             if not run_subprocess(gen_config_cmd, "Architecture Factory"):
                 return abort_before_stage4(
                     "Stage 3 (architecture factory) failed: the NVMain configs in "

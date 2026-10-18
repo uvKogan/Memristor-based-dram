@@ -40,7 +40,7 @@ them as tables rather than figures:
   - Density projection (Table 6): projected = measured 22nm
     Area_Density_Ratio (processed_hero_metrics.csv) x (22/F)^2, with the
     2x/4x deck-stacking multipliers applied only to the selector (1S1R)
-    rows, exactly as derived in Project_Book.typ Section 3.3.
+    rows, exactly as derived in Technical_Report.typ Section 3.3.
 
 This script only reads existing processed outputs (or applies the book's
 own documented closed-form projection to them) - it does not run NVSim/
@@ -90,17 +90,17 @@ OUTPUT_DIR = "/home/yuvalk/MBMM/results/slide_graphs_rev2026-09"
 # footnote is derived from the frozen data at render time.
 CITED_CONSTANTS = {
     # Zahurak et al., "Process Integration of a 27nm, 16Gb Cu ReRAM", IEDM
-    # 2014, Table 1. Project_Book.typ [49]; the source of the 1T1R SILICON
+    # 2014, Table 1. Technical_Report.typ [49]; the source of the 1T1R SILICON
     # configuration's timings.
     'micron_1t1r_read_us': 2.3,
     'micron_1t1r_write_us': 11.7,
     # Liu et al., "A 130.7-mm2 2-Layer 32-Gb ReRAM Memory Device in 24-nm
-    # Technology", IEEE JSSC 2014, Table II. Project_Book.typ [48]; the source
+    # Technology", IEEE JSSC 2014, Table II. Technical_Report.typ [48]; the source
     # of the 1S1R SILICON configuration's timings.
     'sandisk_1s1r_read_us': 40.0,
     'sandisk_1s1r_write_us': 230.0,
     # Fackenthal et al., ISSCC 2014, the 6F2 recessed-channel 16 Gb part.
-    # Project_Book.typ [33] and Section 3.3: substituting its cell area would
+    # Technical_Report.typ [33] and Section 3.3: substituting its cell area would
     # lift the 1T1R density ratio to roughly this figure.
     'recessed_channel_1t1r_density_x': 1.2,
 }
@@ -485,7 +485,7 @@ def breakeven_gating_fraction(df, benchmark='gcc_spec2017',
                               reram='1T1R_SLC', baseline='DDR5_4800'):
     """The fraction of the ReRAM module's static component that would have to
     be gated for its power per gigabyte to equal the DDR5 baseline's. This is
-    the same arithmetic Project_Book.typ Section 3.1.2 performs, done here on
+    the same arithmetic Technical_Report.typ Section 3.1.2 performs, done here on
     the data rather than transcribed, so the footnote cannot drift."""
     r_total = value(df, benchmark, reram, 'Power')
     r_static = value(df, benchmark, reram, 'Static_Power')
@@ -534,7 +534,7 @@ def _endurance_write_rates(technology='1T1R_SLC', arch='full_dimm'):
     benchmark's own stats file: totalWriteRequests divided by that same
     file's own elapsed time (its 'Exiting at cycle' line). The three AI
     traces are microsecond bursts whose rate depends on the denominator
-    chosen, so they are not offered here (Project_Book.typ Table 5 note)."""
+    chosen, so they are not offered here (Technical_Report.typ Table 5 note)."""
     benchmarks = {'GCC': 'gcc_spec2017', 'LBM': 'lbm_spec2017', 'STREAM': 'stream'}
     rates = {}
     for label, benchmark in benchmarks.items():
@@ -1105,7 +1105,7 @@ def slide_density(hero_df):
 # ============================================================================
 
 def slide_density_projection(hero_df):
-    """Reproduces Project_Book.typ Table 6: measured 22nm Area_Density_Ratio
+    """Reproduces Technical_Report.typ Table 6: measured 22nm Area_Density_Ratio
     x (22/F)^2, deck-stack multipliers (x2, x4) applied only to 1S1R."""
     techs = ['1S1R_SLC', '1S1R_MLC', '1T1R_SLC', '1T1R_MLC']
     measured = {}
@@ -1174,7 +1174,7 @@ def slide_endurance_projection(endurance_df, write_rates, capacity_gib=64, endur
     fig, ax = plt.subplots(figsize=(13, 7.5))
 
     # Sub-year lifetimes are shown in hours, on the Gregorian mean year
-    # (365.2425 days) that Project_Book.typ Table 5 converts with: that is
+    # (365.2425 days) that Technical_Report.typ Table 5 converts with: that is
     # what makes 7.7 h, 23.2 h and 69.5 h come out exactly as the book
     # prints them.
     hours_per_year = 365.2425 * 24

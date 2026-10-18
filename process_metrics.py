@@ -94,7 +94,16 @@ RUN_PROVENANCE_COLUMNS = (
     ("Run_Freq_MHz", "freq_mhz"),
     ("Run_Window_ns", "window_ns"),
     ("Run_DDR5_Model", "ddr5_model"),
+    # T2: the --write-pulse-on-path bounding mode. A default-mode run and a
+    # bounding-mode run differ in nothing a stats filename shows, so without
+    # this column the two cannot be told apart inside a CSV.
+    ("Run_Write_Pulse_On_Path", "write_pulse_on_path"),
 )
+
+# Columns whose manifest flag is a JSON boolean. Written lowercase ("true" /
+# "false") so a CSV never mixes Python's True/False repr with the manifest's own
+# JSON spelling; "unknown" still means "no manifest said".
+RUN_PROVENANCE_BOOLEAN_COLUMNS = frozenset({"Run_Write_Pulse_On_Path"})
 
 # What a column holds when no manifest is present. The ten frozen 2026-09
 # datasets predate the manifest and must NOT have one fabricated for them.
@@ -150,6 +159,10 @@ def run_provenance_fields(manifest):
         value = flags.get(flag) if manifest else None
         if value is None:
             value = RUN_PROVENANCE_UNKNOWN
+        elif column in RUN_PROVENANCE_BOOLEAN_COLUMNS:
+            # A boolean flag's False is a real value, not a missing one, so this
+            # runs only after the `is None` test above.
+            value = "true" if value else "false"
         fields[column] = value
     return fields
 

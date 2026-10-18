@@ -3,7 +3,7 @@
 **Status: approved, ready to execute.** Not a Tier-3-style discussion item — the
 Lead has decided this goes in. Per `Review_Fixes_Tracker.md`'s ground rules: claim
 this item (Owner + `in-progress`) before editing, run the compile gate after, and
-append a Change Log entry when done. No edits made to `Project_Book.typ` from this
+append a Change Log entry when done. No edits made to `Technical_Report.typ` from this
 file or this session.
 
 ## What to add
@@ -36,7 +36,7 @@ itself, unless the surrounding style calls for an attribution.
 
 ## After adding
 
-- Run the compile gate: `typst compile --font-path fonts Project_Book.typ <out>.pdf` must exit 0.
+- Run the compile gate: `typst compile --font-path fonts Technical_Report.typ <out>.pdf` must exit 0.
 - No new citation is introduced, so `Reference_Guide.md` shouldn't need a count
   update — but double-check nothing in `Reading_Guide.md`'s §4 coverage notes
   needs a corresponding mention.

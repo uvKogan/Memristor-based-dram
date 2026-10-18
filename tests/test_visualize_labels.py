@@ -240,7 +240,7 @@ def test_endurance_write_rates_read_from_stats_files(synthetic_stats_dir, monkey
     # T6.2: only the three SUSTAINED gem5 workloads. The AlexNet OFMAP row was
     # dropped because its "rate" depends entirely on the denominator chosen
     # (a 4.5 us burst against either its own drain time or the 250 ms window),
-    # which Project_Book.typ Table 5 flags as burst-derived and not a
+    # which Technical_Report.typ Table 5 flags as burst-derived and not a
     # sustained requirement.
     assert set(rates) == {'GCC', 'LBM', 'STREAM'}
     # 1,000,000 writes / (750,000,000 cycles * 1/3000 MHz-derived ns * 1e-9 s) = 4,000,000 writes/s
