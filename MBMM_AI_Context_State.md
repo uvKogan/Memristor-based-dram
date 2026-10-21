@@ -11,18 +11,18 @@ counts). **Both move DDR5 only** - every ReRAM and PCM figure in this file is un
 but they move every DDR5 latency, power, PDP and ratio, and they reverse the direction of the
 power argument, so every such number below was re-read from the corrected book. Both are recorded
 in the book's Appendix A, "DDR5 Timing and Power Corrections of This Revision", and in Appendix D.
-**Updated 2026-09-23 (task E9)** for the short-book plan: the write-pulse bounding run's bracket
+**Updated 2026-09-23 (task E9)** for the book plan (the plan that produced `Project_Book.typ`): the write-pulse bounding run's bracket
 numbers (task T3), the corrected branch-conditional write-path mechanism wording, Section 3.4 (Near
 and Far Memory) and the bit-errors-and-ECC subsection added to `Technical_Report.typ` (task E3), and
-the new `Project_Book.typ` short book (tasks E4-E7). Regenerated from the 2026-09 revision of
+the new `Project_Book.typ`, the book (tasks E4-E7). Regenerated from the 2026-09 revision of
 `documents/MBMM_Book_Typst/Technical_Report.typ`, the corrected, compile-verified edition of the
 Project Book that closes out the "3 September" version. This is a full hardfork, not an in-place
 update: the 2026-09 revision changed the book's central architectural verdict (the
 transistor-versus-selector leakage gap that the prior edition treated as its deciding fact does not
 exist as a device effect), so almost nothing in the prior context file carries forward unchanged.
 
-**Repointed 2026-09-23 (task E1):** the long book was renamed `Technical_Report.typ`; it is the
-project's complete technical report and knowledge base. **Updated 2026-09-23 (task E9):** the new,
+**Repointed 2026-09-23 (task E1):** the earlier single book was renamed `Technical_Report.typ`; it is the
+extended book, the project's complete record and knowledge base. **Updated 2026-09-23 (task E9):** the new,
 short, reader-facing `Project_Book.typ` (tasks E4-E7) is now written, reviewed and part of the
 document set - see Section 7 below.
 
@@ -350,7 +350,10 @@ it. Source: `results/rev2026-09_primary_csv/processed_bar_chart_metrics.csv`,
   short-versus-long bank-group judgements (tCCD, tWTR, tRRD) taken at the **short**, DDR5-friendly
   value and recorded as judgements rather than transcriptions. `configs/DDR5_4800_DRAM_subchannel.config`
   carries the JESD79-5 table and page number for every value inline, plus the disclosure that the
-  tables were read through a third-party mirror and **should be re-verified against an official copy**.
+  tables were read through a third-party mirror. **Re-verified 2026-10-19** against Micron's DDR5 SDRAM
+  core data sheet (Rev. D, 10/2022; Tables 361, 429, 438) and two DDR5-4800 module datasheets: every
+  value agrees, the power-down entry formulas included (`research_notes/ddr5_jedec_timing_verification_2026-10-19.md`);
+  the JEDEC text itself remains access-gated and unread.
 - **Matched array organization:** both cell types forced to 2048 x 2048 subarrays at sense-amp mux 64
   via NVSim's `-ForceBank`/`-ForceMat`/`-ForceMuxSenseAmp`, with an anchored gate that fails the run on
   any mismatch against NVSim's own printed geometry.
@@ -484,7 +487,7 @@ None should be used again, even as a paraphrase, without the correction attached
 - **"Modeled strictly after JESD79-5"** (of the DDR5 baseline). Withdrawn in favour of a scope
   sentence: the baseline is JEDEC-sourced *with three documented, DDR5-friendly short-versus-long
   choices* (tCCD, tWTR, tRRD) and a handful of NVMain-specific keys, on values transcribed through a
-  public mirror that should be re-verified. See the four-label provenance in Section 2.
+  public mirror and verified 2026-10-19 against Micron's core data sheet. See the four-label provenance in Section 2.
 - **"40 to 55x DDR5 power per GiB"** (and the 20-27x MLC companion). Retired with the background-power
   correction: the figures are **12.7 to 17.4x** for SLC and **6.4 to 8.7x** for MLC, and they are
   upper bounds.
@@ -605,7 +608,7 @@ starving the power-down entry condition; not yet root-caused to full confidence)
 ## 7. Where Things Live
 
 - **Book (source of truth):** `documents/MBMM_Book_Typst/Technical_Report.typ` (122 pages, compiles
-  clean; the complete technical report and knowledge base, 100 references).
+  clean; the extended book, the complete record and knowledge base, 101 references).
   Key sections: Abstract; 1 Introduction; 2 Infrastructure & Methodology; 3.1.1-3.1.6 latency/power/PDP
   /endurance/robustness/fidelity-audit (3.1.1 also holds the write-pulse bounding-run subsection and
   Table 9; 3.1.2 also holds the "Bit errors and error correction" subsection); 3.2 scaling; 3.3 global
@@ -613,14 +616,14 @@ starving the power-down entry condition; not yet root-caused to full confidence)
   Conclusion & Future Work; Appendix A (simulation parameters and literature grounding); Appendix B
   (pipeline CLI); Appendix C (reproducibility); Appendix D (what changed since 3 September, the only
   place old headline values are tabulated).
-- **Short, reader-facing book (added 2026-09-23):** `documents/MBMM_Book_Typst/Project_Book.typ` (26
+- **The book (added 2026-09-23):** `documents/MBMM_Book_Typst/Project_Book.typ`, the summary of the whole work with the references it rests on (24
   printed pages / 25 sheets, Chapters 1-6, Figures 1-6, Tables 1-9, 48 references - its own, separate
-  numbering from the technical report's). Reviewed with 336 numeric claims traced to source, zero
+  numbering from the extended book's). Reviewed with 336 numeric claims traced to source, zero
   mismatches. Uses the same media-versus-device labelling and write-pulse-bracket conventions as this
   file (see Findings 1, 7 above). Start here for a new reader; come to `Technical_Report.typ` for full
-  depth, Section 3.4 and the bit-errors subsection, neither of which the short book carries.
+  depth, Section 3.4 and the bit-errors subsection, which the book carries condensed as its Sections 5.2 and 5.3.
 - **Outside-reviewer research note (added 2026-09-23):**
-  `documents/MBMM_Book_Typst/research_notes/reviewer_notes_golander_2026-09.md` - how an outside
+  `documents/MBMM_Book_Typst/private/reviewer_notes_golander_2026-09.md` - how an outside
   reviewer's (Dr. Amit Golander's) informal system-level suggestions (near versus far memory,
   media-versus-device honesty, the BER question, MLC honesty) were checked against primary sources
   before being allowed to shape Section 3.4 and the bit-errors subsection; his direction held up, his
@@ -654,8 +657,8 @@ starving the power-down entry condition; not yet root-caused to full confidence)
   `simulators/nvsim/CLAUDE.md`, `simulators/nvmain/CLAUDE.md`, `configs/CLAUDE.md`.
 - **Deck / one-pager:** `documents/MBMM_Book_Typst/presentation_deck.html` (rebuilt this cycle on the
   corrected book: 60 slides, 15 data-driven charts from `visualize_slides.py`, guarded by
-  `tests/test_presentation_deck.py`; outline in `Presentation_Outline.md`); `Shahar_Review_Evidence.typ`/`.pdf` (one-pager, rewritten and
-  reviewed this cycle); `Note_to_Shahar_2026-09.md` (drafted, reviewed, not sent).
+  `tests/test_presentation_deck.py`; outline in `Presentation_Outline.md`); `private/Shahar_Review_Evidence.typ`/`.pdf` (one-pager, rewritten and
+  reviewed this cycle); `private/Note_to_Shahar_2026-09.md` (drafted, reviewed, not sent).
 
 ---
 
@@ -712,10 +715,10 @@ the values. Together they moved every DDR5 latency, power, PDP and ratio in the 
 the direction of the power argument, since break-even now sits inside the cited idleness band rather
 than above it - while leaving every ReRAM and PCM figure byte-identical. **F3** then brought the
 downstream documents into line with the corrected book: F3a the book's own dependent text, and F3c
-(2026-09-21) the one-pager `Shahar_Review_Evidence.typ`, the draft `Note_to_Shahar_2026-09.md` and
+(2026-09-21) the one-pager `private/Shahar_Review_Evidence.typ`, the draft `private/Note_to_Shahar_2026-09.md` and
 this context file.
 
-**The short-book plan (2026-09-22/23)** added two things this file's earlier hardfork did not carry:
+**The book plan (2026-09-22/23, the plan that produced `Project_Book.typ`)** added two things this file's earlier hardfork did not carry:
 a write-pulse bounding run (task T3, `--write-pulse-on-path`, `results/system_rev2026-09_writepulse/`)
 measuring the upper end of the write-path cost directly instead of leaving it a stated-but-unmeasured
 lower bound, with its bracket findings folded into Section 1.2 Finding 1 and the withdrawn-wordings
@@ -725,7 +728,7 @@ about 900 lines to 122 pages (task E3: Section 3.4 Near and Far Memory, the bit-
 subsection, 46 new references [55]-[100]). An outside reviewer's (Dr. Amit Golander's) informal
 system-level suggestions were checked against primary sources first and, where they held up, shaped
 Section 3.4 and the bit-errors subsection; the check is recorded in
-`research_notes/reviewer_notes_golander_2026-09.md`. This file, the document-set guides
+`private/reviewer_notes_golander_2026-09.md`. This file, the document-set guides
 (`README.md`, `Reading_Guide.md`, `Reference_Guide.md`) and one stale value in
 `Technical_Report.typ` (a rounding slip at the "2.4 to 6.5x" endurance-ratio sentence, corrected to
 "2.3 to 6.5x" against `results/endurance_table.csv`) were updated to match (task E9, 2026-09-23).

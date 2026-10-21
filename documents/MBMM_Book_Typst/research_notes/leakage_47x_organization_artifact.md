@@ -114,8 +114,8 @@ R1 and R2 reproduce `results/hardware/*_results.txt` exactly.
   Appendix A (HRS-sweep sentence, "Access-Device Leakage Model", "Bit-Cell Area"); §1.2 and §4.2 1024x1024.
 - **Deck:** slides 18, 26, 50, 51 (47x wording); every slide using 50.9 W, 1.12 W or PDP ratios (27, 28, 34,
   35, 36, 39); slide 8 (selector "slower access path").
-- **Shahar_Review_Evidence.typ** rows 6 and 10; `Reference_Guide.md` [43]/[44] rationale;
-  `Post_Meeting_Notes_Shahar_2026-09-03.md` item 6; `Presentation_Outline.md`; `Meeting_Prep_Cheat_Sheet.md`.
+- **private/Shahar_Review_Evidence.typ** rows 6 and 10; `Reference_Guide.md` [43]/[44] rationale;
+  `private/Post_Meeting_Notes_Shahar_2026-09-03.md` item 6; `Presentation_Outline.md`; `private/Meeting_Prep_Cheat_Sheet.md`.
 - **Downstream results:** NVMain configs take leakage, latency and energy from NVSim, so Tables 2-5 and 7,
   Figures 1-27 and the endurance projections (write rates depend on latency) all inherit the organization choice.
 

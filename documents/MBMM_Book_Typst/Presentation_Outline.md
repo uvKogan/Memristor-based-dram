@@ -1,6 +1,6 @@
 # Presentation Outline - MBMM (22nm ReRAM as Commodity Main Memory)
 
-**Cut 2026-09-23 (task E8) to follow the short book.** This outline describes
+**Cut 2026-09-23 (task E8) to follow the book.** This outline describes
 `presentation_deck.html` as it now stands: **27 slides**, 6 embedded charts, 26 main-line slides
 plus one backup slide. The previous 60-slide deck was built on the long document; this one follows
 `Project_Book.typ`, the short, reviewed, reader-facing book, slide for section.
@@ -13,7 +13,7 @@ the verdict.
 **Source of truth.** Every number on every slide is read from `Project_Book.typ` and cited below by
 its book section, table or figure. The deck never says more than the book says. Where the book
 attaches a caveat, the slide carries it too. The book itself traces every number to the frozen
-result set, and the complete technical report carries the uncondensed tables and the appendix
+result set, and the extended book carries the uncondensed tables and the appendix
 recording claim by claim what changed since the September 3 version.
 
 **Charts.** Six, all pre-existing and read-only: four are the book's own figures
@@ -42,7 +42,7 @@ screenshot, which is the failure this rule exists to prevent. If a future edit a
 claim it needs the same block, and `tests/test_presentation_deck.py` will fail until it does.
 
 **Retired values have no home in this deck.** There is no change-log appendix any more; the
-technical report's change appendix is where the 3 September figures live. The test asserts every
+extended book's change appendix is where the 3 September figures live. The test asserts every
 retired string, every superseded interim value and the outside reviewer's remembered numbers are
 absent from every slide.
 
@@ -52,7 +52,7 @@ absent from every slide.
 
 | # | Slide | Key content | Book |
 |---|---|---|---|
-| 1 | Title | Title, name, advisor, date; short book, technical report named as a separate document | Title page, 1.3 |
+| 1 | Title | Title, name, advisor, date; the book; the extended book named as a separate document | Title page, 1.3 |
 | 2 | Why This Question, Now | Economic pressure (DRAM wafers to HBM, late 2025) and physical pressure (capacitor scaling); the narrow question; endurance as the binding constraint; balanced verdict, not advocacy | 1.1, 1.3 |
 | 3 | The Pipeline, End to End | NVSim to extraction to generation to NVMain 2.0 to post-processing; `mbmm_master.py` as the gate; frozen datasets, 120-run primary matrix, seven sensitivity series, manifests; 783 tests | 2.1, Figure 1 |
 | 4 | Device Characterization at One Matched Organization | Table 1 in full: 20F2 / 4F2, read 10.12 / 4.70 ns, write 15.26 / 24.59 ns, leakage 108.384 mW for both, area 12.008 / 3.540 mm2; MLC multipliers 1.5x and 3.263x from the EMBER macro | **Table 1**, 2.2 |
@@ -127,7 +127,7 @@ assumed clock.
 | # | Slide | Key content | Book |
 |---|---|---|---|
 | 25 | Future Work | The book's eight items, two columns | Chapter 6 |
-| 26 | Data Availability, and Where the Full Record Is | The repository; the technical report named as the uncondensed record; the gated pipeline, frozen datasets and 783 tests | 1.3, Chapter 6 |
+| 26 | Data Availability, and Where the Full Record Is | The repository; the extended book named as the uncondensed record; the gated pipeline, frozen datasets and 783 tests | 1.3, Chapter 6 |
 | 27 | Backup: Shahar's Ten Notes, Mapped | Each of the ten notes against the slide that answers it. Prepare, do not present unless asked; open the meeting here if he asks what came of his review | review mapping |
 
 ---

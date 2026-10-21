@@ -1,8 +1,8 @@
 """
 MBMM: Write-Queue-Depth Sensitivity Sweep
 
-Answers Shahar Kvatinsky's meeting note #5 (documents/MBMM_Book_Typst/
-Post_Meeting_Notes_Shahar_2026-09-03.md): does the FRFCFS memory controller's
+Answers Shahar Kvatinsky's meeting note #5 (documents/MBMM_Book_Typst/private/
+Post_Meeting_Notes_Shahar_2026-09-03.md, a private, git-ignored note): does the FRFCFS memory controller's
 QueueSize (added as an explicit, documented parameter in 3_gen_nvmain_config.py --
 previously an implicit NVMain default) change how much of LBM's write-heavy trace
 completes within the fixed matched-host simulation window?

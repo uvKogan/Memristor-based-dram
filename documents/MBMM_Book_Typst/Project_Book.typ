@@ -1,5 +1,5 @@
-// MBMM Project Book - the short, reader-facing book.
-// Technical report: Technical_Report.typ.
+// MBMM Project Book - the book: the summary of the whole work, with the references it rests on.
+// Extended book (the complete record underneath it): Technical_Report.typ.
 // GEN-BEGIN preamble
 #let blockquote(body) = block(
   inset: (left: 1.2em, top: 0.3em, bottom: 0.3em),
@@ -25,7 +25,7 @@
   #v(0.3em)
   #text(size: 12pt)[September 2026]
   #v(1.5em)
-  #text(size: 11pt)[Short project book. Technical report: Technical_Report.pdf.]
+  #text(size: 11pt)[The project book. Extended book, with the complete record: Technical_Report.pdf.]
 ]
 #pagebreak()
 #set page(numbering: "1")
@@ -113,7 +113,7 @@ Cells are calibrated to high resistance targets, $10^5 Omega$ in the
 low-resistance state and $10^9 Omega$ in the high, to hold a sensing
 margin against IR drop on long bitlines #strong[\[8\]]. The arrays
 here are 2048 cells on a side, one doubling past that source's own
-1024-cell design point, and the technical report shows the criterion
+1024-cell design point, and the extended book shows the criterion
 still holds to within 1%.
 
 In a crossbar, current can flow through unselected cells as well as the
@@ -170,7 +170,7 @@ The claim is a balanced verdict, not an advocacy case. Selector-gated
 a large, honest power deficit per gigabyte; the transistor-gated
 variant matches it on leakage and loses on area; write endurance is the
 binding constraint and wear leveling, not the cell, decides it. The
-technical report states the conclusion in one line, and this book keeps
+extended book states the conclusion in one line, and this book keeps
 it: #emph[neither is a drop-in DDR5 replacement at 22nm.]
 
 One caveat governs every latency in this book and is stated here once,
@@ -196,12 +196,12 @@ endurance figure in this book is a #emph[projection] from a write
 distribution measured inside a simulation window, never a measured
 lifetime; the word "measured" is not used of any lifetime.
 
-This is the short book. The complete technical report and knowledge
-base of the project is a separate document, `Technical_Report.pdf`,
-which carries the full methodology, every table in its uncondensed
-form, the simulation-fidelity audit, the reproduction instructions and
-an appendix recording claim by claim what changed since the September 3
-version. This book is its condensed, reader-facing version.
+This is the book: the summary of the whole work, with every reference
+it rests on. The extended book, `Technical_Report.pdf`, is the complete
+record underneath it: the full methodology, every table in its
+uncondensed form, the simulation-fidelity audit, the reproduction
+instructions and an appendix recording claim by claim what changed
+since the September 3 version.
 
 = 2. Method
 
@@ -308,7 +308,7 @@ JESD79-5 #strong[\[20\]], and the scope of that statement is exact:
 #emph[every DDR5-4800 device timing is taken from JESD79-5, with three
 documented short-value choices that favor the baseline (tCCD, tWTR,
 tRRD) and a handful of NVMain-specific keys with no DDR5 counterpart;
-the technical report labels all 36 device and simulator keys with their
+the extended book labels all 36 device and simulator keys with their
 provenance.] The core numbers are
 the 4800 MT/s bin at 1.1 V: tCAS-tRCD-tRP of 40-39-39, CWL of 38
 cycles, tWR 30 ns, tRRD_S 8 cycles and tFAW 32 cycles, with an all-bank
@@ -335,7 +335,7 @@ PCM product ever shipped is, as Section 1.2 records, a selector-gated
 Section 1.2 are generated directly from those data sheets and run on
 the same traces and the same module geometry, labeled 1T1R SILICON and
 1S1R SILICON, and they appear beside every projected latency in Chapter
-4\. The technical report puts the reason plainly, and this book keeps
+4\. The extended book puts the reason plainly, and this book keeps
 it: #emph[the two published-silicon rows sit in the same table
 deliberately: they are the counterweight to every projected row above
 them, and no reading of this table is complete without them.]
@@ -349,7 +349,7 @@ hardwired to. The gem5 traces are 64 B aligned as they come. The
 SCALE-Sim traces are not: they are tensor-element granular and only
 1.6% aligned, so for them the 64 B width is imposed by the
 configuration rather than carried by the trace. A dedicated 64 versus
-128 B study, reported in the technical report, found 128 B worse on
+128 B study, reported in the extended book, found 128 B worse on
 every axis.
 
 #strong[The ReRAM interface.] All ReRAM configurations run behind an
@@ -436,7 +436,7 @@ found fourteen #emph[silent] failure modes: defects that produced
 plausible numbers rather than errors. Thirteen were repaired in this
 project's toolchain and the affected simulations re-run. Table 3 is the
 list. It records the mode and the fix only; the values each repair
-moved are tabulated in the technical report's change appendix.
+moved are tabulated in the extended book's change appendix.
 
 #strong[Table 3: the thirteen repaired silent failure modes, in eleven
 rows, two pairs sharing one repair between them.]
@@ -486,7 +486,7 @@ rows, two pairs sharing one repair between them.]
 
 #emph[Every repair was validated before its results were adopted,
 against a device-level anchor, exact predicted arithmetic or the
-simulator's own counters; the technical report's simulation-fidelity
+simulator's own counters; the extended book's simulation-fidelity
 audit records each check. The fourteenth mode, the DDR5 supply and
 current parameters, is recorded there as #strong[partially] fixed: the
 supply voltage was corrected and the currents calibrated to vendor

@@ -12,11 +12,11 @@ silently into one number; and results for the cell write pulse are reported
 as **a bracket** - a default-mode value and a bounding-mode value (the pulse
 excluded versus included on the request path) rather than one single
 number, because which branch a write takes depends on the workload.
-`Technical_Report.typ` is the **complete technical report and knowledge
-base** of the project (with `Technical_Report.pdf` as its compiled artifact,
-regenerated on every edit): 122 pages, 100 references, the full detail
-behind every number the short book had to compress or cut, including
-Section 3.4 (Near and Far Memory - not in the short book at all), the
+`Technical_Report.typ` is the **extended book**, the complete record and
+knowledge base of the project (with `Technical_Report.pdf` as its compiled
+artifact, regenerated on every edit): 122 pages, 101 references, the full
+detail behind every number the book carries in condensed form, including
+Section 3.4 (Near and Far Memory; the book's Section 5.2), the
 "Bit errors and error correction" subsection (design-point BER answer),
 the write-pulse bounding-run subsection (Table 9), Table 10 (device
 reference row) and Figure 28. `Technical_Report.typ` began as a QA-verified
@@ -39,7 +39,7 @@ a parity target.
 - `Reference_Guide.md` - one-paragraph summary of all 100 references cited
   in `Technical_Report.typ` (`Project_Book.typ` has its own, separate,
   independent 48-reference numbering).
-- `research_notes/reviewer_notes_golander_2026-09.md` - how an outside
+- `private/reviewer_notes_golander_2026-09.md` - how an outside
   reviewer's informal system-level suggestions (near versus far memory,
   media-versus-device honesty, the BER question) were checked against
   primary sources before shaping Section 3.4 and the bit-errors subsection;
@@ -48,10 +48,10 @@ a parity target.
 - `Review_Fixes_Tracker.md` - single source of truth for the 2026-08
   super-critique fix pass (all items closed) and the coordination ground
   rules for parallel workers. `Revision_Workflow_2026-09.md` is the live
-  tracker and session log for the 2026-09 revision and the short-book plan.
+  tracker and session log for the 2026-09 revision and the book plan.
 - `Presentation_Outline.md`, `presentation_deck.html`,
   `Presentation_Fixes_Tracker.md` - the talk (parallel workstream).
-- `NotebookLM_Podcast_Prompt.md` - ready-to-paste prompt for generating an
+- `private/NotebookLM_Podcast_Prompt.md` - ready-to-paste prompt for generating an
   audio explainer from the references.
 
 The frozen datasets behind the 2026-09 revision's numbers live under

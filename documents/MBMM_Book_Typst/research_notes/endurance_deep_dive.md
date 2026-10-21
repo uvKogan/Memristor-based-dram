@@ -217,7 +217,7 @@ LBM lifetime (years) under each basis (1T1R SLC 10^7; MLC 10^6 at 16 GB):
 - The MLC and 1S1R lifetimes exist only in documents.
 - An independent recomputation (`endurance_audit_runs/lifetime_recompute.*`) matches every book, deck and
   cheat-sheet figure.
-- **One stale input:** 3,269,479 writes (pre-idle-gating) in `Post_Meeting_Notes_Shahar_2026-09-03.md`
+- **One stale input:** 3,269,479 writes (pre-idle-gating) in `private/Post_Meeting_Notes_Shahar_2026-09-03.md`
   item 8 gives 1.08 yr instead of 1.09.
 
 Full recomputed table (years; SLC 10^7, MLC 10^6; each track's own completed writes):
@@ -264,9 +264,9 @@ GCC, STREAM and OFMAP complete identical write counts on all four tracks, so thr
   - §3.1.6 item 11 and Appendix B (3 GHz basis), pending verification.
 - **Deck:** slide 33 (Endurance) and its chart; slide 16 ("uncached"); slides 36 and 50 (endurance lines).
 - **Other documents:**
-  - One-pager `Shahar_Review_Evidence.typ`, row 8.
-  - `Post_Meeting_Notes_Shahar_2026-09-03.md` item 8 (stale 3,269,479).
-  - `Meeting_Prep_Cheat_Sheet.md` and `Presentation_Outline.md` endurance lines.
+  - One-pager `private/Shahar_Review_Evidence.typ`, row 8.
+  - `private/Post_Meeting_Notes_Shahar_2026-09-03.md` item 8 (stale 3,269,479).
+  - `private/Meeting_Prep_Cheat_Sheet.md` and `Presentation_Outline.md` endurance lines.
 
 ## 6. Recommended approach (for the Lead's decision)
 

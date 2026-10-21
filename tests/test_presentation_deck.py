@@ -10,7 +10,7 @@ faster-than-DDR5 claim travelling without its projection caveat, a ReRAM
 latency that does not say "media" or an Optane or CXL figure that does not say
 "device", or a corrupted base64 image.
 
-E8 rewrote the deck on the short book (`Project_Book.typ`): 27 slides instead
+E8 rewrote the deck on the book (`Project_Book.typ`): 27 slides instead
 of 60, no change-log appendix, and every number read from the reviewed book.
 Two consequences for these tests. Retired values now belong *nowhere*, because
 the change-log slides that were their one legitimate home are gone. And the
@@ -33,13 +33,16 @@ DECK = (pathlib.Path(__file__).resolve().parents[1]
         / "documents/MBMM_Book_Typst/presentation_deck.html")
 OUTLINE = (pathlib.Path(__file__).resolve().parents[1]
            / "documents/MBMM_Book_Typst/Presentation_Outline.md")
+# The cheat sheet is the Lead's personal rehearsal note. Since 2026-10-22 it lives
+# in the git-ignored private/ folder, so it is checked only where it exists.
 CHEAT_SHEET = (pathlib.Path(__file__).resolve().parents[1]
-               / "documents/MBMM_Book_Typst/Meeting_Prep_Cheat_Sheet.md")
+               / "documents/MBMM_Book_Typst/private/Meeting_Prep_Cheat_Sheet.md")
+COMPANION_DOCS = tuple(p for p in (OUTLINE, CHEAT_SHEET) if p.exists())
 
 EM_DASH = chr(0x2014)
 EN_DASH = chr(0x2013)
 
-# The short-book deck is a 25 to 30 slide talk. The band, not a literal, is
+# The book's deck is a 25 to 30 slide talk. The band, not a literal, is
 # what the dispatch fixed; the exact count is asserted against the outline so
 # the presenter's document and the deck cannot drift apart.
 MIN_SLIDES, MAX_SLIDES = 25, 30
@@ -81,7 +84,7 @@ REQUIRED_TITLES = [
 BRACKET_TITLE = "MLC and the Write-Pulse Bracket"
 
 # Retired values from the 3 September version, plus four wordings retired by
-# the short book itself. Unlike the previous deck, this one has no change-log
+# the book itself. Unlike the previous deck, this one has no change-log
 # appendix, so every one of these belongs nowhere at all:
 #   * "not on the request path" is the superseded description of the cell write
 #     pulse. The accurate mechanism (write recovery delays the subarray's next
@@ -120,7 +123,7 @@ FASTER_THAN_DDR5_PATTERNS = [
 # DDR5 was re-simulated, so every DDR5 figure and every ratio to DDR5 moved.
 #
 # These values are NOT retired 3 September headlines - they were interim
-# figures the deck itself carried for one day, and the technical report's
+# figures the deck itself carried for one day, and the extended book's
 # change appendix deliberately does not print them as an "old value" column.
 # They must not appear anywhere in the deck, the outline or the cheat sheet.
 SUPERSEDED_INTERIM_VALUES = [
@@ -184,7 +187,7 @@ def test_sections_are_balanced(deck_html):
 
 def test_slide_count_is_a_talk_length_deck(slide_texts):
     assert MIN_SLIDES <= len(slide_texts) <= MAX_SLIDES, (
-        f"{len(slide_texts)} slides; the short-book deck is "
+        f"{len(slide_texts)} slides; the book's deck is "
         f"{MIN_SLIDES} to {MAX_SLIDES}"
     )
 
@@ -205,8 +208,7 @@ def test_every_required_slide_is_present_in_order(slide_titles):
 def test_no_forbidden_dash_in_the_three_deliverables(deck_html):
     for path, body in (
         (DECK, deck_html),
-        (OUTLINE, OUTLINE.read_text(encoding="utf-8")),
-        (CHEAT_SHEET, CHEAT_SHEET.read_text(encoding="utf-8")),
+        *((p, p.read_text(encoding="utf-8")) for p in COMPANION_DOCS),
     ):
         assert EM_DASH not in body, f"{path.name} contains a U+2014 em-dash"
         assert EN_DASH not in body, f"{path.name} contains a U+2013 en-dash"
@@ -291,7 +293,7 @@ def test_the_caveat_block_states_all_three_conditions(slide_blocks):
 
 
 def test_every_reram_latency_slide_says_media(slide_texts):
-    """Reading rule of the short book: every ReRAM latency here is a media
+    """Reading rule of the book: every ReRAM latency here is a media
     number, produced by a device model driving a memory simulator."""
     track = re.compile(r"1[TS]1R")
     nanoseconds = re.compile(r"\d\s?ns\b")
@@ -341,7 +343,7 @@ def test_superseded_interim_values_appear_nowhere(slide_texts, superseded):
 
 @pytest.mark.parametrize("superseded", SUPERSEDED_INTERIM_VALUES)
 def test_superseded_interim_values_absent_from_the_companion_documents(superseded):
-    for path in (OUTLINE, CHEAT_SHEET):
+    for path in COMPANION_DOCS:
         body = path.read_text(encoding="utf-8")
         assert not _mentions(body, superseded), (
             f"superseded interim value {superseded!r} still in {path.name}"

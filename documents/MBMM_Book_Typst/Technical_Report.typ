@@ -17,7 +17,7 @@
   #v(2in)
   #text(size: 20pt, weight: "bold")[Evaluation of 22nm Memristor-Based Main Memory (MBMM) in Commodity DIMM Architectures]
   #v(0.3em)
-  #text(size: 12pt)[Technical report and knowledge base of the project. The reader-facing project book is a separate, shorter document (Project_Book).]
+  #text(size: 12pt)[The extended book: the complete record and knowledge base of the project. The book itself, the summary of the work with its references, is the separate document Project_Book.]
 ]
 #pagebreak()
 // GEN-END preamble
@@ -572,8 +572,13 @@ simulation result.]]
   cross-check configuration - 2 parsed but read by no timing code at
   all, and the 3 short-versus-long judgements above. Two further
   disclosures belong with it. The values were transcribed from the
-  JESD79-5 tables through a public mirror rather than from an official
-  copy of the standard, and should be re-verified against one. And
+  JESD79-5 tables through a public mirror; on 2026-10-19 every one of
+  them was checked against Micron's DDR5 SDRAM core data sheet \[101\],
+  the vendor's full transcription of JESD79-5, and against two
+  DDR5-4800 module datasheets, and all agree, including the three
+  power-down entry formulas (research note
+  `ddr5_jedec_timing_verification_2026-10-19.md`); the JEDEC text
+  itself remains unread, since it is access-gated. And
   NVMain charges the activate-to-activate constraint tRRD, and advances
   its four-activate window, on every #emph[refresh] as well as on every
   activate, which JEDEC does not do for an all-bank refresh; that is
@@ -4548,6 +4553,8 @@ data, has been made publicly available.
 
 #strong[\[100\]] Intel Corporation and Micron Technology, 3D XPoint technology announcement, July 2015. \[Online\]. Available: #link("https://www.intc.com/news-events/press-releases/detail/324/intel-and-micron-produce-breakthrough-memory-technology")[#underline[https:\/\/www.intc.com/news-events/press-releases/detail/324/intel-and-micron-produce-breakthrough-memory-technology]].
 
+#strong[\[101\]] Micron Technology, Inc., \"DDR5 SDRAM,\" core product data sheet, Doc. No. CCM005-1684161373-23, Rev. D, Oct. 2022, 537 pp. (speed bins Table 361; command and address timing Table 429; power-down timing Table 438). \[Online\]. Available: https:\/\/www.farnell.com/datasheets/3980285.pdf (accessed 2026-10-19).
+
 #pagebreak() <section-3>
 = Appendix A: Simulation Parameters and Literature Grounding
 <appendix-a-simulation-parameters-and-literature-grounding>
@@ -4769,10 +4776,14 @@ data, has been made publicly available.
   window, on every refresh as well as every activate, which JEDEC does
   not do for an all-bank refresh; that is template behavior and makes the
   baseline slightly pessimistic. The values were read from the JESD79-5
-  tables through a public mirror rather than an official copy of the
-  standard and #strong[should be re-verified against one]\; Micron\'s 16 Gb
-  DDR5 addendum \[29\] independently confirms only the 4800B speed bin,
-  CL 40, tRCD, tRP and tCK. #emph[Effect.] DDR5\'s average total latency
+  tables through a public mirror; on 2026-10-19 every one of them was
+  checked against Micron\'s DDR5 SDRAM core data sheet \[101\], the
+  vendor\'s full transcription of JESD79-5 (speed bin Table 361, command
+  timing Table 429, power-down Table 438), and against two DDR5-4800
+  module datasheets, and #strong[all agree], the power-down entry
+  formulas included; Micron\'s 16 Gb DDR5 addendum \[29\] separately
+  confirms the 4800B speed bin, CL 40, tRCD, tRP and tCK. The JEDEC text
+  itself remains unread (access-gated). #emph[Effect.] DDR5\'s average total latency
   rose by between 6.4% (AlexNet IFMAP) and 47.5% (AlexNet OFMAP) across
   the six traces; module power moved by at most 3%, in both directions,
   because this is a timing correction and not a power one. Both

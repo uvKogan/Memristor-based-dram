@@ -26,7 +26,7 @@ book or deck yet.
 - Time base and trace window: `trace_timebase_investigation.md`
 - Organization, calibration, selector physics: `leakage_47x_organization_artifact.md` §8-§14
 - Endurance: `endurance_deep_dive.md`, especially §3.5 and §7
-- Optane: `../Lead_Future_Work_Notes.md` §2b and §2c
+- Optane: `../private/Lead_Future_Work_Notes.md` §2b and §2c
 
 ## Open (Round 2 and later)
 

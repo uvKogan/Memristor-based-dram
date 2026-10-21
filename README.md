@@ -4,11 +4,12 @@ A full-stack, cross-layer simulation pipeline for evaluating 22 nm ReRAM as a co
 main-memory replacement for DRAM: NVSim for the device and array, NVMain 2.0 for the
 memory system, Python for the ETL between them and for the analysis.
 
-**Results are in the book, not here.** `documents/MBMM_Book_Typst/Technical_Report.typ`
-(and its compiled PDF) is the complete technical report and knowledge base: it carries
-every number, its caveats and its provenance. `documents/MBMM_Book_Typst/Project_Book.typ`
-is the short, reader-facing project book (24 printed pages, Chapters 1-6, Figures 1-6,
-Tables 1-9, 48 references). This file is only how to run the thing.
+**Results are in the book, not here.** `documents/MBMM_Book_Typst/Project_Book.typ`
+is the book: the summary of the whole work, with the references it rests on (24 printed
+pages, Chapters 1-6, Figures 1-6, Tables 1-9, 48 references).
+`documents/MBMM_Book_Typst/Technical_Report.typ` (and its compiled PDF) is the extended
+book, the complete record and knowledge base: it carries every number, its caveats and its
+provenance. This file is only how to run the thing.
 
 ## 🏗️ Data flow
 

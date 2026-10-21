@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Figure for Section 3.4 of the MBMM technical report (task E3):
+Figure for Section 3.4 of the MBMM extended book, Technical_Report.typ (task E3):
 
   fig_far_memory_sketch.png -- die-level density (cost axis, DDR5 = 1.00)
   against latency, with the measured far-memory acceptance window shaded and
@@ -20,8 +20,8 @@ results/ or is a cited literature constant declared below:
   * Density (y): `Area_Density_Ratio` from results/rev2026-09_primary_csv/
     processed_hero_metrics.csv, DDR5_4800 == 1.0 by construction.
   * Optane PMem 305 ns idle random read: DEVICE number, Izraelevitz et al.
-    2019, arXiv:1903.05714, via research_notes/
-    reviewer_notes_golander_2026-09.md theme (d) and its source [22]. No
+    2019, arXiv:1903.05714, via the private, git-ignored
+    documents/MBMM_Book_Typst/private/reviewer_notes_golander_2026-09.md theme (d) and its source [22]. No
     density value is published for it, so it is drawn on the latency axis
     only and labelled as such.
   * Far-memory window 214 to 394 ns: DEVICE idle load-to-use latency of

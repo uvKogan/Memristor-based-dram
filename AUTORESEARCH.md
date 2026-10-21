@@ -1,7 +1,7 @@
 # AUTORESEARCH.md - write-queue size sweep (LBM)
 
 Run tag: `queue-sweep-lbm`. Branch: `autoresearch/queue-sweep-lbm`.
-Origin: Shahar Kvatinsky's meeting note #5 (`documents/MBMM_Book_Typst/Post_Meeting_Notes_Shahar_2026-09-03.md`).
+Origin: Shahar Kvatinsky's meeting note #5 (`documents/MBMM_Book_Typst/private/Post_Meeting_Notes_Shahar_2026-09-03.md`).
 
 ## What we're testing
 

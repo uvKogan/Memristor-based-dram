@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Two new figures for the MBMM short book (task E2):
+Two new figures for the MBMM book, Project_Book.typ (task E2):
 
   F3  fig_clock_sensitivity.png  -- GCC average total latency versus the
       assumed ReRAM interface clock (800/1333/2400 MHz), 1T1R_SLC and
@@ -331,7 +331,7 @@ def _default_paths(repo_root):
 
 def main():
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    parser = argparse.ArgumentParser(description="Render the two short-book figures (task E2).")
+    parser = argparse.ArgumentParser(description="Render the two book figures (task E2).")
     parser.add_argument('--out-dir', default=os.path.join(
         repo_root, 'documents', 'MBMM_Book_Typst', 'media', 'short_book'))
     parser.add_argument('--endurance-csv', default=os.path.join(

@@ -59,3 +59,7 @@ documents/reference_validation_papers/Liu et al., JSSC 2014 Fackenthal et al., I
 # 2026-09 revision: raw gem5 MemCtrl logs (multi-GB); sidecars are tracked, raw logs are not
 benchmarks/raw_logs/
 !benchmarks/*.sidecar.json
+
+# Reviewer notes (Shahar Kvatinsky, Amit Golander), the reply drafts and the one-pager:
+# private correspondence, kept out of the public repository (2026-10-22)
+documents/MBMM_Book_Typst/private/

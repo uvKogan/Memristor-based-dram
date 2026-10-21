@@ -1,8 +1,8 @@
 # Reference Guide - Technical_Report.typ
 
-This guide covers `Technical_Report.typ`'s reference list only. As of the 2026-09 short-book revision, the document set has two separate books with two separate, independent reference numberings: `Technical_Report.typ` (122 pages, the complete technical report and knowledge base, 100 references, [1]-[100]) and `Project_Book.typ` (the short, reader-facing book, 26 printed pages, 48 references, [1]-[48], its own numbering - a citation like "book [12]" always needs the book named, the two [12]s are different sources). This guide's per-reference entries below are Technical_Report numbering.
+This guide covers `Technical_Report.typ`'s reference list only. As of the 2026-09 revision, the document set has two books with two separate, independent reference numberings: `Technical_Report.typ` (the extended book: 122 pages, the complete record and knowledge base, 101 references, [1]-[101]) and `Project_Book.typ` (the book: the summary of the whole work, 24 printed pages, 48 references, [1]-[48], its own numbering - a citation like "book [12]" always needs the book named, the two [12]s are different sources). This guide's per-reference entries below are Technical_Report numbering.
 
-A quick-reference summary of all 100 sources cited in `Technical_Report.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts; [55]-[100] were added by the September 2026 revision's Section 3.4 (Near and Far Memory) and the bit-errors-and-ECC subsection of 3.1.2, and are summarized more briefly below in three themed groups rather than individually re-verified against their full texts (most are used for a single named figure, quoted directly from the reference entry's own parenthetical in `Technical_Report.typ`).
+A quick-reference summary of all 101 sources cited in `Technical_Report.typ`. Each entry: what it is, and the one or two things you need to know about *why* it's cited here. Compiled from an independent verification pass (Aug 2026) that re-checked every citation against its actual source (local PDF or live web fetch), not just trusted the earlier drafts; [55]-[100] were added by the September 2026 revision's Section 3.4 (Near and Far Memory) and the bit-errors-and-ECC subsection of 3.1.2, and are summarized more briefly below in three themed groups rather than individually re-verified against their full texts (most are used for a single named figure, quoted directly from the reference entry's own parenthetical in `Technical_Report.typ`).
 
 The book's MLC penalty multipliers are: **1.5x read latency, 3.263x write latency, 1.1x read energy, 3.0x write energy** (2 bits/cell vs. 1 bit/cell), all sourced from the EMBER macro's two publications, [6] and [31] below.
 
@@ -206,7 +206,7 @@ The product brief supplying the only published endurance (PBW by access size and
 
 ---
 
-## Added in the September 2026 short-book revision (Section 3.4 and the bit-errors subsection of 3.1.2)
+## Added in the September 2026 revision (Section 3.4 and the bit-errors subsection of 3.1.2)
 
 ### MLC write-iteration characterization ([55]-[59]), cited in 3.1.1's bounding-run and Appendix A's smart-write discussion
 
@@ -299,7 +299,7 @@ Identifies line resistance, not the selector alone, as the binding constraint on
 **[83] "Effect of threshold switching selectors on one-selector one-resistor crossbar arrays," ResearchGate 351467888**
 A 10% read margin needs a half-bias nonlinearity around 8,000 and an on/off window of 5 - a second, independent source for the selector-quality bar the book's own analytic layer is checked against.
 
-### Far memory, CXL and Optane ([84]-[100]), cited in Section 3.4 (Near and Far Memory)
+### Far memory, CXL and Optane ([84]-[100]), cited in Section 3.4 (Near and Far Memory); [101] added 2026-10-19 for the DDR5 baseline
 
 **[84] Measured idle latency of local and remote-socket DDR5 and of CXL-attached DRAM devices, arXiv:2409.14317**
 A primary measured-latency source behind the far-memory window the book quotes (device-level idle latencies, local versus remote-socket versus CXL-attached).
@@ -351,3 +351,6 @@ CXL 1.1/2.0, x16 at 32 GT/s, two DDR5 channels, up to 2 TB; no published latency
 
 **[100] Intel Corporation and Micron Technology, 3D XPoint technology announcement, Jul. 2015**
 The original 3D XPoint (later marketed as Optane) announcement - historical anchor for when the one shipped 1S1R-adjacent main-memory-class NVM product was introduced.
+
+**[101] Micron, "DDR5 SDRAM" core product data sheet, Rev. D, Oct. 2022**
+The vendor's complete transcription of JESD79-5 for a JEDEC-compliant DDR5 part (537 pages; speed bins Table 361, command and address timing Table 429, power-down timing Table 438). Added 2026-10-19 as the source against which every JEDEC-sourced key of the DDR5-4800B baseline configuration was re-verified, since the JEDEC standard itself is access-gated; see `research_notes/ddr5_jedec_timing_verification_2026-10-19.md`. Complements [29], the 16 Gb die addendum, which covers only the speed bin and the IDD limits.
