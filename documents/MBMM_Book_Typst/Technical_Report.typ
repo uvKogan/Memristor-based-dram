@@ -2542,16 +2542,23 @@ support, because it measured where the writes went.
 
 One negative result belongs here, because it bounds what the simulator
 can contribute to this section at all. #strong[The simulation cannot
-show wear leveling at work.] With one whole-module region of 134,217,728
-lines and one gap move per 100 writes, a 250 ms window makes 2,207 gap
-moves under GCC and 23,848 under LBM, roughly 10#super[-5] of a single
-rotation, and the gap starts at the top of the module while these
-workloads occupy low addresses. Running the matrix with the decoder off
+show wear leveling at work.] With one Start-Gap region of 67,108,864
+lines (4 GiB: NVMain's default region is ROWS x COLS x BANKS x RANKS x
+64 B, the per-channel geometry without the channel count, and the two
+channels share one gap register, so the move counts are totals across
+both) and one gap move per 100 writes, a 250 ms window makes 2,207 gap
+moves under GCC and 23,848 under LBM, roughly 3 x 10#super[-5] and
+4 x 10#super[-4] of a single rotation, and the gap starts at the top of
+the region while these workloads occupy low addresses. Running the matrix with the decoder off
 therefore reproduces the primary run\'s wear statistics and latencies
 #emph[identically]: row-level maximum writes 1,059, 3,072 and 40,704 and
 hot-spot factors 2.77, 1.06 and 1.20 on GCC, LBM and the AlexNet output
 map, the same with the decoder on and off
-(`results/system_rev2026-09_decoder_default`). That is the expected
+(`results/system_rev2026-09_decoder_default`). At the measured move
+rates, 8,828 per second under GCC and 95,392 under LBM, one rotation of
+the 67,108,864-line region takes about 7,600 s of simulated time under
+GCC (2.1 hours) and about 700 s under LBM (11.7 minutes), that is
+30,000 and 2,800 windows of 250 ms. That is the expected
 outcome rather than a defect, and it is why this section shows no
 before-and-after hot-spot figure: inside any window this pipeline can
 simulate, leveling has not yet had time to do anything. The effect of
@@ -4353,15 +4360,14 @@ confidence.
 
 == 4.3 Data Availability and Reproducibility
 <data-availability-and-reproducibility>
-To ensure the scientific reproducibility of the 22nm ReRAM models, the
-complete simulation stack, including the mbmm\_master.py orchestration
-script, modified NVSim/NVMain C++ source files, and JSON configuration
-data, has been made publicly available.
-
-#blockquote[
-#strong[Project Repository:]
-#link("https://github.com/uvKogan/Memristor-based-dram")[#underline[https:\/\/github.com/uvKogan/Memristor-based-dram]]
-]
+The complete simulation stack (the mbmm\_master.py orchestration
+script, the patched NVSim and NVMain C++ sources, the JSON
+configurations) is public at
+#link("https://github.com/uvKogan/Memristor-based-dram")[#underline[https:\/\/github.com/uvKogan/Memristor-based-dram]].
+The two simulators are git submodules of that repository, pinned at the
+NVMain fork `uvKogan/NVmain`, branch `ddr5-timing-fix`, commit
+`c89988d`, and the NVSim fork `uvKogan/MBMM`, commit `9a90d44`;
+Appendix C gives the full statement.
 
 #pagebreak()
 <section-2>
@@ -5108,6 +5114,13 @@ the ReRAM and PCM results, run at `53cea70`, and the DDR5 results, run
 with the corrected configurations committed as `c89988d`, are all
 reproduced from `c89988d`.
 
+#strong[Recipe.] `git clone --recursive
+https://github.com/uvKogan/Memristor-based-dram.git` checks out both
+pins; the B.2 command then regenerates the primary matrix; and
+`typst compile --font-path fonts Project_Book.typ`, and the same for
+`Technical_Report.typ`, rebuild the two documents from
+`documents/MBMM_Book_Typst/`.
+
 #strong[Pipeline interface.] The master orchestration script
 mbmm\_master.py takes the replay window in #emph[nanoseconds]
 (`--window-ns`), converting it to each technology's own cycle budget
@@ -5415,7 +5428,7 @@ quantity to be compared arithmetically against the new one.
   [#strong[Start-Gap on versus off]],
   [Not run; the decoder did not exist],
   [Wear statistics and latency identical with the decoder on and off on GCC, LBM and the AlexNet output map, so no before-and-after hot-spot figure is shown],
-  [A 250 ms window completes about 10#super[-5] of one rotation over a whole-module region, so leveling has not yet acted; its effect is carried by the projection instead],
+  [A 250 ms window completes about 3 x 10#super[-5] (GCC) of one rotation over the 67,108,864-line Start-Gap region, so leveling has not yet acted; its effect is carried by the projection instead],
   [Section 3.1.4; results/system\_rev2026-09\_decoder\_default],
 
   [#strong[Gap-move traffic]],
