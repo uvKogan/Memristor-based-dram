@@ -124,8 +124,9 @@ the #emph[pre-revision] dataset, read latency is invariant to a ±20%
 ReadVoltage perturbation with Power-Delay Product changing less than 4%.
 That sweep has not been re-run at the matched organization, so its
 absolute values are not comparable with the tables above; its
-qualitative conclusion survives a fortiori, because the static share of
-module power is now 99.96% (Section 3.1.5).
+qualitative conclusion is expected to survive, though it has not been
+re-measured, because the static share of module power is now 99.96%
+(Section 3.1.5).
 
 The resulting picture is narrower and better grounded than the one this
 book carried in its 3 September version. Selector-gated 22nm SLC ReRAM
@@ -1696,7 +1697,7 @@ under the compute-bound GCC (SPEC2017) workload.]
 
 Power is the axis on which this revision reverses the book\'s previous
 conclusion outright, so the correction is stated first and the numbers
-follow. #strong[There is no transistor-versus-selector leakage gap.] The
+follow. #strong[NVSim reports no transistor-versus-selector leakage gap.] The
 two-orders-of-magnitude device-level separation that the 3 September
 version of this book made its deciding architectural fact (superseded
 figures in Appendix D) was an artifact of simulating the two cells at
@@ -1852,10 +1853,14 @@ rule that a tile side may not exceed $I_"on" \/ (6 I_"leak")$, the OTS
 bound supports a maximum tile of 1666 cells a side - #strong[so the 2048
 x 2048 organization this book simulates is not valid at present-day
 selector quality]. The FAST bound supports 166,666 cells a side and is
-valid with three orders of magnitude to spare. Read margin is
-comfortable at both (24.0% and 23.2% against a 10% requirement), so the
-binding limit at the OTS bound is tile leakage and at the FAST bound is
-read margin. The consequence is stated plainly wherever 1S1R results
+valid with three orders of magnitude to spare. The read-margin solve,
+validated against Zhou's Fig. 3(b) for sides up to 512, puts the margin
+at the 2048 tile at 24.0% and 23.2% against a 10% requirement; that is
+the validated model extrapolated to four times the largest validated
+side and to this project's own cell window, a model statement rather
+than a validated point. The binding limit at the OTS bound is tile
+leakage; at the FAST bound no limit binds below the 2048 side that was
+searched. The consequence is stated plainly wherever 1S1R results
 appear: #strong[every 1S1R number in this book is conditional on a
 selector better than today\'s production ovonic threshold switch.] That
 is a real, citable engineering requirement, and it replaces the
@@ -2542,16 +2547,23 @@ support, because it measured where the writes went.
 
 One negative result belongs here, because it bounds what the simulator
 can contribute to this section at all. #strong[The simulation cannot
-show wear leveling at work.] With one whole-module region of 134,217,728
-lines and one gap move per 100 writes, a 250 ms window makes 2,207 gap
-moves under GCC and 23,848 under LBM, roughly 10#super[-5] of a single
-rotation, and the gap starts at the top of the module while these
-workloads occupy low addresses. Running the matrix with the decoder off
+show wear leveling at work.] With one Start-Gap region of 67,108,864
+lines (4 GiB: NVMain's default region is ROWS x COLS x BANKS x RANKS x
+64 B, the per-channel geometry without the channel count, and the two
+channels share one gap register, so the move counts are totals across
+both) and one gap move per 100 writes, a 250 ms window makes 2,207 gap
+moves under GCC and 23,848 under LBM, roughly 3 x 10#super[-5] and
+4 x 10#super[-4] of a single rotation, and the gap starts at the top of
+the region while these workloads occupy low addresses. Running the matrix with the decoder off
 therefore reproduces the primary run\'s wear statistics and latencies
 #emph[identically]: row-level maximum writes 1,059, 3,072 and 40,704 and
 hot-spot factors 2.77, 1.06 and 1.20 on GCC, LBM and the AlexNet output
 map, the same with the decoder on and off
-(`results/system_rev2026-09_decoder_default`). That is the expected
+(`results/system_rev2026-09_decoder_default`). At the measured move
+rates, 8,828 per second under GCC and 95,392 under LBM, one rotation of
+the 67,108,864-line region takes about 7,600 s of simulated time under
+GCC (2.1 hours) and about 700 s under LBM (11.7 minutes), that is
+30,000 and 2,800 windows of 250 ms. That is the expected
 outcome rather than a defect, and it is why this section shows no
 before-and-after hot-spot figure: inside any window this pipeline can
 simulate, leveling has not yet had time to do anything. The effect of
@@ -2600,7 +2612,8 @@ this sweep was executed before the power-model repair of Section 3.1.6
 #emph[and] before the matched 2048 x 2048 organization of this revision,
 and it has not been re-run under either. Its absolute numbers therefore
 belong to the pre-revision dataset and are not comparable with Tables
-2-5. Its qualitative conclusion survives both changes a fortiori: the
+2-5. Its qualitative conclusion is expected to survive both changes,
+by the argument that follows, though it has not been re-measured: the
 static share of the swept module\'s power is 99.96% at the corrected
 organization (Section 3.1.2), so per-operation read energy is an even
 smaller fraction of the total than it was, and read-latency invariance
@@ -2615,8 +2628,8 @@ latency, invariant at 32.13 ns across all three voltages. Top right:
 system average total latency. Bottom left: system power. Bottom right:
 Power-Delay Product, whose largest movement across the full sweep is
 3.8% (LBM, 31.80 against 33.07 cycles x W at the 1.40 V design point),
-so efficiency conclusions are robust to process variation in the
-ReadVoltage operating point.]
+so the power-delay product is insensitive to the ReadVoltage operating
+point in this pre-revision sweep.]
 
 #emph[Two things to read carefully here. First, the invariance claim is
 a #strong[circuit] claim, and only the top-left panel makes it: the
@@ -2748,8 +2761,12 @@ The supply voltage - 1.5 V against DDR5\'s JEDEC-specified 1.1 V - was
 corrected, scaling all DDR5 power linearly by 0.733 (verified exact);
 the IDD current magnitudes were subsequently calibrated to published
 vendor datasheets (Micron and SK hynix 16 Gb DDR5-4800 tables) \[29\],
-\[30\], run as a two-vendor band - the conservative SK hynix floor is
-this book\'s headline, the Micron ceiling is reported alongside - with a
+\[30\], with the SK hynix values, the lower of the two, as the
+configuration this book reports (a Micron-ceiling variant was run
+during the calibration cycle but was not re-run on the corrected 16 GiB
+module and the corrected background-power accounting, so no ceiling
+figure is quoted here; two power-down currents hynix does not publish
+are scaled from Micron's by the IDD2N and IDD3N ratios) - with a
 documented caveat that datasheet IDD values are specification limits rather than typicals (vendors publish no typical DDR5 IDD figure to use instead, Section 3.1.2); calibrating with real currents also exposed and
 forced the repair of a sign artifact in NVMain\'s activate-energy
 formula (clamped at zero, worst case 2.8% of module power before the
@@ -2830,7 +2847,8 @@ their latency averages compare identical populations, while LBM - the
 one genuinely service-limited workload - is completed to a
 technology-dependent depth (the sustained-throughput ordering of Section
 3.1.1), so its latency averages cover each configuration\'s completed
-prefix, and DDR5 power is reported as a two-vendor calibration band.
+prefix, and DDR5 power is reported at the SK hynix datasheet limits,
+the lower of the two vendor tables consulted.
 Within those bounds, the cross-technology power and PDP comparisons that
 earlier drafts of this work withheld are restored in Sections 3.1.2,
 3.1.3, and 3.3.
@@ -4353,15 +4371,14 @@ confidence.
 
 == 4.3 Data Availability and Reproducibility
 <data-availability-and-reproducibility>
-To ensure the scientific reproducibility of the 22nm ReRAM models, the
-complete simulation stack, including the mbmm\_master.py orchestration
-script, modified NVSim/NVMain C++ source files, and JSON configuration
-data, has been made publicly available.
-
-#blockquote[
-#strong[Project Repository:]
-#link("https://github.com/uvKogan/Memristor-based-dram")[#underline[https:\/\/github.com/uvKogan/Memristor-based-dram]]
-]
+The complete simulation stack (the mbmm\_master.py orchestration
+script, the patched NVSim and NVMain C++ sources, the JSON
+configurations) is public at
+#link("https://github.com/uvKogan/Memristor-based-dram")[#underline[https:\/\/github.com/uvKogan/Memristor-based-dram]].
+The two simulators are git submodules of that repository, pinned at the
+NVMain fork `uvKogan/NVmain`, branch `ddr5-timing-fix`, commit
+`c89988d`, and the NVSim fork `uvKogan/MBMM`, commit `9a90d44`;
+Appendix C gives the full statement.
 
 #pagebreak()
 <section-2>
@@ -4579,10 +4596,11 @@ data, has been made publicly available.
   power is bit-for-bit identical across the full two-orders-of-magnitude
   range, and read latency varies by at most 1.7% across it. The sweep
   was run at the pre-revision organization, so its absolute values
-  belong to that dataset; its conclusion holds a fortiori at the matched
-  2048 x 2048 organization, where NVSim charges the cell no leakage at
-  all and chip leakage is entirely peripheral. The exact HRS value is
-  therefore not load-bearing for any finding in this book. Note that the
+  belong to that dataset; its conclusion is expected to hold at the
+  matched 2048 x 2048 organization, where NVSim charges the cell no
+  leakage at all and chip leakage is entirely peripheral, though the
+  sweep has not been re-run there. On that reasoning the exact HRS
+  value is not load-bearing for any finding in this book. Note that the
   same sweep was previously offered as evidence that the
   transistor-versus-selector leakage separation of that era was
   insensitive to HRS. That reading was correct but beside the point: the
@@ -4654,7 +4672,9 @@ data, has been made publicly available.
   chip (OTS) or 0.076 mW (FAST), which is an instantaneous figure during
   an access and must be duty-cycled before comparison, and must never be
   added to the 108.384 mW standby figure; read margin is 24.0% and 23.2%
-  against a 10% requirement; and the maximum valid tile side is
+  against a 10% requirement, the solve's validated range (sides up to
+  512, Zhou Fig. 3(b)) extrapolated to the 2048 tile at this project's
+  own cell window; and the maximum valid tile side is
   #strong[1666 cells at the OTS bound] against 166,666 at the FAST
   bound. The simulated 2048-cell tile is therefore valid only at the
   better bound, which is why every 1S1R result in this book is stated as
@@ -5108,6 +5128,13 @@ the ReRAM and PCM results, run at `53cea70`, and the DDR5 results, run
 with the corrected configurations committed as `c89988d`, are all
 reproduced from `c89988d`.
 
+#strong[Recipe.] `git clone --recursive
+https://github.com/uvKogan/Memristor-based-dram.git` checks out both
+pins; the B.2 command then regenerates the primary matrix; and
+`typst compile --font-path fonts Project_Book.typ`, and the same for
+`Technical_Report.typ`, rebuild the two documents from
+`documents/MBMM_Book_Typst/`.
+
 #strong[Pipeline interface.] The master orchestration script
 mbmm\_master.py takes the replay window in #emph[nanoseconds]
 (`--window-ns`), converting it to each technology's own cycle budget
@@ -5415,7 +5442,7 @@ quantity to be compared arithmetically against the new one.
   [#strong[Start-Gap on versus off]],
   [Not run; the decoder did not exist],
   [Wear statistics and latency identical with the decoder on and off on GCC, LBM and the AlexNet output map, so no before-and-after hot-spot figure is shown],
-  [A 250 ms window completes about 10#super[-5] of one rotation over a whole-module region, so leveling has not yet acted; its effect is carried by the projection instead],
+  [A 250 ms window completes about 3 x 10#super[-5] (GCC) of one rotation over the 67,108,864-line Start-Gap region, so leveling has not yet acted; its effect is carried by the projection instead],
   [Section 3.1.4; results/system\_rev2026-09\_decoder\_default],
 
   [#strong[Gap-move traffic]],
