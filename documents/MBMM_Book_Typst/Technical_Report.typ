@@ -124,8 +124,9 @@ the #emph[pre-revision] dataset, read latency is invariant to a ±20%
 ReadVoltage perturbation with Power-Delay Product changing less than 4%.
 That sweep has not been re-run at the matched organization, so its
 absolute values are not comparable with the tables above; its
-qualitative conclusion survives a fortiori, because the static share of
-module power is now 99.96% (Section 3.1.5).
+qualitative conclusion is expected to survive, though it has not been
+re-measured, because the static share of module power is now 99.96%
+(Section 3.1.5).
 
 The resulting picture is narrower and better grounded than the one this
 book carried in its 3 September version. Selector-gated 22nm SLC ReRAM
@@ -1696,7 +1697,7 @@ under the compute-bound GCC (SPEC2017) workload.]
 
 Power is the axis on which this revision reverses the book\'s previous
 conclusion outright, so the correction is stated first and the numbers
-follow. #strong[There is no transistor-versus-selector leakage gap.] The
+follow. #strong[NVSim reports no transistor-versus-selector leakage gap.] The
 two-orders-of-magnitude device-level separation that the 3 September
 version of this book made its deciding architectural fact (superseded
 figures in Appendix D) was an artifact of simulating the two cells at
@@ -1852,10 +1853,14 @@ rule that a tile side may not exceed $I_"on" \/ (6 I_"leak")$, the OTS
 bound supports a maximum tile of 1666 cells a side - #strong[so the 2048
 x 2048 organization this book simulates is not valid at present-day
 selector quality]. The FAST bound supports 166,666 cells a side and is
-valid with three orders of magnitude to spare. Read margin is
-comfortable at both (24.0% and 23.2% against a 10% requirement), so the
-binding limit at the OTS bound is tile leakage and at the FAST bound is
-read margin. The consequence is stated plainly wherever 1S1R results
+valid with three orders of magnitude to spare. The read-margin solve,
+validated against Zhou's Fig. 3(b) for sides up to 512, puts the margin
+at the 2048 tile at 24.0% and 23.2% against a 10% requirement; that is
+the validated model extrapolated to four times the largest validated
+side and to this project's own cell window, a model statement rather
+than a validated point. The binding limit at the OTS bound is tile
+leakage; at the FAST bound no limit binds below the 2048 side that was
+searched. The consequence is stated plainly wherever 1S1R results
 appear: #strong[every 1S1R number in this book is conditional on a
 selector better than today\'s production ovonic threshold switch.] That
 is a real, citable engineering requirement, and it replaces the
@@ -2607,7 +2612,8 @@ this sweep was executed before the power-model repair of Section 3.1.6
 #emph[and] before the matched 2048 x 2048 organization of this revision,
 and it has not been re-run under either. Its absolute numbers therefore
 belong to the pre-revision dataset and are not comparable with Tables
-2-5. Its qualitative conclusion survives both changes a fortiori: the
+2-5. Its qualitative conclusion is expected to survive both changes,
+by the argument that follows, though it has not been re-measured: the
 static share of the swept module\'s power is 99.96% at the corrected
 organization (Section 3.1.2), so per-operation read energy is an even
 smaller fraction of the total than it was, and read-latency invariance
@@ -2622,8 +2628,8 @@ latency, invariant at 32.13 ns across all three voltages. Top right:
 system average total latency. Bottom left: system power. Bottom right:
 Power-Delay Product, whose largest movement across the full sweep is
 3.8% (LBM, 31.80 against 33.07 cycles x W at the 1.40 V design point),
-so efficiency conclusions are robust to process variation in the
-ReadVoltage operating point.]
+so the power-delay product is insensitive to the ReadVoltage operating
+point in this pre-revision sweep.]
 
 #emph[Two things to read carefully here. First, the invariance claim is
 a #strong[circuit] claim, and only the top-left panel makes it: the
@@ -2755,8 +2761,12 @@ The supply voltage - 1.5 V against DDR5\'s JEDEC-specified 1.1 V - was
 corrected, scaling all DDR5 power linearly by 0.733 (verified exact);
 the IDD current magnitudes were subsequently calibrated to published
 vendor datasheets (Micron and SK hynix 16 Gb DDR5-4800 tables) \[29\],
-\[30\], run as a two-vendor band - the conservative SK hynix floor is
-this book\'s headline, the Micron ceiling is reported alongside - with a
+\[30\], with the SK hynix values, the lower of the two, as the
+configuration this book reports (a Micron-ceiling variant was run
+during the calibration cycle but was not re-run on the corrected 16 GiB
+module and the corrected background-power accounting, so no ceiling
+figure is quoted here; two power-down currents hynix does not publish
+are scaled from Micron's by the IDD2N and IDD3N ratios) - with a
 documented caveat that datasheet IDD values are specification limits rather than typicals (vendors publish no typical DDR5 IDD figure to use instead, Section 3.1.2); calibrating with real currents also exposed and
 forced the repair of a sign artifact in NVMain\'s activate-energy
 formula (clamped at zero, worst case 2.8% of module power before the
@@ -2837,7 +2847,8 @@ their latency averages compare identical populations, while LBM - the
 one genuinely service-limited workload - is completed to a
 technology-dependent depth (the sustained-throughput ordering of Section
 3.1.1), so its latency averages cover each configuration\'s completed
-prefix, and DDR5 power is reported as a two-vendor calibration band.
+prefix, and DDR5 power is reported at the SK hynix datasheet limits,
+the lower of the two vendor tables consulted.
 Within those bounds, the cross-technology power and PDP comparisons that
 earlier drafts of this work withheld are restored in Sections 3.1.2,
 3.1.3, and 3.3.
@@ -4660,7 +4671,9 @@ Appendix C gives the full statement.
   chip (OTS) or 0.076 mW (FAST), which is an instantaneous figure during
   an access and must be duty-cycled before comparison, and must never be
   added to the 108.384 mW standby figure; read margin is 24.0% and 23.2%
-  against a 10% requirement; and the maximum valid tile side is
+  against a 10% requirement, the solve's validated range (sides up to
+  512, Zhou Fig. 3(b)) extrapolated to the 2048 tile at this project's
+  own cell window; and the maximum valid tile side is
   #strong[1666 cells at the OTS bound] against 166,666 at the FAST
   bound. The simulated 2048-cell tile is therefore valid only at the
   better bound, which is why every 1S1R result in this book is stated as

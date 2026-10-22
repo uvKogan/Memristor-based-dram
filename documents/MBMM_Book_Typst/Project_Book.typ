@@ -286,7 +286,8 @@ organization of 2048 x 2048 subarrays at sense-amp mux 64.]
 #emph[The one device-level advantage that survives a matched
 organization is the selector's die area, 3.540 against 12.008 mm² per
 1 Gb chip; leakage is identical for both cell types, for the reason
-lesson 1 of Chapter 3 gives. Source:
+lesson 1 of Chapter 3 gives. The 1S1R rows are uncalibrated against any
+fabricated part. Source:
 results/rev2026-09\_primary\_csv/hardware\_metrics.json.]
 
 NVSim has no multi-level-cell model, so the MLC rows apply an analytic
@@ -303,21 +304,27 @@ and die area are unchanged, because the array is the same array.
 DDR5-4800 RDIMM built from eight 16 Gb x8 devices, modeled with DDR5’s
 defining architectural feature: two independent 32-bit subchannels per
 DIMM, each with its own command bus and 32 banks, serving a 64-byte
-access as a 16-beat burst on its 32-bit bus. Its timings come from
-JESD79-5 #strong[\[20\]], and the scope of that statement is exact:
-#emph[every DDR5-4800 device timing is taken from JESD79-5, with three
-documented short-value choices that favor the baseline (tCCD, tWTR,
-tRRD) and a handful of NVMain-specific keys with no DDR5 counterpart;
-the extended book labels all 36 device and simulator keys with their
-provenance.] The core numbers are
+access as a 16-beat burst on its 32-bit bus. Its timings are the
+JESD79-5 values for the 4800B bin #strong[\[20\]], read through a
+vendor's transcription (Micron's DDR5 core data sheet) and two
+DDR5-4800 module datasheets, all of which agree; the JEDEC text itself
+is access-gated and was not consulted. The scope of that statement is
+exact: #emph[every DDR5-4800 device timing is taken from JESD79-5, with
+three documented short-value choices that favor the baseline (tCCD,
+tWTR, tRRD) and a handful of NVMain-specific keys with no DDR5
+counterpart; the extended book labels all 36 device and simulator keys
+with their provenance.] The core numbers are
 the 4800 MT/s bin at 1.1 V: tCAS-tRCD-tRP of 40-39-39, CWL of 38
 cycles, tWR 30 ns, tRRD_S 8 cycles and tFAW 32 cycles, with an all-bank
 refresh every tREFI of 3.906 us occupying tRFC of 295 ns. One
-disclosure belongs with it: the DDR5 power model is calibrated to
-published vendor IDD tables as a two-vendor band, and datasheet IDD
-values are specification limits rather than typicals, with no typical
-DDR5 figure published to use instead, so this is a worst-case-current
-baseline reported as a band and not a typical-power one.
+disclosure belongs with it: the DDR5 power model uses SK hynix's
+published 16 Gb DDR5-4800 IDD limits, the lower of the two vendor
+tables consulted, and the two power-down currents hynix does not
+publish are scaled from Micron's. Datasheet IDD values are
+specification limits rather than typicals, with no typical DDR5 figure
+published to use instead, so the 0.797 W of Table 5 is a
+worst-case-current figure for the lower-current vendor, not a typical
+power.
 
 #strong[PCM.] A legacy non-volatile baseline, named for its
 architectural framing in Lee et al. #strong[\[21\]], is carried as the
@@ -762,11 +769,14 @@ and the sensing window and retention worsen as levels are added.
 
 == 4.2. Power
 
-#strong[There is no transistor-versus-selector leakage gap.] At the
-matched organization NVSim assigns both cell types the same 108.384 mW
+#strong[NVSim reports no transistor-versus-selector leakage gap.] At
+the matched organization it assigns both cell types the same 108.384 mW
 of peripheral leakage per 1 Gb chip, and all four ReRAM full-DIMM
-configurations sit on one shared static floor of 6.937 W. Table 5 is
-the module accounting.
+configurations sit on one shared static floor of 6.937 W. That is a
+statement about the periphery: NVSim models no selector leakage of its
+own, and the 1S1R characterization is uncalibrated against any
+fabricated cross-point part, so the selector's contribution is bounded
+separately below. Table 5 is the module accounting.
 
 #strong[Table 5: total module power (W) and power per gigabyte
 (W/GiB), full-DIMM, module-sum semantics.]
@@ -1047,10 +1057,11 @@ the 1T1R SLC full DIMM is 4 to 10% faster and every track pays 14.1 to
 other (Section 4.2). A 64 B DDR5
 cross-check on a legacy single-channel shape averages 79.6 against
 83.1 ns under GCC but holds tCCD below the JEDEC floor, so its
-advantage is optimistic. And a plus or minus 20% ReadVoltage sweep
-moves the power-delay product by less than 4% with read latency
-invariant, on a pre-revision dataset not comparable with Tables 4
-to 7.
+advantage is optimistic. And a pre-revision three-point NVSim
+ReadVoltage sweep, plus or minus 20%, not re-run at the matched
+organization or under the repaired power model, moved the power-delay
+product by less than 4% with read latency invariant; its numbers are
+not comparable with Tables 4 to 7.
 
 == 4.5. Density, and the comparison in one table
 
@@ -1559,7 +1570,7 @@ python3 mbmm_master.py --all \
 
 #strong[\[19\]] J. Izraelevitz, J. Yang, L. Zhang, J. Kim, X. Liu, A. Memaripour, Y. J. Soh, Z. Wang, Y. Xu, S. R. Dulloor, J. Zhao, and S. Swanson, \"Basic Performance Measurements of the Intel Optane DC Persistent Memory Module,\" arXiv:1903.05714, Aug. 2019.
 
-#strong[\[20\]] JEDEC Solid State Technology Association, \"DDR5 SDRAM Standard,\" JESD79-5D, Nov. 2025. \[Online\]. Available: #link("https://www.jedec.org/standards-documents/docs/jesd79-5d")[#underline[https:\/\/www.jedec.org/standards-documents/docs/jesd79-5d]].
+#strong[\[20\]] JEDEC Solid State Technology Association, \"DDR5 SDRAM Standard,\" JESD79-5D, Nov. 2025. \[Online\]. Available: #link("https://www.jedec.org/standards-documents/docs/jesd79-5d")[#underline[https:\/\/www.jedec.org/standards-documents/docs/jesd79-5d]]. Access-gated; the values used here were read from Micron Technology, \"DDR5 SDRAM\" core product data sheet, Doc. CCM005-1684161373-23, Rev. D, Oct. 2022, the vendor's transcription of the standard, and checked against two DDR5-4800 module datasheets (extended book, reference [101]).
 
 #strong[\[21\]] B. C. Lee, E. Ipek, O. Mutlu, and D. Burger, \"Architecting phase change memory as a scalable dram alternative,\" in #emph[Proc. 36th Annu. Int. Symp. Comput. Archit. (ISCA)], 2009, pp. 2-13.
 
