@@ -4596,10 +4596,11 @@ Appendix C gives the full statement.
   power is bit-for-bit identical across the full two-orders-of-magnitude
   range, and read latency varies by at most 1.7% across it. The sweep
   was run at the pre-revision organization, so its absolute values
-  belong to that dataset; its conclusion holds a fortiori at the matched
-  2048 x 2048 organization, where NVSim charges the cell no leakage at
-  all and chip leakage is entirely peripheral. The exact HRS value is
-  therefore not load-bearing for any finding in this book. Note that the
+  belong to that dataset; its conclusion is expected to hold at the
+  matched 2048 x 2048 organization, where NVSim charges the cell no
+  leakage at all and chip leakage is entirely peripheral, though the
+  sweep has not been re-run there. On that reasoning the exact HRS
+  value is not load-bearing for any finding in this book. Note that the
   same sweep was previously offered as evidence that the
   transistor-versus-selector leakage separation of that era was
   insensitive to HRS. That reading was correct but beside the point: the
