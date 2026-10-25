@@ -63,3 +63,6 @@ benchmarks/raw_logs/
 # Reviewer notes (Shahar Kvatinsky, Amit Golander), the reply drafts and the one-pager:
 # private correspondence, kept out of the public repository (2026-10-22)
 documents/MBMM_Book_Typst/private/
+
+# Wrap-up review report of 2026-10-23 (local working document, not part of the public repository)
+wrap-up-review*.md
