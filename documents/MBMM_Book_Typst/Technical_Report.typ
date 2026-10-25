@@ -261,7 +261,9 @@ not.]
 
 - #strong[Economic Drivers]: By late 2025, the massive reallocation of
   DRAM wafers to AI-focused HBM production created a severe
-  supply-demand gap for commodity main memory #strong[\[1\], \[2\]].
+  supply-demand gap for commodity main memory #strong[\[1\], \[2\]], on
+  top of the longer server refresh cycles hyperscalers had adopted since
+  2022 #strong[\[16\]].
 
 - #strong[The Objective]: This project investigates whether
   memristor-based non-volatile memory (NVM) can effectively substitute
@@ -1825,7 +1827,8 @@ say whether a 2048-cell cross-point tile is even viable, let alone what
 a selector costs in sneak current. Because that omission sits directly
 under this book\'s flagship configuration, it is closed here by a
 standalone analytic layer built on the published read model of Zhou, Kim
-and Lu #strong[\[51\]] and the handbook tile-leakage rule, evaluated at
+and Lu #strong[\[51\]] and the handbook tile-leakage rule #strong[\[102\]],
+evaluated at
 two selector qualities: an ovonic threshold switch representing
 present-day production practice (nonlinearity $10^4$, $I_"on"$ 100 uA,
 $I_"leak"$ 10 nA at half the threshold) and a Crossbar-class FAST
@@ -1849,7 +1852,8 @@ OTS figure is a 0.87% instantaneous adder on a chip already leaking
 anything.
 
 #emph[Tile validity, not leakage, is what binds.] Under the handbook
-rule that a tile side may not exceed $I_"on" \/ (6 I_"leak")$, the OTS
+rule that a tile side may not exceed $I_"on" \/ (6 I_"leak")$
+#strong[\[102\]], the OTS
 bound supports a maximum tile of 1666 cells a side - #strong[so the 2048
 x 2048 organization this book simulates is not valid at present-day
 selector quality]. The FAST bound supports 166,666 cells a side and is
@@ -2841,13 +2845,14 @@ latency-tolerant accelerators that overlap compute with memory access
 would experience a smaller end-to-end penalty; additionally, the
 completed-request and trace-player mechanism audit that exposed item
 (11) confirms that, after the matched-host correction, every
-configuration admits the identical request population per workload: GCC
-and the four lighter traces complete in full for every technology, so
-their latency averages compare identical populations, while LBM - the
-one genuinely service-limited workload - is completed to a
-technology-dependent depth (the sustained-throughput ordering of Section
-3.1.1), so its latency averages cover each configuration\'s completed
-prefix, and DDR5 power is reported at the SK hynix datasheet limits,
+configuration admits the identical request population per workload: DDR5
+and the four projected ReRAM tracks complete every workload in full, so
+their latency averages compare identical populations, while PCM and the
+two published-silicon configurations are service-limited on the heavier
+traces (down to 50.2%, 18.2% and 1.0% of LBM and 46.1%, 9.2% and 0.5%
+of STREAM, the sustained-throughput ordering of Section 3.1.1), so
+their latency averages cover each configuration\'s completed prefix,
+and DDR5 power is reported at the SK hynix datasheet limits,
 the lower of the two vendor tables consulted.
 Within those bounds, the cross-technology power and PDP comparisons that
 earlier drafts of this work withheld are restored in Sections 3.1.2,
@@ -4572,6 +4577,8 @@ Appendix C gives the full statement.
 
 #strong[\[101\]] Micron Technology, Inc., \"DDR5 SDRAM,\" core product data sheet, Doc. No. CCM005-1684161373-23, Rev. D, Oct. 2022, 537 pp. (speed bins Table 361; command and address timing Table 429; power-down timing Table 438). \[Online\]. Available: https:\/\/www.farnell.com/datasheets/3980285.pdf (accessed 2026-10-19).
 
+#strong[\[102\]] M. Rudan, R. Brunetti, and S. Reggiani, Eds., #emph[Springer Handbook of Semiconductor Devices]. Cham, Switzerland: Springer, 2023 (crossbar tile limit, Fig. 17.21, pp. 642-643, after Molas et al., IMW 2020; OTS selector currents, Table 30.3).
+
 #pagebreak() <section-3>
 = Appendix A: Simulation Parameters and Literature Grounding
 <appendix-a-simulation-parameters-and-literature-grounding>
@@ -4657,7 +4664,7 @@ Appendix C gives the full statement.
   thirteen points of that paper's Fig. 3(b) to within 0.3 percentage
   points and against the array power of its Fig. 8(a). Tile validity is
   the handbook rule that a tile side may not exceed
-  $I_"on" \/ (6 I_"leak")$. Sneak leakage counts the half-selected cells
+  $I_"on" \/ (6 I_"leak")$ \[102\]. Sneak leakage counts the half-selected cells
   on the active lines of the sixteen subarrays a request activates,
   derived from the forced organization above. #emph[Operating point:]
   read voltage 1.4 V with a V/2 half-select scheme, $R_"on"$
@@ -4969,7 +4976,15 @@ Appendix C gives the full statement.
   configurations and its manifest were written before the edit landed.
   The manifest is otherwise complete and the run is not affected;
   a reproduction that validates manifests against the current schema
-  string should expect this one file to differ.
+  string should expect this one file to differ. Every manifest also
+  records the NVMain submodule as dirty: the generated ReRAM
+  configurations are written into the submodule's `Config/` directory
+  by design, so `dirty: true` for `simulators/nvmain` reflects
+  untracked generated files, not source edits. The primary matrix and
+  the sensitivity series predate the manifest feature (task F2,
+  2026-09-21) and carry no manifest; they are recorded by their run
+  logs, the revision tracker and the NVMain command line in every
+  stats-file header.
 
 - #strong[Module Capacity and the Address Footprint (the mechanism
   behind Section 3.2’s scaling result):] #emph[Re-derived 2026-09

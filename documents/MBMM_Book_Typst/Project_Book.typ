@@ -59,7 +59,7 @@ leveling rather than the cell decides it, ideal uniform leveling at
 64 GiB and 10#super[6] cycles per cell giving 38.6 years under GCC, 3.6
 under LBM and 4.3 under STREAM. #strong[Density:] the selector-gated
 cross-point reaches 1.24x DDR5’s die-level density as SLC and 2.47x as
-MLC, against 0.36x and 0.73x for the transistor-gated cell, which does
+MLC, conditional on selector quality (Section 4.2), against 0.36x and 0.73x for the transistor-gated cell, which does
 not clear parity at the 20F² cell assumed here. Selector-gated 22nm SLC ReRAM is therefore a density
 play with competitive projected latency and a large, honest power
 deficit per gigabyte, while the transistor-gated variant matches it on
@@ -152,7 +152,10 @@ reads in 2.3 us and writes in 11.7 us #strong[\[13\]]\; SanDisk and
 Toshiba's 24nm 32 Gb 1S1R cross-point reads in 40 us and writes in
 230 us #strong[\[14\]]. Both are carried through this evaluation as
 their own configurations, on the same traces and the same module
-geometry, and they appear beside every projected latency.
+geometry, and they appear beside every projected latency. Both are
+storage parts accessed a page at a time, so their figures are page-mode
+access times rather than media bounds, and the book carries no middle
+rung between them and the projection.
 
 The one non-volatile main memory ever shipped is worth naming here for
 its vocabulary as much as for its history. #strong[3D XPoint] is the
@@ -207,7 +210,29 @@ it rests on. The extended book, `Technical_Report.pdf`, is the complete
 record underneath it: the full methodology, every table in its
 uncondensed form, the simulation-fidelity audit, the reproduction
 instructions and an appendix recording claim by claim what changed
-since the September 3 version.
+since the September 3 version. Five statements of that version are
+withdrawn, so a reader who saw it knows what not to carry forward:
+
+- the 47x leakage gap between the cell types, an artifact of two
+  unmatched array organizations (Chapter 3, lesson 1);
+
+- the DDR5 timing and power figures built on a DDR3-era template and an
+  undercounted background power, replaced by JESD79-5 timings and the
+  corrected device count (Section 2.3);
+
+- "the selector lives longer", an artifact of a service-limited window:
+  all four ReRAM tracks wear identically (Section 4.3);
+
+- the 10#super[7] SLC endurance rating and the 1.09-year LBM lifetime at
+  8 GB, replaced by the 10#super[6] planning value and the Table 6
+  projections at 64 GiB;
+
+- the statement that the baseline was modeled strictly after JESD79-5,
+  now stated as read through vendor transcriptions with three
+  documented short-value choices (Section 2.3).
+
+Appendix D of the extended book records each of them, old value
+against new.
 
 = 2. Method
 
@@ -329,7 +354,13 @@ refresh every tREFI of 3.906 us occupying tRFC of 295 ns. The baseline
 keeps NVMain's open-page row-buffer policy (`ClosePage 0`), the value
 the configuration was introduced with, while every ReRAM configuration
 runs the relaxed close-page policy (`ClosePage 1`); Section 4.1 gives
-the baseline under both policies. A second disclosure belongs with it:
+the baseline under both policies. The two modules also differ in
+geometry: the ReRAM DIMM runs 4 ranks of 8 banks per channel with
+64 KiB rows against DDR5’s 1 rank of 32 banks with 4 KiB rows, under
+different address mappings, and both use one FRFCFS queue of 32
+entries; the one-channel control and the rank-depth bound of
+Section 4.4 limit what those differences can be worth. One more
+disclosure belongs with the power model:
 the DDR5 power model uses SK hynix's published 16 Gb DDR5-4800 IDD
 limits, the lower of the two vendor
 tables consulted, and the two power-down currents hynix does not
@@ -360,7 +391,11 @@ the same traces and the same module geometry, labeled 1T1R SILICON and
 4\. The extended book puts the reason plainly, and this book keeps
 it: #emph[the two published-silicon rows sit in the same table
 deliberately: they are the counterweight to every projected row above
-them, and no reading of this table is complete without them.]
+them, and no reading of this table is complete without them.] Those
+timings are the page-mode read and write times of storage parts, not
+media bounds; they are the only fabricated ReRAM figures at this
+capacity, which is why they are carried, and why they must not be read
+as what a DIMM-class part would do.
 
 #strong[Access granularity.] Every technology in this comparison is
 accessed at #strong[64 bytes]. That is the x86-64 cache line, matched
@@ -643,7 +678,10 @@ projected tracks complete every workload in full; PCM, 1T1R SILICON and
 1S1R SILICON complete as little as 46.1%, 9.2% and 0.5% of STREAM, and
 a latency
 average over a service-limited run covers only that run's completed
-prefix, which is why end-to-end latency is the saturation measure.
+prefix, which is why end-to-end latency is the saturation measure. The
+PCM row charges its 150 ns write pulse on the request path, unlike the
+ReRAM default (Section 4.1), so its latencies sit on a different
+write-path convention.
 Source: results/rev2026-09\_primary\_csv/processed\_bar\_chart\_metrics.csv,
 column Latency\_ns.]
 
@@ -783,11 +821,11 @@ in the matrix being 1S1R MLC under GCC at 72.398 ns against DDR5’s
 moves, because the same traces present the same writes and the mode
 changes only when they are served.
 
-One comparison bounds the whole MLC treatment. Published
-program-and-verify data on 1T1R ReRAM reports an average of 49 pulses
-per level move, median 36 #strong[\[28\]], and the closest published
-two-bit #emph[array] result is MLC phase-change memory, more than
-seventy iterations for a total write of 9.7 us #strong[\[29\]]\; against
+One comparison bounds the whole MLC treatment. Multi-level 1T1R ReRAM
+is written by iterative program-and-verify pulses #strong[\[28\]], and the
+closest published two-bit #emph[array] result is MLC phase-change
+memory, more than seventy iterations for a total write of 9.7 us
+#strong[\[29\]]\; against
 that, the 3.263x write multiplier used here understates the media-level
 MLC write cost by one to two orders of magnitude, and the bounding run
 does not close that gap, because it moves this project's own pulse onto
@@ -851,7 +889,7 @@ gigabyte, which reflects the leakage constant of the configuration it
 inherits rather than a characterized device. Figure 3 shows where the
 watts are: dynamic power is 2.9 to 4.9 mW module-wide under GCC and
 rises only to 346 to 417 mW under the AI read bursts, under 6% of the
-total. DDR5's refresh alone, 9.1% of its 0.797 W under GCC or about
+total. DDR5’s refresh alone, 9.1% of its 0.797 W under GCC or about
 73 mW, is fifteen to twenty-five times the whole ReRAM module's dynamic
 draw, and ReRAM refreshes nothing; the 6.94 W leakage floor outweighs
 that saved refresh ninety-six times over. ReRAM power is leakage, and at the matched organization that is
@@ -903,8 +941,9 @@ bounds; during an access the budget is 7.56 mW per chip at an
 ovonic-threshold-switch bound and 0.076 mW at a best-published FAST
 bound, which at the OTS figure is 0.87% of the module's 6.937 W static
 floor while a rank is being accessed. What binds
-is tile validity, not leakage: the OTS bound supports a tile of at most
-1666 cells a side, so #strong[the 2048 x 2048 organization simulated
+is tile validity, not leakage: under the handbook rule that a tile side
+may not exceed $I_"on" \/ (6 I_"leak")$ #strong[\[50\]], the OTS bound
+supports a tile of at most 1666 cells a side, so #strong[the 2048 x 2048 organization simulated
 here is not valid at present-day selector quality], while the FAST
 bound supports 166,666. Every 1S1R number in this book is conditional
 on a selector better than today's production ovonic threshold
@@ -914,8 +953,10 @@ switch. #emph[Source: results/selector\_layer.json.]
 
 Writes wear the cell, so endurance is the constraint that decides
 whether any of the above matters. The projection carries the write
-distribution measured per line location inside the 250 ms window onto a
-64 GiB module at the best-sourced 10#super[6] cycle rating
+distribution measured per line location inside the 250 ms window (the
+per-line counts are taken from the trace inside the window; the
+simulator's per-row wear counters are the cross-check) onto a 64 GiB
+module at the best-sourced 10#super[6] cycle rating
 #strong[\[31\]], and asks how long it lives under four wear-leveling
 policies. Table 6 is that projection for the three sustained
 workloads, and Figure 4 is the same projection by policy.
@@ -953,7 +994,8 @@ would demand at this write rate and capacity, which is the same
 equation solved for endurance rather than for time. #strong[Every row
 assumes a stationary write distribution:] the spatial pattern of writes
 measured inside the 250 ms window is taken to repeat unchanged for the
-module's whole life. Source: results/endurance\_table.csv, rows
+module's whole life, and the no-leveling column assumes an operating
+system that never remaps a hot line. Source: results/endurance\_table.csv, rows
 capacity\_gib \= 64, endurance \= 1e6, write\_reduction \= 1.0,
 rate\_basis \= admitted.]
 
@@ -991,6 +1033,17 @@ advances one line per hundred writes: projected under randomized
 Start-Gap, GCC survives 0.69 years at 8 GiB but only 7.7 hours at
 64 GiB.
 
+The arithmetic is one equation. With ideal leveling the $N$ lines of
+the module share the write rate $W$ equally, so a cell endurance $E$
+gives a lifetime $T = N E \/ W$, and the endurance a life $T$ demands
+is $E_"req" = W T \/ N$: at 64 GiB, $N = 2^30$ lines, GCC's
+0.88 million writes per second and $E = 10^6$ give 38.6 years. The
+required-endurance form is Prof. Kvatinsky's. The extended book's
+Section 3.1.4 places the 10#super[6] planning value inside the
+literature, where shipped filamentary parts are rated at 10#super[4]
+to 10#super[7] cycles and laboratory single-device results reach
+10#super[10] and beyond.
+
 Solved for endurance instead of for time, a ten-year life on a 64 GiB
 module demands #strong[2.6 × 10#super[5] cycles under GCC,
 2.8 × 10#super[6] under LBM and 2.3 × 10#super[6] under STREAM] with
@@ -1005,7 +1058,9 @@ One negative result bounds what the simulation can contribute.
 #strong[It cannot show wear leveling at work.] With one Start-Gap region
 of 67,108,864 lines (4 GiB: NVMain sizes the region from the
 per-channel geometry, without the channel count, and the two channels
-share one gap register) and one gap move per hundred writes, a 250 ms
+share one gap register; the simulator's region is therefore half the
+simulated 8 GiB module, while the projection assumes one region over
+the whole 64 GiB module) and one gap move per hundred writes, a 250 ms
 window makes 2,207 gap moves under GCC and 23,848 under LBM, roughly
 3 x 10#super[-5] and 4 x 10#super[-4] of one rotation, so
 running the matrix with the remapper off reproduces the
@@ -1014,8 +1069,11 @@ move rates one rotation of the region takes about 7,600 s of simulated
 time under GCC, 2.1 hours, and about 700 s under LBM, 11.7 minutes:
 30,000 and 2,800 windows of 250 ms, far beyond any trace this pipeline
 could replay. Leveling's
-effect is carried entirely by the projection behind Table 6, validated
-against a write-by-write simulator to within 0.3%.
+effect is carried entirely by the projection behind Table 6, whose
+sliding-window model was checked against a brute-force write-by-write
+reference in an independent review round; the record is
+research\_notes/endurance\_audit\_runs/ and
+tests/test\_endurance\_sensitivity.py.
 
 == 4.4. Scaling and sensitivities
 
@@ -1132,6 +1190,15 @@ an older 0.80 mm²/GB placeholder, with no device or datasheet source
 behind it.]]
 ]
 
+Head to head, the two cells differ in exactly three places. The
+selector buys die area, 3.540 against 12.008 mm² per chip (3.4x), and a
+faster read, 4.70 against 10.12 ns, at the price of a slower write,
+24.59 against 15.26 ns, so its write-to-read ratio is 5.2x against 1.5x
+for the transistor-gated cell; leakage and wear are identical at the
+matched organization (Table 1). Each advantage is conditional: the
+selector's on a selector quality that supports the tile (Section 4.2),
+the transistor's on the 20F² cell assumed above.
+
 Table 8 puts every axis side by side.
 
 #strong[Table 8: cross-technology summary, full-DIMM configurations.]
@@ -1146,20 +1213,20 @@ Table 8 puts every axis side by side.
     [#strong[GCC power (W / W per GiB)]],
     [#strong[Geo-mean PDP]],
     [#strong[Die density]],
-    [#strong[Lifetime \@128 GiB]],
+    [#strong[Lifetime \@64 GiB (ideal / rand.)]],
   ),
   [#strong[DDR5-4800]], [83.1], [0.797 / 0.0498], [136.2], [1.00],
   [n/a (volatile)],
   [#strong[PCM (legacy)]], [12,168.2], [0.046 / 0.0115], [173.6], [1.25\*],
   [not evaluated],
   [#strong[1T1R SLC]], [41.4], [6.939 / 0.8674], [641.0], [0.36],
-  [7.1 yr],
+  [3.6 / 0.20 yr],
   [#strong[1S1R SLC]], [36.8], [6.940 / 0.8674], [594.5], [1.24],
-  [7.1 yr],
+  [3.6 / 0.20 yr],
   [#strong[1T1R MLC]], [44.5], [6.941 / 0.4338], [722.8], [0.73],
-  [7.1 yr],
+  [3.6 / 0.20 yr],
   [#strong[1S1R MLC]], [37.9], [6.941 / 0.4338], [645.4], [2.47],
-  [7.1 yr],
+  [3.6 / 0.20 yr],
 )]
 ]
 
@@ -1173,11 +1240,14 @@ is reported here for completeness and should be read as #emph[not
 characterized], like the lifetime cell beside it. The
 published-silicon counterweights of Table 4 are deliberately not
 repeated here: no row of this table describes a fabricated part.
-#strong[Projected lifetime] is the LBM worst case at 128 GiB under
-#emph[ideal] uniform leveling at 10#super[6] cycles per cell, and is a
-projection in the sense of Section 4.3, not a measured lifetime.
-Source: results/rev2026-09\_primary\_csv/processed\_bar\_chart\_metrics.csv
-and processed\_geometric\_means.csv.]
+#strong[Projected lifetime] is the LBM worst case at 64 GiB, the
+capacity Section 4.3 projects, under #emph[ideal] uniform leveling and
+under randomized Start-Gap, at 10#super[6] cycles per cell; the MLC
+tracks carry the SLC rating, because MLC programming is not counted as
+extra wear; every value is a projection in the sense of Section 4.3,
+not a measured lifetime.
+Source: results/rev2026-09\_primary\_csv/processed\_bar\_chart\_metrics.csv,
+processed\_geometric\_means.csv and results/endurance\_table.csv.]
 
 = 5. Discussion
 
@@ -1355,7 +1425,12 @@ The conditional statement that follows is honest in both directions.
 on it, controller, error correction, and a DRAM cache in front of it as
 in Optane's Memory Mode #strong[\[39\]], landed in the same
 few-hundred-nanosecond class as the measured CXL-attached DRAM devices
-above. No published ReRAM silicon does.] What the projected numbers do
+above. No published ReRAM silicon does.] The public record of non-DRAM
+media behind CXL is NAND with a DRAM cache in front of it
+#strong[\[51\]], #strong[\[52\]], and the far slot at hyperscale is being
+filled with decommissioned DDR4 behind a 50 ns ASIC #strong[\[53\]], so the
+cost bar a ReRAM far-memory device would have to clear is depreciated
+DRAM, not DDR5. What the projected numbers do
 say is which half of that problem is open: at 36.8 to 44.5 ns of media
 latency under CPU traffic, with 1.24x to 2.47x DDR5’s die-level density
 on the selector track, the device physics is not the obstacle. The
@@ -1481,8 +1556,10 @@ leakage and loses on area.
 carries the threshold that would reverse it, and stating them together
 is the most useful thing a negative result can do. The power deficit
 closes only if idle gating removes at least 94.3% of the static
-component with no module overhead, and no gating fraction closes it
-once the ReRAM module's own register, PMIC and PHY overhead exceeds
+component with no module overhead, or if a larger 1T1R subarray cuts
+the peripheral leakage floor that gating would otherwise have to hide,
+the lever the future-work list below names; no gating fraction closes
+it once the ReRAM module's own register, PMIC and PHY overhead exceeds
 0.79 W (Section 4.2). The 1S1R results hold at the simulated 2048 x
 2048 tile only with a selector that supports that tile side, which a
 production ovonic threshold switch, at 1666 cells, does not and a
@@ -1495,7 +1572,11 @@ near the idealized 4F²; at twice that area 22nm SLC falls below DDR5
 parity (Section 4.5). And the latency advantage becomes a statement
 about hardware only when a ReRAM array and interface at the assumed
 800 MHz exist: at published silicon timings the same DIMM averages
-11.9 us and 379 us under GCC (Section 4.1).
+11.9 us and 379 us under GCC (Section 4.1). Two thresholds sit on the
+baseline side: the latency margin is 1.9 to 2.1 to one, not two to one,
+once DDR5 runs the ReRAM configurations' close-page policy, and a
+typical-current DDR5 module would widen the power deficit rather than
+close it (Sections 2.3, 4.1).
 
 Eight pieces of work follow directly from what this book could not
 settle.
@@ -1645,9 +1726,9 @@ python3 mbmm_master.py --all \
 
 #strong[\[27\]] J. D. McCalpin, \"Memory Bandwidth and Machine Balance in Current High Performance Computers,\" IEEE Computer Society Technical Committee on Computer Architecture (TCCA) Newsletter, pp. 19-25, Dec. 1995.
 
-#strong[\[28\]] Program-and-verify pulse-count characterization of multi-level-cell 1T1R RRAM, preprint, arXiv:2108.07879 (average 49 pulses per level move, median 36).
+#strong[\[28\]] W. Wan et al., \"Edge AI without Compromise: Efficient, Versatile and Accurate Neurocomputing in Resistive Random-Access Memory,\" preprint, arXiv:2108.07879, Aug. 2021 (the NeuRRAM chip; iterative program-and-verify writing of multi-level 1T1R cells).
 
-#strong[\[29\]] Program-and-verify characterization of multi-level-cell phase-change memory (more than 70 iterations for a 9.7 us total write; under 1.6 us with the verify step skipped), PMC6680789. \[Online\]. Available: #link("https://pmc.ncbi.nlm.nih.gov/articles/PMC6680789/")[#underline[https:\/\/pmc.ncbi.nlm.nih.gov/articles/PMC6680789/]].
+#strong[\[29\]] C. Xie et al., \"Speeding Up the Write Operation for Multi-Level Cell Phase Change Memory with Programmable Ramp-Down Current Pulses,\" #emph[Micromachines], vol. 10, no. 7, p. 461, 2019. DOI: 10.3390/mi10070461 (more than 70 iterations for a 9.7 us total write; under 1.6 us with the verify step skipped), PMC6680789. \[Online\]. Available: #link("https://pmc.ncbi.nlm.nih.gov/articles/PMC6680789/")[#underline[https:\/\/pmc.ncbi.nlm.nih.gov/articles/PMC6680789/]].
 
 #strong[\[30\]] K. T. Malladi, F. A. Nothaft, K. Periyathambi, B. C. Lee, C. Kozyrakis, and M. Horowitz, \"Towards Energy-Proportional Datacenter Memory with Mobile DRAM,\" in Proc. 39th Annu. Int. Symp. Computer Architecture (ISCA), 2012, pp. 37-48. DOI: 10.1109/ISCA.2012.6237004
 
@@ -1655,11 +1736,11 @@ python3 mbmm_master.py --all \
 
 #strong[\[32\]] M. K. Qureshi, J. Karidis, M. Franceschini, V. Srinivasan, L. Lastras, and B. Abali, \"Enhancing Lifetime and Security of PCM-Based Main Memory with Start-Gap Wear Leveling,\" in #emph[Proc. 42nd Annu. IEEE/ACM Int. Symp. Microarchitecture (MICRO)], 2009, pp. 14-23.
 
-#strong[\[33\]] Measured idle latency of local and remote-socket DDR5 and of CXL-attached DRAM devices, preprint, arXiv:2409.14317.
+#strong[\[33\]] J. Liu, H. Hadian, H. Xu, D. S. Berger, and H. Li, \"Dissecting CXL Memory Performance at Scale: Analysis, Modeling, and Optimization,\" preprint, arXiv:2409.14317, Sept. 2024, the version read here; published as J. Liu et al., \"Systematic CXL Memory Characterization and Performance Analysis at Scale,\" in #emph[Proc. 30th ACM Int. Conf. Architectural Support for Programming Languages and Operating Systems (ASPLOS)], 2025. DOI: 10.1145/3676641.3715987 (measured idle latency of local and remote-socket DDR5 and of CXL-attached DRAM devices).
 
-#strong[\[34\]] \"Pond\": CXL-based memory pooling for cloud platforms (Microsoft Azure), preprint, arXiv:2203.00241 (local DDR4 platform baselines of 78 and 115 ns, pooling latency overheads, workload latency-acceptability study).
+#strong[\[34\]] H. Li, D. S. Berger, L. Hsu, D. Ernst, P. Zardoshti, S. Novakovic, M. Shah, S. Rajadnya, S. Lee, I. Agarwal, M. D. Hill, M. Fontoura, and R. Bianchini, \"Pond: CXL-Based Memory Pooling Systems for Cloud Platforms,\" in #emph[Proc. 28th ACM Int. Conf. Architectural Support for Programming Languages and Operating Systems (ASPLOS)], vol. 2, Mar. 2023, pp. 574-587. DOI: 10.1145/3575693.3578835; preprint arXiv:2203.00241 (local DDR4 platform baselines of 78 and 115 ns, pooling latency overheads, workload latency-acceptability study).
 
-#strong[\[35\]] Sun et al., \"Demystifying CXL Memory with Genuine CXL-Ready Systems and Devices,\" preprint, arXiv:2303.15375.
+#strong[\[35\]] Y. Sun et al., \"Demystifying CXL Memory with Genuine CXL-Ready Systems and Devices,\" in #emph[Proc. 56th Annu. IEEE/ACM Int. Symp. Microarchitecture (MICRO)], 2023, pp. 105-121. DOI: 10.1145/3613424.3614256; preprint arXiv:2303.15375.
 
 #strong[\[36\]] Linux kernel documentation, \"NUMA performance\" (ACPI HMAT latency and bandwidth attributes exposed per initiator-target pair). \[Online\]. Available: #link("https://docs.kernel.org/admin-guide/mm/numaperf.html")[#underline[https:\/\/docs.kernel.org/admin-guide/mm/numaperf.html]].
 
@@ -1669,25 +1750,33 @@ python3 mbmm_master.py --all \
 
 #strong[\[39\]] Intel Corporation, second-generation Intel Xeon Scalable processor family technical overview (Optane PMem Memory Mode and App Direct; 64-byte byte-addressable lines). \[Online\]. Available: #link("https://www.intel.com/content/www/us/en/developer/articles/news/second-generation-intel-xeon-processor-scalable-family-technical-overview.html")[#underline[https:\/\/www.intel.com/content/www/us/en/developer/articles/news/second-generation-intel-xeon-processor-scalable-family-technical-overview.html]].
 
-#strong[\[40\]] Channel-model bit error rates for a 1S1R cross-point array (1024 x 1024, 10 ohm per junction, ideal selector; read and write error rates by cell position), preprint, arXiv:1912.02963.
+#strong[\[40\]] Z. Chen and L. Dolecek, \"Write and Read Channel Models for 1S1R Crossbar Resistive Memory with High Line Resistance,\" in #emph[Proc. IEEE Global Communications Conf. (GLOBECOM)], 2020. DOI: 10.1109/GLOBECOM42002.2020.9322521; preprint arXiv:1912.02963 (channel-model bit error rates for a 1024 x 1024 1S1R array, 10 ohm per junction, ideal selector; read and write error rates by cell position).
 
-#strong[\[41\]] Weebit Nano, smart-write algorithm technical resource (128 kb 1T1R macro: below 10#super[-7] after 10#super[6] cycles, 28.1 dB read margin). \[Online\]. Available: #link("https://www.weebit-nano.com/technical_resources/smart-write-algorithm-to-enhance-performances-and-reliability-of-an-rram-macro/")[#underline[https:\/\/www.weebit-nano.com/technical\_resources/smart-write-algorithm-to-enhance-performances-and-reliability-of-an-rram-macro/]].
+#strong[\[41\]] B. Giraud et al., \"Smart Write Algorithm to Enhance Performances and Reliability of an RRAM Macro,\" #emph[IEEE J. Solid-State Circuits], vol. 59, no. 9, pp. 3045-3057, Sept. 2024. DOI: 10.1109/JSSC.2024.3386429 (128 kb 1T1R macro: below 10#super[-7] after 10#super[6] cycles); summarized at Weebit Nano, smart-write algorithm technical resource. \[Online\]. Available: #link("https://www.weebit-nano.com/technical_resources/smart-write-algorithm-to-enhance-performances-and-reliability-of-an-rram-macro/")[#underline[https:\/\/www.weebit-nano.com/technical\_resources/smart-write-algorithm-to-enhance-performances-and-reliability-of-an-rram-macro/]].
 
-#strong[\[42\]] Raw bit error rate of 1T1R HfO#sub[2] RRAM arrays under cycling, including a 2T2R variant, preprint, arXiv:1902.02528.
+#strong[\[42\]] M. Bocquet et al., \"In-Memory and Error-Immune Differential RRAM Implementation of Binarized Deep Neural Networks,\" in #emph[Proc. IEEE Int. Electron Devices Meeting (IEDM)], Dec. 2018. DOI: 10.1109/IEDM.2018.8614639; preprint arXiv:1902.02528 (raw bit error rate of 1T1R HfO#sub[2] RRAM arrays under cycling, including a 2T2R variant).
 
-#strong[\[43\]] Reliability of a 1S1R selector stacked with STT-MRAM (10#super[-9] per-read disturb rate, 10#super[9] read-disturb-free cycles), IEDM 2023. \[Online\]. Available: #link("https://ieeexplore.ieee.org/document/10413809/")[#underline[https:\/\/ieeexplore.ieee.org/document/10413809/]].
+#strong[\[43\]] E. Ambrosi et al., \"Low voltage (\<1.8 V) and high endurance (\>1M) 1-Selector/1-STT-MRAM with ultra-low (1 ppb) read disturb for high density embedded memory arrays,\" in #emph[Proc. IEEE Int. Electron Devices Meeting (IEDM)], Dec. 2023. DOI: 10.1109/IEDM45741.2023.10413809 (10#super[-9] per-read disturb rate, 10#super[9] read-disturb-free cycles). \[Online\]. Available: #link("https://ieeexplore.ieee.org/document/10413809/")[#underline[https:\/\/ieeexplore.ieee.org/document/10413809/]].
 
 #strong[\[44\]] IBM Research, \"Enhancing 3D XPT/SOM reliability: strategies for mitigating spike current and improving read endurance,\" IMW 2025 (cell failure rate 9% falling to 0.02% after read-endurance optimization). \[Online\]. Available: #link("https://research.ibm.com/publications/enhancing-3d-xptsom-reliability-strategies-for-mitigating-spike-current-and-improving-read-endurance")[#underline[https:\/\/research.ibm.com/publications/enhancing-3d-xptsom-reliability-strategies-for-mitigating-spike-current-and-improving-read-endurance]].
 
-#strong[\[45\]] Zhang, Sridharan, and Jian, chipkill-correct for persistent memory, #emph[Proc. 51st Annu. IEEE/ACM Int. Symp. Microarchitecture (MICRO)], 2018; consulted via ar5iv:2309.00304 (2 x 10#super[-4] raw design point, BCH(2312,2048,22), about 27% coding overhead).
+#strong[\[45\]] D. Zhang, V. Sridharan, and X. Jian, \"Exploring and Optimizing Chipkill-Correct for Persistent Memory Based on High-Density NVRAMs,\" in #emph[Proc. 51st Annu. IEEE/ACM Int. Symp. Microarchitecture (MICRO)], 2018, pp. 710-723. DOI: 10.1109/MICRO.2018.00063 (2 x 10#super[-4] raw design point, BCH(2312,2048,22), about 27% coding overhead); reached through H. Volos, \"The Case for Replication-Aware Memory-Error Protection in Disaggregated Memory,\" #emph[IEEE Computer Architecture Letters], vol. 20, no. 2, 2021, arXiv:2309.00304, which cites it.
 
-#strong[\[46\]] ArchShield, an architectural framework for DRAM with high bit-error rates; consulted via ar5iv:1704.03991 (DRAM on-die SECDED tolerates about 10#super[-6] raw).
+#strong[\[46\]] P. J. Nair, D.-H. Kim, and M. K. Qureshi, \"ArchShield: Architectural Framework for Assisting DRAM Scaling by Tolerating High Error Rates,\" in #emph[Proc. 40th Annu. Int. Symp. Computer Architecture (ISCA)], 2013, pp. 72-83. DOI: 10.1145/2485922.2485929 (DRAM on-die SECDED tolerates about 10#super[-6] raw); consulted through P. J. Nair, \"Architectural Techniques to Enable Reliable and Scalable Memory Systems,\" Ph.D. dissertation, Georgia Inst. of Technology, 2017, arXiv:1704.03991.
 
 #strong[\[47\]] Intel Corporation, Intel Optane SSD 905P series product specifications (uncorrectable bit error rate under 1 sector per 10#super[17] bits). \[Online\]. Available: #link("https://www.intel.com/content/www/us/en/products/sku/147526/intel-optane-ssd-905p-series-1-5tb-2-5in-pcie-x4-3d-xpoint/specifications.html")[#underline[https:\/\/www.intel.com/content/www/us/en/products/sku/147526/intel-optane-ssd-905p-series-1-5tb-2-5in-pcie-x4-3d-xpoint/specifications.html]].
 
-#strong[\[48\]] Read-margin analysis of 1R against 1S1R crossbar arrays, establishing the 10% minimum read-margin criterion, arXiv:2407.10466.
+#strong[\[48\]] A. Tyagi and S. Kvatinsky, \"Assessing the Performance of Stateful Logic in 1-Selector-1-RRAM Crossbar Arrays,\" in #emph[Proc. IEEE Int. Symp. Circuits and Systems (ISCAS)], 2024. DOI: 10.1109/ISCAS58744.2024.10558539; preprint arXiv:2407.10466 (read-margin analysis of 1R against 1S1R crossbar arrays; the 10% minimum read-margin criterion).
 
 #strong[\[49\]] J. Choe, \"Comparing DDR5 Memory From Micron, Samsung, SK Hynix,\" #emph[EE Times], Feb. 15, 2022. \[Online\]. Available: #link("https://www.eetimes.com/comparing-ddr5-memory-from-micron-samsung-sk-hynix/")[#underline[https:\/\/www.eetimes.com/comparing-ddr5-memory-from-micron-samsung-sk-hynix/]]. \[Accessed: Jul. 12, 2026\].
+
+#strong[\[50\]] M. Rudan, R. Brunetti, and S. Reggiani, Eds., #emph[Springer Handbook of Semiconductor Devices]. Cham, Switzerland: Springer, 2023 (crossbar tile limit, Fig. 17.21, pp. 642-643, after Molas et al., IMW 2020; OTS selector currents, Table 30.3).
+
+#strong[\[51\]] S.-P. Yang, M. Kim, S. Nam, J. Park, J.-Y. Choi, E. H. Nam, E. Lee, S. Lee, and B. S. Kim, \"Overcoming the Memory Wall with CXL-Enabled SSDs,\" in #emph[Proc. USENIX Annu. Technical Conf. (ATC)], Jul. 2023, pp. 601-617.
+
+#strong[\[52\]] J. Zeng et al., \"Performance Characterizations and Usage Guidelines of Samsung CXL Memory Module Hybrid Prototype,\" preprint, arXiv:2503.22017, Mar. 2025.
+
+#strong[\[53\]] N. Gholkar, J. Stojkovic, H. Al Maruf, G. Price, P. Chauhan, H. Patel, C. Van Goethem, K. Vemuri, K. Sriadibhatla, K. Subramanian, S. Kanaujia, C. Tang, and A. Dhanotia, \"Vistara: Making CXL Real: Full Path from ASIC Design and OS Support to Hyperscale Deployment,\" in #emph[Proc. 53rd Annu. Int. Symp. Computer Architecture (ISCA)], industry session, 2026.
 
 #set text(size: 12pt)
 

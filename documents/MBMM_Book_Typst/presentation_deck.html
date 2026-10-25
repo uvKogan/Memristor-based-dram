@@ -700,18 +700,18 @@ ul.points.md { gap: 0.8em; max-width: 88ch; }
   </div>
   <div class="table-wrap" style="margin-top:0.4em;">
   <table class="data compact">
-    <thead><tr><th>Full DIMM</th><th class="num">GCC lat. (ns)</th><th class="num">GCC power (W / W per GiB)</th><th class="num">Geo-mean PDP</th><th class="num">Die density</th><th class="num">Lifetime @128 GiB</th></tr></thead>
+    <thead><tr><th>Full DIMM</th><th class="num">GCC lat. (ns)</th><th class="num">GCC power (W / W per GiB)</th><th class="num">Geo-mean PDP</th><th class="num">Die density</th><th class="num">Lifetime @64 GiB (ideal / rand.)</th></tr></thead>
     <tbody>
       <tr><td>DDR5-4800</td><td class="num">83.1</td><td class="num">0.797 / 0.0498</td><td class="num">136.21</td><td class="num">1.00</td><td class="num">n/a (volatile)</td></tr>
       <tr><td>PCM (legacy)</td><td class="num">12,168.2</td><td class="num">0.046 / 0.0115</td><td class="num">173.6</td><td class="num">1.25*</td><td class="num">not evaluated</td></tr>
-      <tr><td>1T1R SLC</td><td class="num">41.4</td><td class="num">6.939 / 0.8674</td><td class="num">641.0</td><td class="num">0.36</td><td class="num">7.1 yr</td></tr>
-      <tr class="hl"><td>1S1R SLC</td><td class="num">36.8</td><td class="num">6.940 / 0.8674</td><td class="num">594.5</td><td class="num">1.24</td><td class="num">7.1 yr</td></tr>
-      <tr><td>1T1R MLC</td><td class="num">44.5</td><td class="num">6.941 / 0.4338</td><td class="num">722.8</td><td class="num">0.73</td><td class="num">7.1 yr</td></tr>
-      <tr><td>1S1R MLC</td><td class="num">37.9</td><td class="num">6.941 / 0.4338</td><td class="num">645.4</td><td class="num">2.47</td><td class="num">7.1 yr</td></tr>
+      <tr><td>1T1R SLC</td><td class="num">41.4</td><td class="num">6.939 / 0.8674</td><td class="num">641.0</td><td class="num">0.36</td><td class="num">3.6 / 0.20 yr</td></tr>
+      <tr class="hl"><td>1S1R SLC</td><td class="num">36.8</td><td class="num">6.940 / 0.8674</td><td class="num">594.5</td><td class="num">1.24</td><td class="num">3.6 / 0.20 yr</td></tr>
+      <tr><td>1T1R MLC</td><td class="num">44.5</td><td class="num">6.941 / 0.4338</td><td class="num">722.8</td><td class="num">0.73</td><td class="num">3.6 / 0.20 yr</td></tr>
+      <tr><td>1S1R MLC</td><td class="num">37.9</td><td class="num">6.941 / 0.4338</td><td class="num">645.4</td><td class="num">2.47</td><td class="num">3.6 / 0.20 yr</td></tr>
     </tbody>
   </table>
   </div>
-  <p class="lede" style="font-size:0.8rem; opacity:0.85;">Only the per-gigabyte power column is comparable, because the modules are 16 GiB (DDR5, ReRAM MLC), 8 GiB (ReRAM SLC) and 4 GiB (PCM), and both sides count memory devices only. Latencies are <strong>media</strong> numbers under the projection caveat. Geo-mean PDP is W&middot;ns over the six workloads. <strong>*</strong> The PCM density figure is a fixed constant in the metrics pipeline with no device or datasheet source behind it, not a characterized die area; read it as <em>not characterized</em>, like the lifetime cell beside it. Projected lifetime is the LBM worst case at 128 GiB under <em>ideal</em> uniform leveling at 10<sup>6</sup> cycles per cell. The published-silicon counterweights are deliberately not repeated here: no row of this table describes a fabricated part.</p>
+  <p class="lede" style="font-size:0.8rem; opacity:0.85;">Only the per-gigabyte power column is comparable, because the modules are 16 GiB (DDR5, ReRAM MLC), 8 GiB (ReRAM SLC) and 4 GiB (PCM), and both sides count memory devices only. Latencies are <strong>media</strong> numbers under the projection caveat. Geo-mean PDP is W&middot;ns over the six workloads. <strong>*</strong> The PCM density figure is a fixed constant in the metrics pipeline with no device or datasheet source behind it, not a characterized die area; read it as <em>not characterized</em>, like the lifetime cell beside it. Projected lifetime is the LBM worst case at 64 GiB, the capacity the endurance section projects, under <em>ideal</em> uniform leveling and under randomized Start-Gap at 10<sup>6</sup> cycles per cell; the MLC tracks carry the SLC rating. The published-silicon counterweights are deliberately not repeated here: no row of this table describes a fabricated part.</p>
 </div>
 <div class="speaker-note"><b>Say</b>Density is the axis on which the selector earns its place, and it is the only axis where the two cell types genuinely part company. The sensitivity to the assumed cell area is worth saying out loud: it is the largest uncertainty in the density case. Book Section 4.5, Table 8 and Figure 6.</div>
 </section>
