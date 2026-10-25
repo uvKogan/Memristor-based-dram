@@ -42,8 +42,9 @@ cells, through NVMain 2.0 on six workload traces at one matched
 2048 x 2048 array organization. #strong[Latency:] at projected media
 timings the ReRAM DIMM is faster than a DDR5-4800 baseline on the three
 CPU traces at both ends of the write-pulse bracket, 41.4 to 48.3 ns for
-1T1R SLC and 36.8 to 47.4 ns for 1S1R SLC against 83.1 ns under GCC,
-and slower on
+1T1R SLC and 36.8 to 47.4 ns for 1S1R SLC against 83.1 ns under GCC
+(78.2 ns when the baseline runs the same close-page policy as the ReRAM
+configurations), and slower on
 the write-dominated AlexNet output-map burst by 1.5x to 3.0x for 1T1R
 SLC, with the counterweight that the identical DIMM built from
 published silicon timings averages 11.9 us and 379 us under GCC.
@@ -316,9 +317,13 @@ counterpart; the extended book labels all 36 device and simulator keys
 with their provenance.] The core numbers are
 the 4800 MT/s bin at 1.1 V: tCAS-tRCD-tRP of 40-39-39, CWL of 38
 cycles, tWR 30 ns, tRRD_S 8 cycles and tFAW 32 cycles, with an all-bank
-refresh every tREFI of 3.906 us occupying tRFC of 295 ns. One
-disclosure belongs with it: the DDR5 power model uses SK hynix's
-published 16 Gb DDR5-4800 IDD limits, the lower of the two vendor
+refresh every tREFI of 3.906 us occupying tRFC of 295 ns. The baseline
+keeps NVMain's open-page row-buffer policy (`ClosePage 0`), the value
+the configuration was introduced with, while every ReRAM configuration
+runs the relaxed close-page policy (`ClosePage 1`); Section 4.1 gives
+the baseline under both policies. A second disclosure belongs with it:
+the DDR5 power model uses SK hynix's published 16 Gb DDR5-4800 IDD
+limits, the lower of the two vendor
 tables consulted, and the two power-down currents hynix does not
 publish are scaled from Micron's. Datasheet IDD values are
 specification limits rather than typicals, with no typical DDR5 figure
@@ -631,12 +636,21 @@ prefix, which is why end-to-end latency is the saturation measure.
 Source: results/rev2026-09\_primary\_csv/processed\_bar\_chart\_metrics.csv,
 column Latency\_ns.]
 
-On the three CPU traces the projected ReRAM DIMM is faster than the
-DDR5-4800 baseline, and under GCC the margin is about two to one:
-41.4 ns for 1T1R SLC and 36.8 ns for 1S1R SLC against 83.1 ns
-(Table 4). The baseline carries its JEDEC timings, write path and
-refresh blocking (Section 2.3), while the ReRAM subarray reads
-in 10.12 ns (1T1R) or 4.70 ns (1S1R) and has no row to precharge.
+On the three CPU traces the projected ReRAM DIMM has lower average
+memory latency than the DDR5-4800 baseline, and under GCC the margin is
+about two to one: 41.4 ns for 1T1R SLC and 36.8 ns for 1S1R SLC against
+83.1 ns (Table 4). The baseline runs NVMain's open-page policy while
+the ReRAM configurations run its relaxed close-page policy; re-run
+under the same close-page policy the baseline gives 78.2 ns under GCC,
+69.9 ns under LBM and 93.5 ns under STREAM, so at matched policy the
+GCC margin is 1.9 to one for 1T1R SLC and 2.1 to one for 1S1R SLC, and
+on STREAM, where the open-page baseline serves 45% of requests from the
+open row, close-page makes the baseline slower. The baseline carries
+its JEDEC timings, write path and refresh blocking (Section 2.3), while
+the ReRAM subarray reads in 10.12 ns (1T1R) or 4.70 ns (1S1R) and
+precharges in one 1.25 ns cycle. The 0.797 W DDR5 power figure that
+Table 5 retains comes from the open-page run; the close-page runs are
+used only for the latency margin.
 
 The decomposition of that margin belongs before any interpretation of
 it. Of the 41.40 ns 1T1R SLC average, #strong[11.25 ns is NVSim device
