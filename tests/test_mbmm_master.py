@@ -60,9 +60,19 @@ def test_cycles_for_missing_clk_line_raises_clear_error(tmp_path):
         master.cycles_for("no_clk", window_ns=250e6, config_dir=tmp_path)
 
 
+def _skip_unless_live_config(model_name):
+    # Q19 (wrap-up review, 2026-10-26): the ReRAM and PCM configs under
+    # simulators/nvmain/Config/ are written by stage 3 and are not tracked,
+    # so a fresh clone has none; the tracked DDR5 config is always there.
+    path = master.get_project_root() / "simulators" / "nvmain" / "Config" / f"{model_name}.config"
+    if not path.is_file():
+        pytest.skip(f"live NVMain config not generated in this checkout: {path}")
+
+
 def test_cycles_for_default_config_dir_reads_real_reram_config():
-    # Sanity check against the real, committed NVMain config (CLK 800),
-    # using the default config_dir (simulators/nvmain/Config).
+    # Sanity check against the real NVMain config (CLK 800), using the
+    # default config_dir (simulators/nvmain/Config).
+    _skip_unless_live_config("reram_22nm_1t1r_slc_full_dimm")
     cycles = master.cycles_for("reram_22nm_1t1r_slc_full_dimm", window_ns=250000000)
     assert cycles == 200000000
 
@@ -73,6 +83,7 @@ def test_cycles_for_default_config_dir_reads_real_ddr5_config():
 
 
 def test_cycles_for_default_config_dir_reads_real_pcm_config():
+    _skip_unless_live_config("pcm_microsoft_2009")
     cycles = master.cycles_for("pcm_microsoft_2009", window_ns=250000000)
     assert cycles == 100000000
 

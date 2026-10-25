@@ -129,7 +129,11 @@ def main():
 
     target_files = []
 
-    if not results_dir.exists():
+    # Q19 (wrap-up review, 2026-10-26): the results/system/ directory is only
+    # needed when the script has to find files itself (--latest, --compare).
+    # --files names its inputs explicitly and must work in a fresh clone,
+    # where results/ is git-ignored and absent.
+    if (args.latest or args.compare) and not results_dir.exists():
         print(f"[!] Results directory not found: {results_dir}")
         print("    Ensure Step 4 (4_execute_simulation.py) has been run.")
         return True

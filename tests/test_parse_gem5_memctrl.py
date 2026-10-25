@@ -345,6 +345,10 @@ def test_output_line_structure_matches_existing_trace(tmp_path):
     new_line = out_path.read_text().splitlines()[0]
 
     existing_path = REPO_ROOT / "benchmarks" / "gpt2_ifmap.nvt"
+    if not existing_path.is_file():
+        # Q19 (wrap-up review, 2026-10-26): the .nvt traces are git-ignored
+        # (SPEC licence and size), so a fresh clone has none to compare with.
+        pytest.skip(f"trace not present in this checkout: {existing_path}")
     existing_line = existing_path.read_text().splitlines()[0]
 
     new_fields = new_line.split(" ")

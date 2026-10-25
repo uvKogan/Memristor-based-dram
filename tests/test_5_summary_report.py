@@ -164,3 +164,23 @@ def test_main_cli_allow_parse_failures_flag_exits_zero(tmp_path, monkeypatch, ca
     assert success is True
     assert bad_file.name in captured.out
     assert "[WARNING]" in captured.out
+
+
+def test_main_cli_files_does_not_require_results_dir(tmp_path, monkeypatch, capsys):
+    """Q19 (wrap-up review, 2026-10-26): `--files` names its inputs explicitly,
+    so the report must not bail out because results/system/ is absent, which
+    is the state of every fresh clone (results/ is git-ignored). The
+    directory check belongs to --latest and --compare only."""
+    good_file = tmp_path / "stats_good.out"
+    good_file.write_text(SYNTHETIC_STATS)
+    empty_root = tmp_path / "fresh_clone"
+    empty_root.mkdir()
+    monkeypatch.setattr(summary_report, "get_project_root", lambda: empty_root)
+    monkeypatch.setattr(sys, "argv", ["5_summary_report.py", "--files", str(good_file)])
+
+    success = summary_report.main()
+    captured = capsys.readouterr()
+
+    assert success is True
+    assert "Results directory not found" not in captured.out
+    assert good_file.name in captured.out
