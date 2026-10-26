@@ -25,9 +25,10 @@ logger = setup_logging("visualize_hero_graphs")
 # ============================================================================
 
 # Overridable via CLI flags (see main()); defaults unchanged.
-OUTPUT_DIR = "/home/yuvalk/MBMM/results/final_graphs/hero"
-HERO_METRICS_FILE = "/home/yuvalk/MBMM/results/processed_hero_metrics.csv"
-GEOMETRIC_MEANS_FILE = "/home/yuvalk/MBMM/results/processed_geometric_means.csv"
+_PROJECT_ROOT = Path(__file__).resolve().parent   # D1 (2026-10-26): no hardcoded checkout path
+OUTPUT_DIR = str(_PROJECT_ROOT / "results" / "final_graphs" / "hero")
+HERO_METRICS_FILE = str(_PROJECT_ROOT / "results" / "processed_hero_metrics.csv")
+GEOMETRIC_MEANS_FILE = str(_PROJECT_ROOT / "results" / "processed_geometric_means.csv")
 
 # v3: replaces the old caption+UNGATED_CAVEAT footnote, which measured wider than
 # the axes (1299px vs 1085px axes, starting off-canvas at x0=50 vs axes x0=175) --

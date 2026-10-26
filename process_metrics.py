@@ -29,9 +29,12 @@ logger = setup_logging("process_metrics")
 # validation runs can target a separate directory (e.g. results/system_v2)
 # without touching the documented-ground-truth results/system/ and
 # results/processed_*.csv. Defaults are unchanged from the original pipeline.
-RESULTS_SYS_DIR = "/home/yuvalk/MBMM/results/system"
-OUTPUT_DIR = "/home/yuvalk/MBMM/results"
-HARDWARE_METRICS_FILE = "/home/yuvalk/MBMM/results/hardware_metrics.json"
+# D1 (wrap-up review, 2026-10-26): defaults derive from this file's own
+# location, so a clone anywhere reads and writes its own results/ folder.
+_PROJECT_ROOT = Path(__file__).resolve().parent
+RESULTS_SYS_DIR = str(_PROJECT_ROOT / "results" / "system")
+OUTPUT_DIR = str(_PROJECT_ROOT / "results")
+HARDWARE_METRICS_FILE = str(_PROJECT_ROOT / "results" / "hardware_metrics.json")
 
 
 def _load_hardware_metrics(path):
@@ -793,8 +796,8 @@ def extract_dimm_wear_stats(content):
 # project copies come first so a repo-local config always wins over whatever
 # happens to sit in the submodule's working tree.
 NVMAIN_CONFIG_SEARCH_DIRS = (
-    "/home/yuvalk/MBMM/configs",
-    "/home/yuvalk/MBMM/simulators/nvmain/Config",
+    str(_PROJECT_ROOT / "configs"),
+    str(_PROJECT_ROOT / "simulators" / "nvmain" / "Config"),
 )
 
 # Config keys this module needs, and what each is used for.

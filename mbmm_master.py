@@ -12,18 +12,22 @@ from pathlib import Path
 from datetime import datetime
 
 # --- ARCHIVE OLD GRAPHS, LOGS, AND METRICS ---
-def archive_old_graphs(output_dir="/home/yuvalk/MBMM/results/final_graphs",
-                       logs_dir="/home/yuvalk/MBMM/results/logs",
-                       metrics_dir="/home/yuvalk/MBMM/results"):
-    """Archive existing .png/.pdf files, .log files, and processed_*.csv files before generating new plots."""
+def archive_old_graphs(output_dir=None, logs_dir=None, metrics_dir=None):
+    """Archive existing .png/.pdf files, .log files, and processed_*.csv files before generating new plots.
+
+    D1 (wrap-up review, 2026-10-26): the defaults are the checkout's own
+    results/ tree, resolved through get_project_root() at call time, not a
+    hardcoded absolute path.
+    """
     import os
     import shutil
     from datetime import datetime
     from pathlib import Path
-    
-    output_path = Path(output_dir)
-    logs_path = Path(logs_dir)
-    metrics_path = Path(metrics_dir)
+
+    results_root = get_project_root() / "results"
+    output_path = Path(output_dir) if output_dir else results_root / "final_graphs"
+    logs_path = Path(logs_dir) if logs_dir else results_root / "logs"
+    metrics_path = Path(metrics_dir) if metrics_dir else results_root
     
     # Collect files to archive
     files_to_archive = []

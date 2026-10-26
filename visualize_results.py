@@ -29,11 +29,12 @@ logger = setup_logging("visualize_bar_charts")
 # runs (e.g. the v2/module-sum repair validation) without touching the
 # documented-ground-truth final_graphs/ and processed_bar_chart_metrics.csv.
 # Defaults are unchanged from the original pipeline.
-BASE_OUTPUT_DIR = "/home/yuvalk/MBMM/results/final_graphs"
+_PROJECT_ROOT = Path(__file__).resolve().parent   # D1 (2026-10-26): no hardcoded checkout path
+BASE_OUTPUT_DIR = str(_PROJECT_ROOT / "results" / "final_graphs")
 LATENCY_DIR = os.path.join(BASE_OUTPUT_DIR, "latency")
 POWER_DIR = os.path.join(BASE_OUTPUT_DIR, "power")
 PDP_DIR = os.path.join(BASE_OUTPUT_DIR, "pdp")
-METRICS_FILE = "/home/yuvalk/MBMM/results/processed_bar_chart_metrics.csv"
+METRICS_FILE = str(_PROJECT_ROOT / "results" / "processed_bar_chart_metrics.csv")
 
 # v3 standardized footnote: the old single-line ungated-leakage caveat measured wider
 # than the axes on the power (1757px vs 1085px axes, starting off-canvas at x=-372)

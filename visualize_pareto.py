@@ -37,8 +37,9 @@ except ImportError:
 # ============================================================================
 
 # Overridable via --metrics-file/--output-dir (see main()); defaults unchanged.
-METRICS_FILE = "/home/yuvalk/MBMM/results/processed_pareto_metrics.csv"
-OUTPUT_DIR = "/home/yuvalk/MBMM/results/final_graphs/pareto"
+_PROJECT_ROOT = Path(__file__).resolve().parent   # D1 (2026-10-26): no hardcoded checkout path
+METRICS_FILE = str(_PROJECT_ROOT / "results" / "processed_pareto_metrics.csv")
+OUTPUT_DIR = str(_PROJECT_ROOT / "results" / "final_graphs" / "pareto")
 
 UNGATED_CAVEAT = ('DDR5 idle gating is live (JEDEC power-down); ReRAM takes no gating '
                    'credit (power-down modeled at standby leakage); module-sum semantics; '

@@ -571,10 +571,11 @@ def _run_master(monkeypatch, root, recorder, argv_extra=()):
     monkeypatch.setattr(master, "get_project_root", lambda: root)
     monkeypatch.setattr(master, "setup_logging", lambda: root / "results" / "exec.log")
     monkeypatch.setattr(master, "run_subprocess", recorder)
-    # archive_old_graphs() defaults to the REAL /home/yuvalk/MBMM/results paths
-    # (they are hardcoded in its signature), so a test that reaches the end of
-    # main() would move the live figures and CSVs into a results/archive_*
-    # folder. Stub it out: nothing in this file may touch results/.
+    # archive_old_graphs() defaults to the checkout's REAL results/ tree
+    # (resolved through get_project_root() since D1, 2026-10-26), so a test
+    # that reaches the end of main() would move the live figures and CSVs into
+    # a results/archive_* folder. Stub it out: nothing in this file may touch
+    # results/.
     monkeypatch.setattr(master, "archive_old_graphs", lambda *a, **k: None)
     monkeypatch.setattr(master, "execution_errors", [])
     monkeypatch.setattr(master, "execution_log", [])

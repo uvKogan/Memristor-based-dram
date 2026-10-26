@@ -182,6 +182,32 @@ binding constraint and wear leveling, not the cell, decides it. The
 extended book states the conclusion in one line, and this book keeps
 it: #emph[neither is a drop-in DDR5 replacement at 22nm.]
 
+The question is not new, and this book sits in a line of work it
+should name. Three ISCA 2009 studies made the architectural case for a
+non-volatile main memory with phase-change memory: Lee et al. narrowed
+PCM's raw delay and energy deficit through row-buffer reorganization
+and partial writes #strong[\[21\]], Qureshi et al. put a small DRAM buffer
+in front of a large PCM store #strong[\[54\]], and Zhou et al. attacked
+durability with redundant-bit-write removal and row shifting
+#strong[\[55\]]. The field's template since has been to hide the write
+penalty, level the wear and buy density where latency cannot be
+hidden, and its one commercial embodiment, Optane, was discontinued on
+cost rather than physics (Section 1.2). For resistive memory the
+closest prior work is Xu et al.'s HPCA 2015 study of crossbar ReRAM as
+main memory, which characterized the data-dependent RESET latency that
+IR drop and sneak current impose on large crossbars #strong[\[56\]]; the
+device-to-system pattern this book follows, one cell characterization
+carried into a system simulator against a DRAM baseline, is the one
+Kultursay et al. set for STT-RAM #strong[\[57\]]. On the system side,
+placing pages between near and far memory is the operating system's
+job, as Meta's transparent page placement describes #strong[\[58\]], which
+is why Section 5.2 treats the far position as a page-placement
+question rather than a per-request one. What this book adds to that
+line is the matched-organization control, the published-silicon
+counterweight beside every projection, and a baseline modeled to the
+current JEDEC standard rather than the DDR2 and DDR3 of that
+generation.
+
 One caveat governs every latency in this book and is stated here once,
 in full, so that later chapters can refer to it rather than repeat it.
 
@@ -1322,7 +1348,7 @@ region surfaces to Linux as a CPU-less NUMA node, with the ACPI
 Heterogeneous Memory Attribute Table supplying latency and bandwidth
 per initiator-target pair so the kernel can rank it #strong[\[36\]],
 and what the kernel does with that ranking is #strong[page placement,
-not per-request routing]: pages move between tiers at 4 KiB granularity
+not per-request routing] #strong[\[58\]]: pages move between tiers at 4 KiB granularity
 on a millisecond-to-second timescale, and nothing routes an individual
 load or store by projected access time. A far memory can afford to be
 slower than DRAM; it cannot afford to be slower by a factor page
@@ -1777,6 +1803,16 @@ python3 mbmm_master.py --all \
 #strong[\[52\]] J. Zeng et al., \"Performance Characterizations and Usage Guidelines of Samsung CXL Memory Module Hybrid Prototype,\" preprint, arXiv:2503.22017, Mar. 2025.
 
 #strong[\[53\]] N. Gholkar, J. Stojkovic, H. Al Maruf, G. Price, P. Chauhan, H. Patel, C. Van Goethem, K. Vemuri, K. Sriadibhatla, K. Subramanian, S. Kanaujia, C. Tang, and A. Dhanotia, \"Vistara: Making CXL Real: Full Path from ASIC Design and OS Support to Hyperscale Deployment,\" in #emph[Proc. 53rd Annu. Int. Symp. Computer Architecture (ISCA)], industry session, 2026.
+
+#strong[\[54\]] M. K. Qureshi, V. Srinivasan, and J. A. Rivers, \"Scalable High Performance Main Memory System Using Phase-Change Memory Technology,\" in #emph[Proc. 36th Annu. Int. Symp. Computer Architecture (ISCA)], 2009, pp. 24-33. DOI: 10.1145/1555754.1555760
+
+#strong[\[55\]] P. Zhou, B. Zhao, J. Yang, and Y. Zhang, \"A Durable and Energy Efficient Main Memory Using Phase Change Memory Technology,\" in #emph[Proc. 36th Annu. Int. Symp. Computer Architecture (ISCA)], 2009, pp. 14-23. DOI: 10.1145/1555754.1555759
+
+#strong[\[56\]] C. Xu, D. Niu, N. Muralimanohar, R. Balasubramonian, T. Zhang, S. Yu, and Y. Xie, \"Overcoming the Challenges of Crossbar Resistive Memory Architectures,\" in #emph[Proc. 21st IEEE Int. Symp. High Performance Computer Architecture (HPCA)], 2015, pp. 476-488. DOI: 10.1109/HPCA.2015.7056056
+
+#strong[\[57\]] E. Kültürsay, M. Kandemir, A. Sivasubramaniam, and O. Mutlu, \"Evaluating STT-RAM as an Energy-Efficient Main Memory Alternative,\" in #emph[Proc. IEEE Int. Symp. Performance Analysis of Systems and Software (ISPASS)], 2013, pp. 256-267. DOI: 10.1109/ISPASS.2013.6557176
+
+#strong[\[58\]] H. A. Maruf, H. Wang, A. Dhanotia, J. Weiner, N. Agarwal, P. Bhattacharya, C. Petersen, M. Chowdhury, S. Kanaujia, and P. Chauhan, \"TPP: Transparent Page Placement for CXL-Enabled Tiered-Memory,\" in #emph[Proc. 28th ACM Int. Conf. Architectural Support for Programming Languages and Operating Systems (ASPLOS)], vol. 3, Mar. 2023, pp. 742-755; preprint arXiv:2206.02878.
 
 #set text(size: 12pt)
 

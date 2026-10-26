@@ -14,13 +14,18 @@ from pathlib import Path
 from datetime import datetime
 
 
-def setup_logging(stage_name, log_dir="/home/yuvalk/MBMM/results/logs"):
+def default_log_dir():
+    """results/logs/ of the checkout this module lives in (D1, 2026-10-26)."""
+    return str(Path(__file__).resolve().parent / "results" / "logs")
+
+
+def setup_logging(stage_name, log_dir=None):
     """
     Configure unified logging for pipeline stages.
     
     Args:
         stage_name (str): Name of the pipeline stage (e.g., "process_metrics", "visualize_pareto")
-        log_dir (str): Directory to write log files (default: /results/logs/)
+        log_dir (str): Directory to write log files (default: the checkout's results/logs/)
     
     Returns:
         logging.Logger: Configured logger that writes to both console and file
@@ -40,7 +45,7 @@ def setup_logging(stage_name, log_dir="/home/yuvalk/MBMM/results/logs"):
     """
     
     # Create log directory if it doesn't exist (absolute path)
-    log_path = Path(log_dir)
+    log_path = Path(log_dir if log_dir is not None else default_log_dir())
     log_path.mkdir(parents=True, exist_ok=True)
     
     # Create timestamped log file per stage

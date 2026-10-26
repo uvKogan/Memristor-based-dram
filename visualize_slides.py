@@ -47,7 +47,7 @@ own documented closed-form projection to them) - it does not run NVSim/
 NVMain and is not gated by mbmm_master.py. Every loader fails loudly,
 naming the file and the key, rather than plotting a silent default.
 
-Output: /home/yuvalk/MBMM/results/slide_graphs_rev2026-09/ (never touches
+Output: results/slide_graphs_rev2026-09/ under the checkout (never touches
 results/final_graphs*, which the book's embedded figures depend on).
 """
 
@@ -75,13 +75,14 @@ logger = setup_logging("visualize_slides")
 # run). CSV_DIR holds the processed_*.csv files and hardware_metrics.json
 # process_metrics.py writes at its OUTPUT_DIR. SENS_ROOT holds the
 # per-axis sensitivity result directories of T5.1 step 2.
-DATA_DIR = "/home/yuvalk/MBMM/results/system_rev2026-09_primary"
-CSV_DIR = "/home/yuvalk/MBMM/results/rev2026-09_primary_csv"
-SENS_ROOT = "/home/yuvalk/MBMM/results"
-ENDURANCE_CSV = "/home/yuvalk/MBMM/results/endurance_table.csv"
-SIDECAR_DIR = "/home/yuvalk/MBMM/benchmarks"
+_PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))   # D1 (2026-10-26): no hardcoded checkout path
+DATA_DIR = os.path.join(_PROJECT_ROOT, "results", "system_rev2026-09_primary")
+CSV_DIR = os.path.join(_PROJECT_ROOT, "results", "rev2026-09_primary_csv")
+SENS_ROOT = os.path.join(_PROJECT_ROOT, "results")
+ENDURANCE_CSV = os.path.join(_PROJECT_ROOT, "results", "endurance_table.csv")
+SIDECAR_DIR = os.path.join(_PROJECT_ROOT, "benchmarks")
 HARDWARE_METRICS_FILE = os.path.join(CSV_DIR, "hardware_metrics.json")
-OUTPUT_DIR = "/home/yuvalk/MBMM/results/slide_graphs_rev2026-09"
+OUTPUT_DIR = os.path.join(_PROJECT_ROOT, "results", "slide_graphs_rev2026-09")
 
 # Published figures quoted in chart footnotes as context. NONE of these is a
 # result of this pipeline and none is ever plotted; they are listed here, with
