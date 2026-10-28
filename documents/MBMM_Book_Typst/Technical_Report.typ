@@ -3391,7 +3391,8 @@ assumptions, not measurements (Appendix A): demonstrated 1T1R endpoints
 span a 14nm FinFET embedded macro at 112F² \[20\] - which would drag
 1T1R\'s 22nm ratio from 0.36x down to roughly 0.07x - and a DRAM-process
 recessed-channel part at 6F² \[33\] - which would lift it to roughly
-1.2x; on the selector side, 4F² is the idealized floor, and a realized
+0.9x once the die's periphery (about 1.6 mm² of 12.0) is held fixed, or
+1.2x if the whole die scaled with the cell; on the selector side, 4F² is the idealized floor, and a realized
 cell at twice that area would halve every 1S1R entry, dropping 22nm SLC
 #emph[below] DDR5 parity (0.62x) while MLC retains 1.24x before node
 scaling restores the margin. That is a materially weaker position than
