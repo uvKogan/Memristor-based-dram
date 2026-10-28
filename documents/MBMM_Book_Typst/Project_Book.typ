@@ -73,10 +73,10 @@ at 22nm.]
 Two pressures meet in commodity main memory. The first is economic. By
 late 2025 the reallocation of DRAM wafers to High-Bandwidth Memory for
 AI accelerators had opened a severe supply-demand gap for ordinary DIMM
-memory #strong[\[1\], \[2\]]. The second is physical. DRAM's planar
+memory #strong[\[1\]]. The second is physical. DRAM's planar
 cell is held back by capacitor leakage and short-channel effects, and
 commodity DDR5 is fabricated on 10 nm-class DRAM nodes that sit at the
-end of the capacitor's scaling roadmap #strong[\[3\]]. A resistive cell
+end of the capacitor's scaling roadmap #strong[\[2\]]. A resistive cell
 stores its state as resistance rather than as charge, so it has no
 capacitor to scale and needs no refresh.
 
@@ -88,8 +88,8 @@ to buy its lifetime architecturally rather than from the device.
 
 To answer the question I built a cross-layer simulation pipeline that
 carries a device-level 22nm ReRAM characterization from NVSim
-#strong[\[4\]] into cycle-accurate system simulation in NVMain 2.0
-#strong[\[5\]], and I ran four ReRAM tracks, a JEDEC-sourced DDR5-4800
+#strong[\[3\]] into cycle-accurate system simulation in NVMain 2.0
+#strong[\[4\]], and I ran four ReRAM tracks, a JEDEC-sourced DDR5-4800
 baseline, a legacy PCM baseline and two published-silicon
 configurations against six workload traces. Chapter 2 describes the
 pipeline, Chapter 4 reports what it measured.
@@ -102,19 +102,19 @@ stored state. A programming voltage grows or ruptures a conductive
 filament of oxygen vacancies through the oxide, switching the cell
 between a low-resistance and a high-resistance state; a read applies a
 small sense voltage that leaves the filament undisturbed
-#strong[\[6\]]. The filament persists without power, so storage is
+#strong[\[5\]]. The filament persists without power, so storage is
 non-volatile. Filament formation is stochastic and writes stress the
 filament, which is why the resistance targets below are engineering
 choices and why endurance is the binding constraint of Chapter 4.
 
 I standardized on a 22nm FinFET low-operating-power node, which is
 logic-compatible and has fabricated ReRAM precedent at that node
-#strong[\[7\]]. It is a deliberately conservative frame: 22nm has
+#strong[\[6\]]. It is a deliberately conservative frame: 22nm has
 several shrink generations of headroom ahead of it, so the density
 figures here are a floor on ReRAM's potential rather than a ceiling.
 Cells are calibrated to high resistance targets, $10^5 Omega$ in the
 low-resistance state and $10^9 Omega$ in the high, to hold a sensing
-margin against IR drop on long bitlines #strong[\[8\]]. The arrays
+margin against IR drop on long bitlines #strong[\[7\]]. The arrays
 here are 2048 cells on a side, one doubling past that source's own
 1024-cell design point, and the extended book shows the criterion
 still holds to within 1%.
@@ -125,17 +125,17 @@ structures compared here, and it is the whole of the density argument.
 #strong[1T1R] puts a CMOS access transistor in series with each cell,
 which eliminates sneak paths completely and costs area: roughly
 $20 F^2$ per bit on a transistor-drive-limited estimate, although the
-fabricated 16 Gb 1T1R part cited below #strong[\[13\]] reports a
+fabricated 16 Gb 1T1R part cited below #strong[\[12\]] reports a
 $6 F^2$ array, a difference Section 4.5 carries into the density
 verdict. #strong[1S1R]
 replaces the transistor with a two-terminal selector whose sharply
 non-linear threshold suppresses the sneak current instead, reducing the
-cell to an idealized $4 F^2$ #strong[\[9\]]. The selector is therefore
+cell to an idealized $4 F^2$ #strong[\[8\]]. The selector is therefore
 what buys the density, and it is also what the density claim is
 conditional on. NVSim models no selector physics of its own, so whether
 a 2048-cell tile is actually sneak-path-viable is settled separately,
 by an analytic selector layer built on the crossbar read model of
-#strong[\[10\]] (Chapter 4): at a present-day ovonic-threshold-switch
+#strong[\[9\]] (Chapter 4): at a present-day ovonic-threshold-switch
 quality it is not, and at the best published selector it is.
 
 Each cell type is evaluated at one bit per cell (SLC) and at two (MLC).
@@ -143,14 +143,14 @@ MLC puts twice the capacity behind the same chips and pays for it in
 write time. NVSim has no multi-level model, so the MLC tracks apply
 multipliers derived from the EMBER macro's own published measurements,
 1.5x on read latency and 3.263x on write latency
-#strong[\[11\], \[12\]].
+#strong[\[10\], \[11\]].
 
 Two things are worth separating before any number appears. NVSim
 produces an array-core projection, and #emph[no fabricated ReRAM part
 reads or writes in nanoseconds]. Micron and Sony's 27nm 16 Gb 1T1R part
-reads in 2.3 us and writes in 11.7 us #strong[\[13\]]\; SanDisk and
+reads in 2.3 us and writes in 11.7 us #strong[\[12\]]\; SanDisk and
 Toshiba's 24nm 32 Gb 1S1R cross-point reads in 40 us and writes in
-230 us #strong[\[14\]]. Both are carried through this evaluation as
+230 us #strong[\[13\]]. Both are carried through this evaluation as
 their own configurations, on the same traces and the same module
 geometry, and they appear beside every projected latency. Both are
 storage parts accessed a page at a time, so their figures are page-mode
@@ -161,12 +161,11 @@ The one non-volatile main memory ever shipped is worth naming here for
 its vocabulary as much as for its history. #strong[3D XPoint] is the
 #emph[media]: a phase-change storage element in series with an Ovonic
 Threshold Switch selector, that is, a 1S1R cross-point, announced by
-Intel and Micron in 2015 #strong[\[15\]], confirmed at the materials
-level by an independent physical teardown #strong[\[16\]] and by
-Intel's own device paper #strong[\[17\]]. #strong[Optane] was the
+Intel and Micron in 2015 and described at the device level in Intel's
+own paper #strong[\[14\]]. #strong[Optane] was the
 #emph[product] built on that media, and Intel exited the business in
-2022 #strong[\[18\]]. Optane's published latencies were measured on a
-shipped module #strong[\[19\]] and are therefore #emph[device] numbers:
+2022. Optane's published latencies were measured on a
+shipped module #strong[\[15\]] and are therefore #emph[device] numbers:
 they include a controller, ECC and a DIMM interface. Every ReRAM
 latency in this book is a #emph[media] number, produced by a device
 model driving a memory simulator. The two are never the same kind of
@@ -186,21 +185,21 @@ The question is not new, and this book sits in a line of work it
 should name. Three ISCA 2009 studies made the architectural case for a
 non-volatile main memory with phase-change memory: Lee et al. narrowed
 PCM's raw delay and energy deficit through row-buffer reorganization
-and partial writes #strong[\[21\]], Qureshi et al. put a small DRAM buffer
-in front of a large PCM store #strong[\[54\]], and Zhou et al. attacked
+and partial writes #strong[\[17\]], Qureshi et al. put a small DRAM buffer
+in front of a large PCM store #strong[\[45\]], and Zhou et al. attacked
 durability with redundant-bit-write removal and row shifting
-#strong[\[55\]]. The field's template since has been to hide the write
+#strong[\[46\]]. The field's template since has been to hide the write
 penalty, level the wear and buy density where latency cannot be
 hidden, and its one commercial embodiment, Optane, was discontinued on
 cost rather than physics (Section 1.2). For resistive memory the
 closest prior work is Xu et al.'s HPCA 2015 study of crossbar ReRAM as
 main memory, which characterized the data-dependent RESET latency that
-IR drop and sneak current impose on large crossbars #strong[\[56\]]; the
+IR drop and sneak current impose on large crossbars #strong[\[47\]]; the
 device-to-system pattern this book follows, one cell characterization
 carried into a system simulator against a DRAM baseline, is the one
-Kultursay et al. set for STT-RAM #strong[\[57\]]. On the system side,
+Kultursay et al. set for STT-RAM #strong[\[48\]]. On the system side,
 placing pages between near and far memory is the operating system's
-job, as Meta's transparent page placement describes #strong[\[58\]], which
+job, as Meta's transparent page placement describes #strong[\[49\]], which
 is why Section 5.2 treats the far position as a page-placement
 question rather than a per-request one. What this book adds to that
 line is the matched-organization control, the published-silicon
@@ -265,7 +264,7 @@ against new.
 == 2.1. The pipeline
 
 No single tool spans the distance from an oxide stack to a DIMM
-latency, so I built a pipeline that does. NVSim #strong[\[4\]]
+latency, so I built a pipeline that does. NVSim #strong[\[3\]]
 characterizes exactly #strong[one 1 Gb chip]: read and write latency in
 nanoseconds, energy per access, leakage and die area.
 `2_extract_hardware_metrics.py` pulls those figures into JSON and
@@ -273,7 +272,7 @@ applies the MLC penalty model. `3_gen_nvmain_config.py` turns the JSON
 into an NVMain configuration, mapping the device read latency once
 across tRCD plus tCAS and the cell write latency onto write recovery,
 and validating both splits against the rendered configuration text.
-NVMain 2.0 #strong[\[5\]] replicates that chip 1, 8, 16 or 64 times,
+NVMain 2.0 #strong[\[4\]] replicates that chip 1, 8, 16 or 64 times,
 wraps it in its own controller, decoder and interconnect and replays a
 trace against it cycle by cycle. `process_metrics.py` turns the
 resulting statistics into the CSVs every table here is drawn from
@@ -355,7 +354,7 @@ penalty on top of the SLC characterization: 1.5x read latency and
 3.263x write latency, with twice the capacity behind the same chips.
 Both multipliers are derived by the same bandwidth-ratio method from
 the EMBER macro's own published measurements, the journal report
-#strong[\[11\]] and its conference precursor #strong[\[12\]]\; leakage
+#strong[\[10\]] and its conference precursor #strong[\[11\]]\; leakage
 and die area are unchanged, because the array is the same array.
 
 == 2.3. Baselines
@@ -365,7 +364,7 @@ DDR5-4800 RDIMM built from eight 16 Gb x8 devices, modeled with DDR5’s
 defining architectural feature: two independent 32-bit subchannels per
 DIMM, each with its own command bus and 32 banks, serving a 64-byte
 access as a 16-beat burst on its 32-bit bus. Its timings are the
-JESD79-5 values for the 4800B bin #strong[\[20\]], read through a
+JESD79-5 values for the 4800B bin #strong[\[16\]], read through a
 vendor's transcription (Micron's DDR5 core data sheet) and two
 DDR5-4800 module datasheets, all of which agree; the JEDEC text itself
 is access-gated and was not consulted. The scope of that statement is
@@ -399,7 +398,7 @@ DDR5 side of every per-gigabyte power ratio in Section 4.2 is a lower
 bound, and a typical module would widen every ratio.
 
 #strong[PCM.] A legacy non-volatile baseline, named for its
-architectural framing in Lee et al. #strong[\[21\]], is carried as the
+architectural framing in Lee et al. #strong[\[17\]], is carried as the
 floor-power reference. It was never run through NVSim: its timing and
 energy constants are inherited unmodified from NVMain's own bundled
 example configuration and were not independently re-derived here. It
@@ -425,9 +424,8 @@ as what a DIMM-class part would do.
 
 #strong[Access granularity.] Every technology in this comparison is
 accessed at #strong[64 bytes]. That is the x86-64 cache line, matched
-by 64 B lines on contemporary Arm server cores #strong[\[22\]]\; it is
-what DDR5’s two 32-bit subchannels deliver at a burst length of 16
-#strong[\[23\]]\; and it is what NVMain's address translator is
+by 64 B lines on contemporary Arm server cores; it is what DDR5’s two
+32-bit subchannels deliver at a burst length of 16 #strong[\[16\]]\; and it is what NVMain's address translator is
 hardwired to. The gem5 traces are 64 B aligned as they come. The
 SCALE-Sim traces are not: they are tensor-element granular and only
 1.6% aligned, so for them the 64 B width is imposed by the
@@ -455,12 +453,12 @@ assumption is worth by re-running the same media at 1333 and 2400 MHz.
 
 Table 2 lists the six traces, from three sources. The three SPEC and
 STREAM traces were
-captured with gem5 #strong[\[24\]] running the X86 out-of-order model
+captured with gem5 #strong[\[18\]] running the X86 out-of-order model
 with L1 and L2 caches enabled, after 500 M fast-forwarded instructions,
 with the first 10 ms of the detailed region discarded as cache warm-up;
 each reconciles exactly with gem5’s own memory-controller request
 counters. The three AI traces come from the SCALE-Sim systolic-array
-simulator #strong[\[25\]].
+simulator #strong[\[19\]].
 
 Time base and window: one trace cycle is one NVMain cycle at CPUFreq
 3000, that is three cycles per nanosecond, and every configuration
@@ -480,17 +478,17 @@ admitted request population.
     [#strong[Read/write in window]],
     [#strong[Span in the 250 ms window]],
   ),
-  [#strong[gcc\_spec2017]], [gem5, SPEC CPU2017 502.gcc\_r #strong[\[26\]]],
+  [#strong[gcc\_spec2017]], [gem5, SPEC CPU2017 502.gcc\_r #strong[\[20\]]],
   [545,566], [298,792 / 220,776 (58/42)], [fills the window, sustained],
-  [#strong[lbm\_spec2017]], [gem5, SPEC CPU2017 519.lbm\_r #strong[\[26\]]],
+  [#strong[lbm\_spec2017]], [gem5, SPEC CPU2017 519.lbm\_r #strong[\[20\]]],
   [10,779,425], [3,179,900 / 2,384,804 (57/43)], [fills the window, sustained],
-  [#strong[stream]], [gem5, STREAM #strong[\[27\]]],
+  [#strong[stream]], [gem5, STREAM #strong[\[21\]]],
   [48,439,056], [3,996,254 / 1,998,124 (67/33)], [fills the window, sustained],
-  [#strong[gpt2\_ifmap]], [SCALE-Sim #strong[\[25\]]],
+  [#strong[gpt2\_ifmap]], [SCALE-Sim #strong[\[19\]]],
   [65,536], [65,536 / 0 (pure read)], [2.2 us burst],
-  [#strong[alexnet\_layer1#linebreak()\_ifmap]], [SCALE-Sim #strong[\[25\]]],
+  [#strong[alexnet\_layer1#linebreak()\_ifmap]], [SCALE-Sim #strong[\[19\]]],
   [1,269,600], [1,269,600 / 0 (pure read)], [60.5 us burst],
-  [#strong[alexnet\_layer1#linebreak()\_ofmap]], [SCALE-Sim #strong[\[25\]]],
+  [#strong[alexnet\_layer1#linebreak()\_ofmap]], [SCALE-Sim #strong[\[19\]]],
   [135,424], [0 / 135,424 (pure write)], [4.5 us burst],
 )]
 ]
@@ -848,10 +846,10 @@ moves, because the same traces present the same writes and the mode
 changes only when they are served.
 
 One comparison bounds the whole MLC treatment. Multi-level 1T1R ReRAM
-is written by iterative program-and-verify pulses #strong[\[28\]], and the
+is written by iterative program-and-verify pulses #strong[\[22\]], and the
 closest published two-bit #emph[array] result is MLC phase-change
 memory, more than seventy iterations for a total write of 9.7 us
-#strong[\[29\]]\; against
+#strong[\[23\]]\; against
 that, the 3.263x write multiplier used here understates the media-level
 MLC write cost by one to two orders of magnitude, and the bounding run
 does not close that gap, because it moves this project's own pulse onto
@@ -939,7 +937,7 @@ $(1-f) times 6.937 + 0.003$ W, so reaching DDR5’s 0.399 W for the same
 8 GiB requires $f = 94.3%$. #strong[That threshold sits inside, not
 above, the idleness band this project cites]\: the 2 to 6%
 memory-bandwidth utilization reported for web-search and
-data-analytics servers #strong[\[30\]] corresponds to 94 to 98% idle,
+data-analytics servers #strong[\[24\]] corresponds to 94 to 98% idle,
 and the band
 brackets break-even, 0.142 W against DDR5’s 0.399 W at the idle end and
 0.419 against 0.399 W at the busy end. Whether a module realizes that
@@ -968,7 +966,7 @@ ovonic-threshold-switch bound and 0.076 mW at a best-published FAST
 bound, which at the OTS figure is 0.87% of the module's 6.937 W static
 floor while a rank is being accessed. What binds
 is tile validity, not leakage: under the handbook rule that a tile side
-may not exceed $I_"on" \/ (6 I_"leak")$ #strong[\[50\]], the OTS bound
+may not exceed $I_"on" \/ (6 I_"leak")$ #strong[\[41\]], the OTS bound
 supports a tile of at most 1666 cells a side, so #strong[the 2048 x 2048 organization simulated
 here is not valid at present-day selector quality], while the FAST
 bound supports 166,666. Every 1S1R number in this book is conditional
@@ -983,7 +981,7 @@ distribution measured per line location inside the 250 ms window (the
 per-line counts are taken from the trace inside the window; the
 simulator's per-row wear counters are the cross-check) onto a 64 GiB
 module at the best-sourced 10#super[6] cycle rating
-#strong[\[31\]], and asks how long it lives under four wear-leveling
+#strong[\[25\]], and asks how long it lives under four wear-leveling
 policies. Table 6 is that projection for the three sustained
 workloads, and Figure 4 is the same projection by policy.
 
@@ -1046,7 +1044,7 @@ capacity sits beside them. With ideal leveling the same module reaches
 38.6 years under GCC and 3.6 under LBM, four to five orders of
 magnitude away.
 
-Deterministic Start-Gap #strong[\[32\]] does not close that gap for
+Deterministic Start-Gap #strong[\[26\]] does not close that gap for
 these footprints. Over a single whole-module region the hottest line
 fails before the gap has rotated once, so it recovers essentially
 nothing; randomizing the region assignment recovers part of it in the
@@ -1191,10 +1189,10 @@ a die-level density of #strong[1.24x DDR5 for 1S1R SLC and 2.47x for
 1S1R MLC] against #strong[0.36x and 0.73x for the two 1T1R tracks]
 (Figure 6), normalized to a DDR5 anchor of 35 mm² per GB, a figure
 inside the 33.1 to 37.6 mm²/GB band of Micron, Samsung and SK hynix
-production 16 Gb DDR5 dies at 10 nm-class nodes #strong[\[49\]]: the
+production 16 Gb DDR5 dies at 10 nm-class nodes #strong[\[40\]]: the
 transistor-gated cell is less dense than the DRAM it would replace, and
 only the cross-point clears parity at the 20F² cell assumed here. At
-the 6F² array the fabricated 16 Gb 1T1R part reports #strong[\[13\]],
+the 6F² array the fabricated 16 Gb 1T1R part reports #strong[\[12\]],
 the same linear scaling would lift 1T1R to roughly 1.2x as SLC and 2.4x
 as MLC, so the 1T1R verdict is a statement about this project's
 transistor-geometry assumption rather than about the cell. Scaled
@@ -1295,7 +1293,7 @@ its direction is.
 per-gigabyte penalty counts memory devices only on both sides and is
 measured against a baseline that realizes its JEDEC power-down credit
 while ReRAM’s is a no-savings placeholder; gating break-even sits
-inside, not above, the cited idleness band #strong[\[30\]], so the
+inside, not above, the cited idleness band #strong[\[24\]], so the
 arithmetic brackets parity for that class and cannot price it. The
 upper end of the output-map bracket is an upper end of the write-path
 cost inside this model, not a prediction of a device.
@@ -1320,16 +1318,16 @@ it were aimed there, and answers with measured numbers.
 The window real systems accept is narrow and it is measured. Local DRAM
 at idle sits well below it: DDR5 measures 111 to 114 ns on two-socket
 servers, where the far socket of the same machine costs 191 to 193 ns
-#strong[\[33\]], and earlier DDR4 two-socket platforms measure 78 to
-115 ns locally and 140 to 142 ns to the far socket #strong[\[33\]],
-#strong[\[34\]]. Shipped CXL-attached DRAM expanders measure about 214,
+#strong[\[27\]], and earlier DDR4 two-socket platforms measure 78 to
+115 ns locally and 140 to 142 ns to the far socket #strong[\[27\]],
+#strong[\[28\]]. Shipped CXL-attached DRAM expanders measure about 214,
 239 and 271 ns idle load-to-use for ASIC-based devices and about 394 ns
-for an FPGA-based one #strong[\[33\]], a band #strong[\[35\]]
+for an FPGA-based one #strong[\[27\]], a band #strong[\[29\]]
 corroborates as ratios. What does #emph[not] survive contact with that
 data is a single blanket threshold for acceptable far memory: in Pond's
 workload study, at an added 64 ns only 43% of 158 workloads stay within
 5% of their local performance and 21% lose more than 25%, and at an
-added 140 ns 37% stay within 5% #strong[\[34\]], so acceptability is a
+added 140 ns 37% stay within 5% #strong[\[28\]], so acceptability is a
 per-workload property, not a number. And #strong[the
 few-hundred-nanosecond band belongs to CXL-attached DRAM #emph[devices],
 not to local DRAM], so no figure drawn from it is a DRAM reference.
@@ -1346,24 +1344,23 @@ close, and nothing in the device physics says it could not be.
 One mechanism decides how such a device would be used. A CXL-attached
 region surfaces to Linux as a CPU-less NUMA node, with the ACPI
 Heterogeneous Memory Attribute Table supplying latency and bandwidth
-per initiator-target pair so the kernel can rank it #strong[\[36\]],
+per initiator-target pair so the kernel can rank it #strong[\[30\]],
 and what the kernel does with that ranking is #strong[page placement,
-not per-request routing] #strong[\[58\]]: pages move between tiers at 4 KiB granularity
+not per-request routing] #strong[\[49\]]: pages move between tiers at 4 KiB granularity
 on a millisecond-to-second timescale, and nothing routes an individual
 load or store by projected access time. A far memory can afford to be
 slower than DRAM; it cannot afford to be slower by a factor page
 migration cannot amortize.
 
 The bandwidth half of the same claim does not hold as stated either. A
-shipping x8 CXL 2.0 expander is published at up to 36 GB/s
-#strong[\[37\]], at or below a single DDR5-4800 channel's 38.4 GB/s
-#strong[\[35\]] and far below the eight such channels of a socket, so
+shipping x8 CXL 2.0 expander is held by its PCIe 5.0 link to about
+the bandwidth of a single DDR5-4800 channel, 38.4 GB/s
+#strong[\[29\]], and far below the eight such channels of a socket, so
 #strong[CXL adds capacity and bandwidth from a slot that otherwise
 carries no memory at all], not bandwidth a DIMM channel could not
-deliver. A shipped controller sets the shape of the class: a CXL 1.1 /
-2.0 smart memory controller carries two DDR5 channels and up to 2 TB
-behind one slot, and publishes no latency figure at all
-#strong[\[38\]]. That framing is what makes the density dividend of
+deliver. Shipped controllers set the shape of the class: two DDR5 channels and
+up to 2 TB behind one slot, with no latency figure published. That
+framing is what makes the density dividend of
 Section 4.5 the quantity such a slot is bought for.
 
 Table 9 is the one place in this book where the modeled tracks sit
@@ -1419,19 +1416,19 @@ measured devices.]
   [device],
   [111 to 114 ns idle; 191 to 193 ns to the far socket],
   [measured on shipped platforms],
-  [#strong[\[33\]]],
+  [#strong[\[27\]]],
 
   [CXL-attached DRAM expanders],
   [device],
   [214, 239, 271 ns (ASIC), about 394 ns (FPGA), idle load-to-use],
   [shipped expander modules behind a link],
-  [#strong[\[33\]], #strong[\[35\]]],
+  [#strong[\[27\]], #strong[\[29\]]],
 
   [Optane PMem 100 / 200],
   [device],
   [305 ns idle random read; 169 ns sequential read],
   [#box[6.6 GB/s] read, #box[2.3 GB/s] write per module; no open loaded-latency figure],
-  [#strong[\[19\]]],
+  [#strong[\[15\]]],
 )]]
 ]
 
@@ -1449,12 +1446,12 @@ prediction for ReRAM.]]
 The conditional statement that follows is honest in both directions.
 #strong[ReRAM could serve as far memory only if a #emph[device] built
 on it, controller, error correction, and a DRAM cache in front of it as
-in Optane's Memory Mode #strong[\[39\]], landed in the same
+in Optane's Memory Mode #strong[\[15\]], landed in the same
 few-hundred-nanosecond class as the measured CXL-attached DRAM devices
 above. No published ReRAM silicon does.] The public record of non-DRAM
 media behind CXL is NAND with a DRAM cache in front of it
-#strong[\[51\]], #strong[\[52\]], and the far slot at hyperscale is being
-filled with decommissioned DDR4 behind a 50 ns ASIC #strong[\[53\]], so the
+#strong[\[42\]], #strong[\[43\]], and the far slot at hyperscale is being
+filled with decommissioned DDR4 behind a 50 ns ASIC #strong[\[44\]], so the
 cost bar a ReRAM far-memory device would have to clear is depreciated
 DRAM, not DDR5. What the projected numbers do
 say is which half of that problem is open: at 36.8 to 44.5 ns of media
@@ -1479,22 +1476,22 @@ errors, a cell perturbed by the reads of its neighbours or of itself.
 numeric figure is a channel model: a 1024 x 1024 array at 10 ohm per
 junction with an #emph[ideal] selector, which gives a read bit error
 rate from 4.29 x 10#super[-4] for the best-positioned cell to
-7.33 x 10#super[-2] for the worst #strong[\[40\]]. The ideal-selector
+7.33 x 10#super[-2] for the worst #strong[\[31\]]. The ideal-selector
 assumption is exactly what Section 4.2 exists to question, so that
 figure is a model output and never silicon. The 1T1R track does have
 measured macros, and they span orders of magnitude with the write
 scheme: a 128 kb macro with a smart-write algorithm reports under
-10#super[-7] after 10#super[6] cycles #strong[\[41\]], while HfO#sub[2]
+10#super[-7] after 10#super[6] cycles #strong[\[32\]], while HfO#sub[2]
 arrays under adverse cycling sit between 10#super[-3] and
-10#super[-2] #strong[\[42\]]. The usable statement is a band, and where a design lands inside it is a
+10#super[-2] #strong[\[33\]]. The usable statement is a band, and where a design lands inside it is a
 write-algorithm and margin decision rather than a material property.
 
 #emph[Layer two, what the selector itself contributes.] A measured 1S1R
 selector stacked with STT-MRAM reports a per-read disturb rate of
 10#super[-9] and 10#super[9] read-disturb-free cycles
-#strong[\[43\]], and an ovonic-threshold-switch cross-point cell
+#strong[\[34\]], and an ovonic-threshold-switch cross-point cell
 reports a failure rate of 9% falling to 0.02% after read-endurance
-optimization #strong[\[44\]]. #strong[The selector's own contribution
+optimization #strong[\[35\]]. #strong[The selector's own contribution
 is therefore bounded well below the layer-one array rates], which is
 the result that matters here: the 1S1R disadvantage established in
 Chapter 4 is tile validity and sneak current, not error rate.
@@ -1502,11 +1499,11 @@ Chapter 4 is tile validity and sneak current, not error rate.
 #emph[Layer three, the design point an NVM main memory actually uses.]
 The standard design point in the persistent-memory architecture
 literature is a raw rate of 2 x 10#super[-4] corrected with
-BCH(2312,2048,22), at about 27% coding overhead #strong[\[45\]]\; DRAM's
+BCH(2312,2048,22), at about 27% coding overhead #strong[\[36\]]\; DRAM's
 on-die SECDED, by contrast, tolerates only about 10#super[-6] raw
-#strong[\[46\]], and the only shipped NVM media has an SSD sibling
+#strong[\[37\]], and the only shipped NVM media has an SSD sibling
 rated by datasheet at under one uncorrectable sector per 10#super[17]
-bits #strong[\[47\]]. Side by side the three layers give the answer
+bits #strong[\[38\]]. Side by side the three layers give the answer
 this section exists for. #strong[A main memory built on published raw
 ReRAM error rates is possible, but it needs SSD-class rather than
 DRAM-class correction, at roughly a 27% cost in bits.] The stronger
@@ -1516,7 +1513,7 @@ memory system altogether, is not supportable against this literature.
 Two closing statements belong here. The selector layer of Section 4.2
 was built independently of this literature and agrees with it: it
 applies the same #strong[10% minimum read-margin criterion]
-#strong[\[48\]], and the limit that binds the 2048-cell tile is the
+#strong[\[39\]], and the limit that binds the 2048-cell tile is the
 line-resistance and tile-leakage mechanism, not a sneak-path bit error
 rate. And, plainly: #strong[the modeled latencies exclude ECC decode.]
 The generated configurations carry no coding block and no decoder, so
@@ -1700,119 +1697,101 @@ python3 mbmm_master.py --all \
 
 #strong[\[1\]] M. Ahmad, \"NAND Flash\'s Reversal of Fortune Amid the AI Boom,\" #emph[EE Times], Jan. 26, 2026. \[Online\]. Available: #link("https://www.eetimes.com/nand-flashs-reversal-of-fortune-amid-the-ai-boom/")[#underline[https:\/\/www.eetimes.com/nand-flashs-reversal-of-fortune-amid-the-ai-boom/]]. \[Accessed: Apr. 25, 2026\].
 
-#strong[\[2\]] A. J. Fleischer, \"How AI Broke the Memory Market,\" #emph[Octopart Pulse], Mar. 13, 2026. \[Online\]. Available: #link("https://octopart.com/pulse/p/how-ai-broke-memory-market")[#underline[https:\/\/octopart.com/pulse/p/how-ai-broke-memory-market]]. \[Accessed: Apr. 25, 2026\].
+#strong[\[2\]] International Roadmap for Devices and Systems (IRDS), \"More Moore,\" 2024. \[Online\]. Available: #link("https://irds.ieee.org/images/files/pdf/2024/2024IRDS_MM.pdf")[#underline[https:\/\/irds.ieee.org/images/files/pdf/2024/2024IRDS\_MM.pdf]].
 
-#strong[\[3\]] International Roadmap for Devices and Systems (IRDS), \"More Moore,\" 2024. \[Online\]. Available: #link("https://irds.ieee.org/images/files/pdf/2024/2024IRDS_MM.pdf")[#underline[https:\/\/irds.ieee.org/images/files/pdf/2024/2024IRDS\_MM.pdf]].
+#strong[\[3\]] X. Dong et al., \"NVSim: A Circuit-Level Performance, Energy, and Area Model for Emerging Nonvolatile Memory,\" #emph[IEEE Trans. Comput.-Aided Design Integr. Circuits Syst.], vol. 31, no. 7, pp. 994-1007, July 2012.
 
-#strong[\[4\]] X. Dong et al., \"NVSim: A Circuit-Level Performance, Energy, and Area Model for Emerging Nonvolatile Memory,\" #emph[IEEE Trans. Comput.-Aided Design Integr. Circuits Syst.], vol. 31, no. 7, pp. 994-1007, July 2012.
+#strong[\[4\]] M. Poremba, T. Zhang, and Y. Xie, \"NVMain 2.0: A user-friendly memory simulator to model (non-)volatile memory systems,\" IEEE Comput. Archit. Lett., vol. 14, no. 2, pp. 140-143, July-Dec. 2015.
 
-#strong[\[5\]] M. Poremba, T. Zhang, and Y. Xie, \"NVMain 2.0: A user-friendly memory simulator to model (non-)volatile memory systems,\" IEEE Comput. Archit. Lett., vol. 14, no. 2, pp. 140-143, July-Dec. 2015.
+#strong[\[5\]] H.-S. P. Wong et al., \"Metal-Oxide RRAM,\" #emph[Proc. IEEE], vol. 100, no. 6, pp. 1951-1970, June 2012. DOI: 10.1109/JPROC.2012.2190369
 
-#strong[\[6\]] H.-S. P. Wong et al., \"Metal-Oxide RRAM,\" #emph[Proc. IEEE], vol. 100, no. 6, pp. 1951-1970, June 2012. DOI: 10.1109/JPROC.2012.2190369
+#strong[\[6\]] C. Xue et al., \"16.1 A 22nm 4Mb 8b-Precision ReRAM Computing-in-Memory Macro with 11.91 to 195.7TOPS/W for Tiny AI Edge Devices,\" #emph[2021 IEEE International Solid-State Circuits Conference (ISSCC)], San Francisco, CA, USA, 2021, pp. 245-247.
 
-#strong[\[7\]] C. Xue et al., \"16.1 A 22nm 4Mb 8b-Precision ReRAM Computing-in-Memory Macro with 11.91 to 195.7TOPS/W for Tiny AI Edge Devices,\" #emph[2021 IEEE International Solid-State Circuits Conference (ISSCC)], San Francisco, CA, USA, 2021, pp. 245-247.
+#strong[\[7\]] C. Matsui, A. Yamada, N. Misawa, and K. Takeuchi, \"ReRAM resistance design of LRS and HRS for ultrahigh-capacity digital memory and analog Computation-in-Memory,\" IEICE Trans. Fundamentals, vol. E109.A, no. 3, pp. 596-603, Mar. 2026. DOI: 10.1587/transfun.2025VLP0011
 
-#strong[\[8\]] C. Matsui, A. Yamada, N. Misawa, and K. Takeuchi, \"ReRAM resistance design of LRS and HRS for ultrahigh-capacity digital memory and analog Computation-in-Memory,\" IEICE Trans. Fundamentals, vol. E109.A, no. 3, pp. 596-603, Mar. 2026. DOI: 10.1587/transfun.2025VLP0011
+#strong[\[8\]] S. H. Jo et al., \"3D-stackable crossbar resistive memory based on Field Assisted Superlinear Threshold (FAST) selector,\" #emph[2014 IEEE International Electron Devices Meeting (IEDM)], San Francisco, CA, USA, 2014, pp. 6.7.1-6.7.4.
 
-#strong[\[9\]] S. H. Jo et al., \"3D-stackable crossbar resistive memory based on Field Assisted Superlinear Threshold (FAST) selector,\" #emph[2014 IEEE International Electron Devices Meeting (IEDM)], San Francisco, CA, USA, 2014, pp. 6.7.1-6.7.4.
+#strong[\[9\]] J. Zhou, K.-H. Kim, and W. Lu, \"Crossbar RRAM Arrays: Selector Device Requirements During Read Operation,\" #emph[IEEE Trans. Electron Devices], vol. 61, no. 5, pp. 1369-1376, May 2014.
 
-#strong[\[10\]] J. Zhou, K.-H. Kim, and W. Lu, \"Crossbar RRAM Arrays: Selector Device Requirements During Read Operation,\" #emph[IEEE Trans. Electron Devices], vol. 61, no. 5, pp. 1369-1376, May 2014.
+#strong[\[10\]] A. Levy, L. R. Upton, M. D. Scott, D. Rich, W.-S. Khwa, Y.-D. Chih, M.-F. Chang, S. Mitra, B. Murmann, and P. Raina, \"EMBER: Efficient Multiple-Bits-Per-Cell Embedded RRAM Macro for High-Density Digital Storage,\" #emph[IEEE J. Solid-State Circuits], vol. 59, no. 7, pp. 2081-2092, July 2024. DOI: 10.1109/JSSC.2024.3387566
 
-#strong[\[11\]] A. Levy, L. R. Upton, M. D. Scott, D. Rich, W.-S. Khwa, Y.-D. Chih, M.-F. Chang, S. Mitra, B. Murmann, and P. Raina, \"EMBER: Efficient Multiple-Bits-Per-Cell Embedded RRAM Macro for High-Density Digital Storage,\" #emph[IEEE J. Solid-State Circuits], vol. 59, no. 7, pp. 2081-2092, July 2024. DOI: 10.1109/JSSC.2024.3387566
+#strong[\[11\]] L. R. Upton et al., \"EMBER: A 100 MHz, 0.86 mm2, multiple-bits-per-cell RRAM macro in 40 nm CMOS with compact peripherals and 1.0 pJ/bit read circuitry,\" in Proc. IEEE 49th Eur. Solid State Circuits Conf. (ESSCIRC), Sep. 2023, pp. 469-472.
 
-#strong[\[12\]] L. R. Upton et al., \"EMBER: A 100 MHz, 0.86 mm2, multiple-bits-per-cell RRAM macro in 40 nm CMOS with compact peripherals and 1.0 pJ/bit read circuitry,\" in Proc. IEEE 49th Eur. Solid State Circuits Conf. (ESSCIRC), Sep. 2023, pp. 469-472.
+#strong[\[12\]] J. Zahurak et al., \"Process Integration of a 27nm, 16Gb Cu ReRAM,\" in #emph[Proc. IEEE Int. Electron Devices Meeting (IEDM)], Dec. 2014.
 
-#strong[\[13\]] J. Zahurak et al., \"Process Integration of a 27nm, 16Gb Cu ReRAM,\" in #emph[Proc. IEEE Int. Electron Devices Meeting (IEDM)], Dec. 2014.
+#strong[\[13\]] T.-y. Liu et al., \"A 130.7-mm² 2-Layer 32-Gb ReRAM Memory Device in 24-nm Technology,\" #emph[IEEE J. Solid-State Circuits], vol. 49, no. 1, pp. 140-153, Jan. 2014.
 
-#strong[\[14\]] T.-y. Liu et al., \"A 130.7-mm² 2-Layer 32-Gb ReRAM Memory Device in 24-nm Technology,\" #emph[IEEE J. Solid-State Circuits], vol. 49, no. 1, pp. 140-153, Jan. 2014.
+#strong[\[14\]] D. Kau, S. Tang, I. V. Karpov, R. Dodge, B. Klehn, J. A. Kalb, J. Strand, A. Diaz, N. Leung, J. Wu, S. Lee, T. Langtry, K.-W. Chang, C. Papagianni, J. Lee, J. Hirst, S. Erra, E. Flores, N. Righos, H. Castro, and G. Spadini, \"A Stackable Cross Point Phase Change Memory,\" in #emph[2009 IEEE International Electron Devices Meeting (IEDM)], Baltimore, MD, Dec. 2009, pp. 617-620. DOI: 10.1109/IEDM.2009.5424263
 
-#strong[\[15\]] Intel Corporation and Micron Technology, 3D XPoint technology announcement, July 2015. \[Online\]. Available: #link("https://www.intc.com/news-events/press-releases/detail/324/intel-and-micron-produce-breakthrough-memory-technology")[#underline[https:\/\/www.intc.com/news-events/press-releases/detail/324/intel-and-micron-produce-breakthrough-memory-technology]].
+#strong[\[15\]] J. Izraelevitz, J. Yang, L. Zhang, J. Kim, X. Liu, A. Memaripour, Y. J. Soh, Z. Wang, Y. Xu, S. R. Dulloor, J. Zhao, and S. Swanson, \"Basic Performance Measurements of the Intel Optane DC Persistent Memory Module,\" arXiv:1903.05714, Aug. 2019.
 
-#strong[\[16\]] TechInsights, \"Memory/Selector Elements for Intel Optane XPoint Memory.\" \[Online\]. Available: #link("https://www.techinsights.com/blog/memoryselector-elements-intel-optanetm-xpoint-memory")[#underline[https:\/\/www.techinsights.com/blog/memoryselector-elements-intel-optanetm-xpoint-memory]].
+#strong[\[16\]] JEDEC Solid State Technology Association, \"DDR5 SDRAM Standard,\" JESD79-5D, Nov. 2025. \[Online\]. Available: #link("https://www.jedec.org/standards-documents/docs/jesd79-5d")[#underline[https:\/\/www.jedec.org/standards-documents/docs/jesd79-5d]]. Access-gated; the values used here were read from Micron Technology, \"DDR5 SDRAM\" core product data sheet, Doc. CCM005-1684161373-23, Rev. D, Oct. 2022, the vendor's transcription of the standard, and checked against two DDR5-4800 module datasheets (extended book, reference [101]).
 
-#strong[\[17\]] D. Kau, S. Tang, I. V. Karpov, R. Dodge, B. Klehn, J. A. Kalb, J. Strand, A. Diaz, N. Leung, J. Wu, S. Lee, T. Langtry, K.-W. Chang, C. Papagianni, J. Lee, J. Hirst, S. Erra, E. Flores, N. Righos, H. Castro, and G. Spadini, \"A Stackable Cross Point Phase Change Memory,\" in #emph[2009 IEEE International Electron Devices Meeting (IEDM)], Baltimore, MD, Dec. 2009, pp. 617-620. DOI: 10.1109/IEDM.2009.5424263
+#strong[\[17\]] B. C. Lee, E. Ipek, O. Mutlu, and D. Burger, \"Architecting phase change memory as a scalable dram alternative,\" in #emph[Proc. 36th Annu. Int. Symp. Comput. Archit. (ISCA)], 2009, pp. 2-13.
 
-#strong[\[18\]] Tom\'s Hardware, \"Intel Kills Optane Memory Business Entirely, Pays \$559 Million to Exit,\" Jul. 28, 2022. \[Online\]. Available: https:\/\/www.tomshardware.com/news/intel-kills-optane-memory-business-for-good. \[Accessed: Jul. 13, 2026\].
+#strong[\[18\]] N. Binkert et al., \"The gem5 Simulator,\" ACM SIGARCH Computer Architecture News, vol. 39, no. 2, pp. 1-7, May 2011. DOI: 10.1145/2024716.2024718
 
-#strong[\[19\]] J. Izraelevitz, J. Yang, L. Zhang, J. Kim, X. Liu, A. Memaripour, Y. J. Soh, Z. Wang, Y. Xu, S. R. Dulloor, J. Zhao, and S. Swanson, \"Basic Performance Measurements of the Intel Optane DC Persistent Memory Module,\" arXiv:1903.05714, Aug. 2019.
+#strong[\[19\]] A. Samajdar, J. M. Joseph, Y. Zhu, P. Whatmough, M. Mattina, and T. Krishna, \"A Systematic Methodology for Characterizing Scalability of DNN Accelerators Using SCALE-Sim,\" in #emph[Proc. IEEE Int. Symp. Perform. Anal. Syst. Softw. (ISPASS)], 2020, pp. 58-68.
 
-#strong[\[20\]] JEDEC Solid State Technology Association, \"DDR5 SDRAM Standard,\" JESD79-5D, Nov. 2025. \[Online\]. Available: #link("https://www.jedec.org/standards-documents/docs/jesd79-5d")[#underline[https:\/\/www.jedec.org/standards-documents/docs/jesd79-5d]]. Access-gated; the values used here were read from Micron Technology, \"DDR5 SDRAM\" core product data sheet, Doc. CCM005-1684161373-23, Rev. D, Oct. 2022, the vendor's transcription of the standard, and checked against two DDR5-4800 module datasheets (extended book, reference [101]).
+#strong[\[20\]] Standard Performance Evaluation Corporation, \"SPEC CPU 2017 Benchmark Suite.\" \[Online\]. Available: https:\/\/www.spec.org/cpu2017/. \[Accessed: Jul. 13, 2026\].
 
-#strong[\[21\]] B. C. Lee, E. Ipek, O. Mutlu, and D. Burger, \"Architecting phase change memory as a scalable dram alternative,\" in #emph[Proc. 36th Annu. Int. Symp. Comput. Archit. (ISCA)], 2009, pp. 2-13.
+#strong[\[21\]] J. D. McCalpin, \"Memory Bandwidth and Machine Balance in Current High Performance Computers,\" IEEE Computer Society Technical Committee on Computer Architecture (TCCA) Newsletter, pp. 19-25, Dec. 1995.
 
-#strong[\[22\]] Arm Ltd., \"Neoverse N3 Technical Overview: Core Components\" (64-byte cache lines). \[Online\]. Available: #link("https://developer.arm.com/documentation/107997/0000/Technical-overview/Core-components")[#underline[https:\/\/developer.arm.com/documentation/107997/0000/Technical-overview/Core-components]].
+#strong[\[22\]] W. Wan et al., \"Edge AI without Compromise: Efficient, Versatile and Accurate Neurocomputing in Resistive Random-Access Memory,\" preprint, arXiv:2108.07879, Aug. 2021 (the NeuRRAM chip; iterative program-and-verify writing of multi-level 1T1R cells).
 
-#strong[\[23\]] Avnet, \"DDR5 Key Module Technical Brief\" (two 32-bit subchannels at burst length 16, giving a 64-byte access). \[Online\]. Available: #link("https://www.avnet.com/wcm/connect/630450bf-bb94-4993-b756-4b9f3ef2334e/DDR5-Key-Module-Technical-Brief.pdf")[#underline[https:\/\/www.avnet.com/wcm/connect/630450bf-bb94-4993-b756-4b9f3ef2334e/DDR5-Key-Module-Technical-Brief.pdf]].
+#strong[\[23\]] C. Xie et al., \"Speeding Up the Write Operation for Multi-Level Cell Phase Change Memory with Programmable Ramp-Down Current Pulses,\" #emph[Micromachines], vol. 10, no. 7, p. 461, 2019. DOI: 10.3390/mi10070461 (more than 70 iterations for a 9.7 us total write; under 1.6 us with the verify step skipped), PMC6680789. \[Online\]. Available: #link("https://pmc.ncbi.nlm.nih.gov/articles/PMC6680789/")[#underline[https:\/\/pmc.ncbi.nlm.nih.gov/articles/PMC6680789/]].
 
-#strong[\[24\]] N. Binkert et al., \"The gem5 Simulator,\" ACM SIGARCH Computer Architecture News, vol. 39, no. 2, pp. 1-7, May 2011. DOI: 10.1145/2024716.2024718
+#strong[\[24\]] K. T. Malladi, F. A. Nothaft, K. Periyathambi, B. C. Lee, C. Kozyrakis, and M. Horowitz, \"Towards Energy-Proportional Datacenter Memory with Mobile DRAM,\" in Proc. 39th Annu. Int. Symp. Computer Architecture (ISCA), 2012, pp. 37-48. DOI: 10.1109/ISCA.2012.6237004
 
-#strong[\[25\]] A. Samajdar, J. M. Joseph, Y. Zhu, P. Whatmough, M. Mattina, and T. Krishna, \"A Systematic Methodology for Characterizing Scalability of DNN Accelerators Using SCALE-Sim,\" in #emph[Proc. IEEE Int. Symp. Perform. Anal. Syst. Softw. (ISPASS)], 2020, pp. 58-68.
+#strong[\[25\]] Y. Chen, \"ReRAM: History, Status, and Future,\" #emph[IEEE Trans. Electron Devices], vol. 67, no. 4, pp. 1420-1433, Apr. 2020.
 
-#strong[\[26\]] Standard Performance Evaluation Corporation, \"SPEC CPU 2017 Benchmark Suite.\" \[Online\]. Available: https:\/\/www.spec.org/cpu2017/. \[Accessed: Jul. 13, 2026\].
+#strong[\[26\]] M. K. Qureshi, J. Karidis, M. Franceschini, V. Srinivasan, L. Lastras, and B. Abali, \"Enhancing Lifetime and Security of PCM-Based Main Memory with Start-Gap Wear Leveling,\" in #emph[Proc. 42nd Annu. IEEE/ACM Int. Symp. Microarchitecture (MICRO)], 2009, pp. 14-23.
 
-#strong[\[27\]] J. D. McCalpin, \"Memory Bandwidth and Machine Balance in Current High Performance Computers,\" IEEE Computer Society Technical Committee on Computer Architecture (TCCA) Newsletter, pp. 19-25, Dec. 1995.
+#strong[\[27\]] J. Liu, H. Hadian, H. Xu, D. S. Berger, and H. Li, \"Dissecting CXL Memory Performance at Scale: Analysis, Modeling, and Optimization,\" preprint, arXiv:2409.14317, Sept. 2024, the version read here; published as J. Liu et al., \"Systematic CXL Memory Characterization and Performance Analysis at Scale,\" in #emph[Proc. 30th ACM Int. Conf. Architectural Support for Programming Languages and Operating Systems (ASPLOS)], 2025. DOI: 10.1145/3676641.3715987 (measured idle latency of local and remote-socket DDR5 and of CXL-attached DRAM devices).
 
-#strong[\[28\]] W. Wan et al., \"Edge AI without Compromise: Efficient, Versatile and Accurate Neurocomputing in Resistive Random-Access Memory,\" preprint, arXiv:2108.07879, Aug. 2021 (the NeuRRAM chip; iterative program-and-verify writing of multi-level 1T1R cells).
+#strong[\[28\]] H. Li, D. S. Berger, L. Hsu, D. Ernst, P. Zardoshti, S. Novakovic, M. Shah, S. Rajadnya, S. Lee, I. Agarwal, M. D. Hill, M. Fontoura, and R. Bianchini, \"Pond: CXL-Based Memory Pooling Systems for Cloud Platforms,\" in #emph[Proc. 28th ACM Int. Conf. Architectural Support for Programming Languages and Operating Systems (ASPLOS)], vol. 2, Mar. 2023, pp. 574-587. DOI: 10.1145/3575693.3578835; preprint arXiv:2203.00241 (local DDR4 platform baselines of 78 and 115 ns, pooling latency overheads, workload latency-acceptability study).
 
-#strong[\[29\]] C. Xie et al., \"Speeding Up the Write Operation for Multi-Level Cell Phase Change Memory with Programmable Ramp-Down Current Pulses,\" #emph[Micromachines], vol. 10, no. 7, p. 461, 2019. DOI: 10.3390/mi10070461 (more than 70 iterations for a 9.7 us total write; under 1.6 us with the verify step skipped), PMC6680789. \[Online\]. Available: #link("https://pmc.ncbi.nlm.nih.gov/articles/PMC6680789/")[#underline[https:\/\/pmc.ncbi.nlm.nih.gov/articles/PMC6680789/]].
+#strong[\[29\]] Y. Sun et al., \"Demystifying CXL Memory with Genuine CXL-Ready Systems and Devices,\" in #emph[Proc. 56th Annu. IEEE/ACM Int. Symp. Microarchitecture (MICRO)], 2023, pp. 105-121. DOI: 10.1145/3613424.3614256; preprint arXiv:2303.15375.
 
-#strong[\[30\]] K. T. Malladi, F. A. Nothaft, K. Periyathambi, B. C. Lee, C. Kozyrakis, and M. Horowitz, \"Towards Energy-Proportional Datacenter Memory with Mobile DRAM,\" in Proc. 39th Annu. Int. Symp. Computer Architecture (ISCA), 2012, pp. 37-48. DOI: 10.1109/ISCA.2012.6237004
+#strong[\[30\]] Linux kernel documentation, \"NUMA performance\" (ACPI HMAT latency and bandwidth attributes exposed per initiator-target pair). \[Online\]. Available: #link("https://docs.kernel.org/admin-guide/mm/numaperf.html")[#underline[https:\/\/docs.kernel.org/admin-guide/mm/numaperf.html]].
 
-#strong[\[31\]] Y. Chen, \"ReRAM: History, Status, and Future,\" #emph[IEEE Trans. Electron Devices], vol. 67, no. 4, pp. 1420-1433, Apr. 2020.
+#strong[\[31\]] Z. Chen and L. Dolecek, \"Write and Read Channel Models for 1S1R Crossbar Resistive Memory with High Line Resistance,\" in #emph[Proc. IEEE Global Communications Conf. (GLOBECOM)], 2020. DOI: 10.1109/GLOBECOM42002.2020.9322521; preprint arXiv:1912.02963 (channel-model bit error rates for a 1024 x 1024 1S1R array, 10 ohm per junction, ideal selector; read and write error rates by cell position).
 
-#strong[\[32\]] M. K. Qureshi, J. Karidis, M. Franceschini, V. Srinivasan, L. Lastras, and B. Abali, \"Enhancing Lifetime and Security of PCM-Based Main Memory with Start-Gap Wear Leveling,\" in #emph[Proc. 42nd Annu. IEEE/ACM Int. Symp. Microarchitecture (MICRO)], 2009, pp. 14-23.
+#strong[\[32\]] B. Giraud et al., \"Smart Write Algorithm to Enhance Performances and Reliability of an RRAM Macro,\" #emph[IEEE J. Solid-State Circuits], vol. 59, no. 9, pp. 3045-3057, Sept. 2024. DOI: 10.1109/JSSC.2024.3386429 (128 kb 1T1R macro: below 10#super[-7] after 10#super[6] cycles); summarized at Weebit Nano, smart-write algorithm technical resource. \[Online\]. Available: #link("https://www.weebit-nano.com/technical_resources/smart-write-algorithm-to-enhance-performances-and-reliability-of-an-rram-macro/")[#underline[https:\/\/www.weebit-nano.com/technical\_resources/smart-write-algorithm-to-enhance-performances-and-reliability-of-an-rram-macro/]].
 
-#strong[\[33\]] J. Liu, H. Hadian, H. Xu, D. S. Berger, and H. Li, \"Dissecting CXL Memory Performance at Scale: Analysis, Modeling, and Optimization,\" preprint, arXiv:2409.14317, Sept. 2024, the version read here; published as J. Liu et al., \"Systematic CXL Memory Characterization and Performance Analysis at Scale,\" in #emph[Proc. 30th ACM Int. Conf. Architectural Support for Programming Languages and Operating Systems (ASPLOS)], 2025. DOI: 10.1145/3676641.3715987 (measured idle latency of local and remote-socket DDR5 and of CXL-attached DRAM devices).
+#strong[\[33\]] M. Bocquet et al., \"In-Memory and Error-Immune Differential RRAM Implementation of Binarized Deep Neural Networks,\" in #emph[Proc. IEEE Int. Electron Devices Meeting (IEDM)], Dec. 2018. DOI: 10.1109/IEDM.2018.8614639; preprint arXiv:1902.02528 (raw bit error rate of 1T1R HfO#sub[2] RRAM arrays under cycling, including a 2T2R variant).
 
-#strong[\[34\]] H. Li, D. S. Berger, L. Hsu, D. Ernst, P. Zardoshti, S. Novakovic, M. Shah, S. Rajadnya, S. Lee, I. Agarwal, M. D. Hill, M. Fontoura, and R. Bianchini, \"Pond: CXL-Based Memory Pooling Systems for Cloud Platforms,\" in #emph[Proc. 28th ACM Int. Conf. Architectural Support for Programming Languages and Operating Systems (ASPLOS)], vol. 2, Mar. 2023, pp. 574-587. DOI: 10.1145/3575693.3578835; preprint arXiv:2203.00241 (local DDR4 platform baselines of 78 and 115 ns, pooling latency overheads, workload latency-acceptability study).
+#strong[\[34\]] E. Ambrosi et al., \"Low voltage (\<1.8 V) and high endurance (\>1M) 1-Selector/1-STT-MRAM with ultra-low (1 ppb) read disturb for high density embedded memory arrays,\" in #emph[Proc. IEEE Int. Electron Devices Meeting (IEDM)], Dec. 2023. DOI: 10.1109/IEDM45741.2023.10413809 (10#super[-9] per-read disturb rate, 10#super[9] read-disturb-free cycles). \[Online\]. Available: #link("https://ieeexplore.ieee.org/document/10413809/")[#underline[https:\/\/ieeexplore.ieee.org/document/10413809/]].
 
-#strong[\[35\]] Y. Sun et al., \"Demystifying CXL Memory with Genuine CXL-Ready Systems and Devices,\" in #emph[Proc. 56th Annu. IEEE/ACM Int. Symp. Microarchitecture (MICRO)], 2023, pp. 105-121. DOI: 10.1145/3613424.3614256; preprint arXiv:2303.15375.
+#strong[\[35\]] IBM Research, \"Enhancing 3D XPT/SOM reliability: strategies for mitigating spike current and improving read endurance,\" IMW 2025 (cell failure rate 9% falling to 0.02% after read-endurance optimization). \[Online\]. Available: #link("https://research.ibm.com/publications/enhancing-3d-xptsom-reliability-strategies-for-mitigating-spike-current-and-improving-read-endurance")[#underline[https:\/\/research.ibm.com/publications/enhancing-3d-xptsom-reliability-strategies-for-mitigating-spike-current-and-improving-read-endurance]].
 
-#strong[\[36\]] Linux kernel documentation, \"NUMA performance\" (ACPI HMAT latency and bandwidth attributes exposed per initiator-target pair). \[Online\]. Available: #link("https://docs.kernel.org/admin-guide/mm/numaperf.html")[#underline[https:\/\/docs.kernel.org/admin-guide/mm/numaperf.html]].
+#strong[\[36\]] D. Zhang, V. Sridharan, and X. Jian, \"Exploring and Optimizing Chipkill-Correct for Persistent Memory Based on High-Density NVRAMs,\" in #emph[Proc. 51st Annu. IEEE/ACM Int. Symp. Microarchitecture (MICRO)], 2018, pp. 710-723. DOI: 10.1109/MICRO.2018.00063 (2 x 10#super[-4] raw design point, BCH(2312,2048,22), about 27% coding overhead); reached through H. Volos, \"The Case for Replication-Aware Memory-Error Protection in Disaggregated Memory,\" #emph[IEEE Computer Architecture Letters], vol. 20, no. 2, 2021, arXiv:2309.00304, which cites it.
 
-#strong[\[37\]] Micron Technology, \"Micron launches memory expansion module portfolio to accelerate CXL 2.0 adoption,\" Aug. 7, 2023 (CZ120, x8, up to 36 GB/s). \[Online\]. Available: #link("https://www.globenewswire.com/news-release/2023/08/07/2719764/14450/en/Micron-Launches-Memory-Expansion-Module-Portfolio-to-Accelerate-CXL-2-0-Adoption.html")[#underline[https:\/\/www.globenewswire.com/news-release/2023/08/07/2719764/14450/en/Micron-Launches-Memory-Expansion-Module-Portfolio-to-Accelerate-CXL-2-0-Adoption.html]].
+#strong[\[37\]] P. J. Nair, D.-H. Kim, and M. K. Qureshi, \"ArchShield: Architectural Framework for Assisting DRAM Scaling by Tolerating High Error Rates,\" in #emph[Proc. 40th Annu. Int. Symp. Computer Architecture (ISCA)], 2013, pp. 72-83. DOI: 10.1145/2485922.2485929 (DRAM on-die SECDED tolerates about 10#super[-6] raw); consulted through P. J. Nair, \"Architectural Techniques to Enable Reliable and Scalable Memory Systems,\" Ph.D. dissertation, Georgia Inst. of Technology, 2017, arXiv:1704.03991.
 
-#strong[\[38\]] Astera Labs, CM5162 Leo smart memory controller product page (CXL 1.1 / 2.0, x16 at 32 GT/s, two DDR5 channels, up to 2 TB; no published latency figure). \[Online\]. Available: #link("https://www.asteralabs.com/product-details/cm5162p/")[#underline[https:\/\/www.asteralabs.com/product-details/cm5162p/]].
+#strong[\[38\]] Intel Corporation, Intel Optane SSD 905P series product specifications (uncorrectable bit error rate under 1 sector per 10#super[17] bits). \[Online\]. Available: #link("https://www.intel.com/content/www/us/en/products/sku/147526/intel-optane-ssd-905p-series-1-5tb-2-5in-pcie-x4-3d-xpoint/specifications.html")[#underline[https:\/\/www.intel.com/content/www/us/en/products/sku/147526/intel-optane-ssd-905p-series-1-5tb-2-5in-pcie-x4-3d-xpoint/specifications.html]].
 
-#strong[\[39\]] Intel Corporation, second-generation Intel Xeon Scalable processor family technical overview (Optane PMem Memory Mode and App Direct; 64-byte byte-addressable lines). \[Online\]. Available: #link("https://www.intel.com/content/www/us/en/developer/articles/news/second-generation-intel-xeon-processor-scalable-family-technical-overview.html")[#underline[https:\/\/www.intel.com/content/www/us/en/developer/articles/news/second-generation-intel-xeon-processor-scalable-family-technical-overview.html]].
+#strong[\[39\]] A. Tyagi and S. Kvatinsky, \"Assessing the Performance of Stateful Logic in 1-Selector-1-RRAM Crossbar Arrays,\" in #emph[Proc. IEEE Int. Symp. Circuits and Systems (ISCAS)], 2024. DOI: 10.1109/ISCAS58744.2024.10558539; preprint arXiv:2407.10466 (read-margin analysis of 1R against 1S1R crossbar arrays; the 10% minimum read-margin criterion).
 
-#strong[\[40\]] Z. Chen and L. Dolecek, \"Write and Read Channel Models for 1S1R Crossbar Resistive Memory with High Line Resistance,\" in #emph[Proc. IEEE Global Communications Conf. (GLOBECOM)], 2020. DOI: 10.1109/GLOBECOM42002.2020.9322521; preprint arXiv:1912.02963 (channel-model bit error rates for a 1024 x 1024 1S1R array, 10 ohm per junction, ideal selector; read and write error rates by cell position).
+#strong[\[40\]] J. Choe, \"Comparing DDR5 Memory From Micron, Samsung, SK Hynix,\" #emph[EE Times], Feb. 15, 2022. \[Online\]. Available: #link("https://www.eetimes.com/comparing-ddr5-memory-from-micron-samsung-sk-hynix/")[#underline[https:\/\/www.eetimes.com/comparing-ddr5-memory-from-micron-samsung-sk-hynix/]]. \[Accessed: Jul. 12, 2026\].
 
-#strong[\[41\]] B. Giraud et al., \"Smart Write Algorithm to Enhance Performances and Reliability of an RRAM Macro,\" #emph[IEEE J. Solid-State Circuits], vol. 59, no. 9, pp. 3045-3057, Sept. 2024. DOI: 10.1109/JSSC.2024.3386429 (128 kb 1T1R macro: below 10#super[-7] after 10#super[6] cycles); summarized at Weebit Nano, smart-write algorithm technical resource. \[Online\]. Available: #link("https://www.weebit-nano.com/technical_resources/smart-write-algorithm-to-enhance-performances-and-reliability-of-an-rram-macro/")[#underline[https:\/\/www.weebit-nano.com/technical\_resources/smart-write-algorithm-to-enhance-performances-and-reliability-of-an-rram-macro/]].
+#strong[\[41\]] M. Rudan, R. Brunetti, and S. Reggiani, Eds., #emph[Springer Handbook of Semiconductor Devices]. Cham, Switzerland: Springer, 2023 (crossbar tile limit, Fig. 17.21, pp. 642-643, after Molas et al., IMW 2020; OTS selector currents, Table 30.3).
 
-#strong[\[42\]] M. Bocquet et al., \"In-Memory and Error-Immune Differential RRAM Implementation of Binarized Deep Neural Networks,\" in #emph[Proc. IEEE Int. Electron Devices Meeting (IEDM)], Dec. 2018. DOI: 10.1109/IEDM.2018.8614639; preprint arXiv:1902.02528 (raw bit error rate of 1T1R HfO#sub[2] RRAM arrays under cycling, including a 2T2R variant).
+#strong[\[42\]] S.-P. Yang, M. Kim, S. Nam, J. Park, J.-Y. Choi, E. H. Nam, E. Lee, S. Lee, and B. S. Kim, \"Overcoming the Memory Wall with CXL-Enabled SSDs,\" in #emph[Proc. USENIX Annu. Technical Conf. (ATC)], Jul. 2023, pp. 601-617.
 
-#strong[\[43\]] E. Ambrosi et al., \"Low voltage (\<1.8 V) and high endurance (\>1M) 1-Selector/1-STT-MRAM with ultra-low (1 ppb) read disturb for high density embedded memory arrays,\" in #emph[Proc. IEEE Int. Electron Devices Meeting (IEDM)], Dec. 2023. DOI: 10.1109/IEDM45741.2023.10413809 (10#super[-9] per-read disturb rate, 10#super[9] read-disturb-free cycles). \[Online\]. Available: #link("https://ieeexplore.ieee.org/document/10413809/")[#underline[https:\/\/ieeexplore.ieee.org/document/10413809/]].
+#strong[\[43\]] J. Zeng et al., \"Performance Characterizations and Usage Guidelines of Samsung CXL Memory Module Hybrid Prototype,\" preprint, arXiv:2503.22017, Mar. 2025.
 
-#strong[\[44\]] IBM Research, \"Enhancing 3D XPT/SOM reliability: strategies for mitigating spike current and improving read endurance,\" IMW 2025 (cell failure rate 9% falling to 0.02% after read-endurance optimization). \[Online\]. Available: #link("https://research.ibm.com/publications/enhancing-3d-xptsom-reliability-strategies-for-mitigating-spike-current-and-improving-read-endurance")[#underline[https:\/\/research.ibm.com/publications/enhancing-3d-xptsom-reliability-strategies-for-mitigating-spike-current-and-improving-read-endurance]].
+#strong[\[44\]] N. Gholkar, J. Stojkovic, H. Al Maruf, G. Price, P. Chauhan, H. Patel, C. Van Goethem, K. Vemuri, K. Sriadibhatla, K. Subramanian, S. Kanaujia, C. Tang, and A. Dhanotia, \"Vistara: Making CXL Real: Full Path from ASIC Design and OS Support to Hyperscale Deployment,\" in #emph[Proc. 53rd Annu. Int. Symp. Computer Architecture (ISCA)], industry session, 2026.
 
-#strong[\[45\]] D. Zhang, V. Sridharan, and X. Jian, \"Exploring and Optimizing Chipkill-Correct for Persistent Memory Based on High-Density NVRAMs,\" in #emph[Proc. 51st Annu. IEEE/ACM Int. Symp. Microarchitecture (MICRO)], 2018, pp. 710-723. DOI: 10.1109/MICRO.2018.00063 (2 x 10#super[-4] raw design point, BCH(2312,2048,22), about 27% coding overhead); reached through H. Volos, \"The Case for Replication-Aware Memory-Error Protection in Disaggregated Memory,\" #emph[IEEE Computer Architecture Letters], vol. 20, no. 2, 2021, arXiv:2309.00304, which cites it.
+#strong[\[45\]] M. K. Qureshi, V. Srinivasan, and J. A. Rivers, \"Scalable High Performance Main Memory System Using Phase-Change Memory Technology,\" in #emph[Proc. 36th Annu. Int. Symp. Computer Architecture (ISCA)], 2009, pp. 24-33. DOI: 10.1145/1555754.1555760
 
-#strong[\[46\]] P. J. Nair, D.-H. Kim, and M. K. Qureshi, \"ArchShield: Architectural Framework for Assisting DRAM Scaling by Tolerating High Error Rates,\" in #emph[Proc. 40th Annu. Int. Symp. Computer Architecture (ISCA)], 2013, pp. 72-83. DOI: 10.1145/2485922.2485929 (DRAM on-die SECDED tolerates about 10#super[-6] raw); consulted through P. J. Nair, \"Architectural Techniques to Enable Reliable and Scalable Memory Systems,\" Ph.D. dissertation, Georgia Inst. of Technology, 2017, arXiv:1704.03991.
+#strong[\[46\]] P. Zhou, B. Zhao, J. Yang, and Y. Zhang, \"A Durable and Energy Efficient Main Memory Using Phase Change Memory Technology,\" in #emph[Proc. 36th Annu. Int. Symp. Computer Architecture (ISCA)], 2009, pp. 14-23. DOI: 10.1145/1555754.1555759
 
-#strong[\[47\]] Intel Corporation, Intel Optane SSD 905P series product specifications (uncorrectable bit error rate under 1 sector per 10#super[17] bits). \[Online\]. Available: #link("https://www.intel.com/content/www/us/en/products/sku/147526/intel-optane-ssd-905p-series-1-5tb-2-5in-pcie-x4-3d-xpoint/specifications.html")[#underline[https:\/\/www.intel.com/content/www/us/en/products/sku/147526/intel-optane-ssd-905p-series-1-5tb-2-5in-pcie-x4-3d-xpoint/specifications.html]].
+#strong[\[47\]] C. Xu, D. Niu, N. Muralimanohar, R. Balasubramonian, T. Zhang, S. Yu, and Y. Xie, \"Overcoming the Challenges of Crossbar Resistive Memory Architectures,\" in #emph[Proc. 21st IEEE Int. Symp. High Performance Computer Architecture (HPCA)], 2015, pp. 476-488. DOI: 10.1109/HPCA.2015.7056056
 
-#strong[\[48\]] A. Tyagi and S. Kvatinsky, \"Assessing the Performance of Stateful Logic in 1-Selector-1-RRAM Crossbar Arrays,\" in #emph[Proc. IEEE Int. Symp. Circuits and Systems (ISCAS)], 2024. DOI: 10.1109/ISCAS58744.2024.10558539; preprint arXiv:2407.10466 (read-margin analysis of 1R against 1S1R crossbar arrays; the 10% minimum read-margin criterion).
+#strong[\[48\]] E. Kültürsay, M. Kandemir, A. Sivasubramaniam, and O. Mutlu, \"Evaluating STT-RAM as an Energy-Efficient Main Memory Alternative,\" in #emph[Proc. IEEE Int. Symp. Performance Analysis of Systems and Software (ISPASS)], 2013, pp. 256-267. DOI: 10.1109/ISPASS.2013.6557176
 
-#strong[\[49\]] J. Choe, \"Comparing DDR5 Memory From Micron, Samsung, SK Hynix,\" #emph[EE Times], Feb. 15, 2022. \[Online\]. Available: #link("https://www.eetimes.com/comparing-ddr5-memory-from-micron-samsung-sk-hynix/")[#underline[https:\/\/www.eetimes.com/comparing-ddr5-memory-from-micron-samsung-sk-hynix/]]. \[Accessed: Jul. 12, 2026\].
-
-#strong[\[50\]] M. Rudan, R. Brunetti, and S. Reggiani, Eds., #emph[Springer Handbook of Semiconductor Devices]. Cham, Switzerland: Springer, 2023 (crossbar tile limit, Fig. 17.21, pp. 642-643, after Molas et al., IMW 2020; OTS selector currents, Table 30.3).
-
-#strong[\[51\]] S.-P. Yang, M. Kim, S. Nam, J. Park, J.-Y. Choi, E. H. Nam, E. Lee, S. Lee, and B. S. Kim, \"Overcoming the Memory Wall with CXL-Enabled SSDs,\" in #emph[Proc. USENIX Annu. Technical Conf. (ATC)], Jul. 2023, pp. 601-617.
-
-#strong[\[52\]] J. Zeng et al., \"Performance Characterizations and Usage Guidelines of Samsung CXL Memory Module Hybrid Prototype,\" preprint, arXiv:2503.22017, Mar. 2025.
-
-#strong[\[53\]] N. Gholkar, J. Stojkovic, H. Al Maruf, G. Price, P. Chauhan, H. Patel, C. Van Goethem, K. Vemuri, K. Sriadibhatla, K. Subramanian, S. Kanaujia, C. Tang, and A. Dhanotia, \"Vistara: Making CXL Real: Full Path from ASIC Design and OS Support to Hyperscale Deployment,\" in #emph[Proc. 53rd Annu. Int. Symp. Computer Architecture (ISCA)], industry session, 2026.
-
-#strong[\[54\]] M. K. Qureshi, V. Srinivasan, and J. A. Rivers, \"Scalable High Performance Main Memory System Using Phase-Change Memory Technology,\" in #emph[Proc. 36th Annu. Int. Symp. Computer Architecture (ISCA)], 2009, pp. 24-33. DOI: 10.1145/1555754.1555760
-
-#strong[\[55\]] P. Zhou, B. Zhao, J. Yang, and Y. Zhang, \"A Durable and Energy Efficient Main Memory Using Phase Change Memory Technology,\" in #emph[Proc. 36th Annu. Int. Symp. Computer Architecture (ISCA)], 2009, pp. 14-23. DOI: 10.1145/1555754.1555759
-
-#strong[\[56\]] C. Xu, D. Niu, N. Muralimanohar, R. Balasubramonian, T. Zhang, S. Yu, and Y. Xie, \"Overcoming the Challenges of Crossbar Resistive Memory Architectures,\" in #emph[Proc. 21st IEEE Int. Symp. High Performance Computer Architecture (HPCA)], 2015, pp. 476-488. DOI: 10.1109/HPCA.2015.7056056
-
-#strong[\[57\]] E. Kültürsay, M. Kandemir, A. Sivasubramaniam, and O. Mutlu, \"Evaluating STT-RAM as an Energy-Efficient Main Memory Alternative,\" in #emph[Proc. IEEE Int. Symp. Performance Analysis of Systems and Software (ISPASS)], 2013, pp. 256-267. DOI: 10.1109/ISPASS.2013.6557176
-
-#strong[\[58\]] H. A. Maruf, H. Wang, A. Dhanotia, J. Weiner, N. Agarwal, P. Bhattacharya, C. Petersen, M. Chowdhury, S. Kanaujia, and P. Chauhan, \"TPP: Transparent Page Placement for CXL-Enabled Tiered-Memory,\" in #emph[Proc. 28th ACM Int. Conf. Architectural Support for Programming Languages and Operating Systems (ASPLOS)], vol. 3, Mar. 2023, pp. 742-755; preprint arXiv:2206.02878.
+#strong[\[49\]] H. A. Maruf, H. Wang, A. Dhanotia, J. Weiner, N. Agarwal, P. Bhattacharya, C. Petersen, M. Chowdhury, S. Kanaujia, and P. Chauhan, \"TPP: Transparent Page Placement for CXL-Enabled Tiered-Memory,\" in #emph[Proc. 28th ACM Int. Conf. Architectural Support for Programming Languages and Operating Systems (ASPLOS)], vol. 3, Mar. 2023, pp. 742-755; preprint arXiv:2206.02878.
 
 #set text(size: 12pt)
 
