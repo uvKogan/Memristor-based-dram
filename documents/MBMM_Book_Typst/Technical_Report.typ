@@ -690,7 +690,12 @@ simulation result.]]
   the device read latency exactly once (for 1T1R SLC, 4 + 5 cycles at
   800 MHz, 11.25 ns against a 10.12 ns device read), and tWR, the write
   recovery time. tRP is fixed at one cycle by ruling, because a
-  resistive read is non-destructive and has no row to restore. Every
+  resistive read is non-destructive and has no row to restore; the
+  November precharge sensitivity (tRP 4 and 8 cycles,
+  `results/system_rev2026-09_precharge_trp4` and `_trp8`) moves the CPU
+  averages by at most 0.7 ns, because under close page only a later
+  access to the same bank waits for the precharge, while the one-row AI
+  bursts rise 10 to 26%. Every
   other protocol timing the simulation applies is a constant in
   #emph[interface cycles], never derived for ReRAM, and therefore
   scales in nanoseconds with whatever clock is chosen: tCWD 7, tRTP 5,
@@ -1988,7 +1993,16 @@ protocol and nothing else. A BCH(2312,2048,22) decoder sits on that path
 in a real part, and its latency is not a rounding error against an
 11.25 ns device read. The latencies of Table 2 are therefore optimistic
 by exactly the decode time a 27%-overhead code would add, on top of
-being media rather than device numbers, and closing that gap is named as
+being media rather than device numbers. The November decode sensitivity
+(`results/system_rev2026-09_eccdecode_20ns` and `_40ns`: 16 and 32
+interface cycles added to tCAS, a pipelined stand-in for a decoder on
+every read) prices it: the CPU averages rise by the decode time times
+the 57 to 67% read share, 11.3 to 14.1 ns at 20 ns and 19.5 to 25.0 ns
+at 40 ns, the all-write burst is unchanged, and at 40 ns the SLC tracks
+still average 58.4 to 66.0 ns on the CPU traces against 78.3 to 83.1 ns
+for the open-page baseline and 69.9 to 93.5 ns for the close-page one.
+A code-level model that ties decode latency to the capacity cost of the
+same code remains named as
 future work in Section 4.2 rather than estimated here from a code this
 project has not modeled.
 
@@ -4374,8 +4388,10 @@ confidence.
   path, a capacity cost of 27% applied to the density figures of
   Table 6, and the resulting re-derivation of the latency and density
   verdicts together, since the two move in opposite directions. It needs
-  a code-level latency estimate rather than a simulator change, and it
-  would turn the "excludes ECC decode" caveat into a number.
+  a code-level latency estimate rather than a simulator change. The
+  November decode sensitivity brackets the latency side at 20 and 40 ns
+  of fixed delay and the book's Table 8 applies the 27% capacity cost;
+  what this item still asks for is the two from one code.
 
 - #strong[Write-Pulse-Aware MLC Modeling Beyond the Bracket]: The
   bounding run of Section 3.1.1 brackets the write-path cost between two
@@ -5565,6 +5581,12 @@ quantity to be compared arithmetically against the new one.
   [NVSim re-characterized with `-DeviceRoadmap: LSTP` instead of LOP (one line in each cell configuration) and the four full-DIMM tracks re-run on all six traces: chip leakage 1.599 mW instead of 108.384, module floor 0.10 W instead of 6.94, per-GiB power 0.26x to 0.94x of DDR5 (SLC) and 0.14x to 0.54x (MLC) instead of 12.7x to 17.4x and 6.4x to 8.7x; CPU latencies within 2%, write burst at most 4% slower, die area within 0.3%],
   [New measurement, not a correction: the floor is a transistor-roadmap choice the model exposes as a knob, and nothing in the model or the literature read decides between the two profiles. The book reports both ends as a band and names the choice as a limit],
   [Book Sections 2.2, 4.2 (Table 5b), 5.4; results/system\_rev2026-09\_periphery\_lstp/ (RUN\_NOTE.md, run\_manifest.json, \_csv/)],
+
+  [#strong[Precharge and read-decode sensitivities (November 2026)]],
+  [Not run. tRP was a one-cycle placeholder and the latencies excluded ECC decode, both disclosed as untested conditions],
+  [Four one-line variants of the full-DIMM ReRAM configs, 24 runs each: tRP 4 and 8 cycles move the CPU averages by at most 0.7 ns and the one-row AI bursts by 10 to 26%; 16 and 32 cycles added to tCAS raise the CPU averages by 11.3 to 14.1 and 19.5 to 25.0 ns (decode time times the read share), leave the write burst unchanged, and keep the SLC tracks 1.20x to 1.41x below the open-page baseline and 1.12x to 1.53x below the close-page one at 40 ns],
+  [New measurements, not corrections: the precharge is not a latency lever on CPU traffic under close page, and a decoder narrows the margin without reversing it. The book carries both as Table 4c and gives the latency axis its own band],
+  [Book Sections 4.1 (Table 4c), 5.3, 5.4, Chapter 6; results/system\_rev2026-09\_precharge\_trp4, \_trp8, \_eccdecode\_20ns, \_eccdecode\_40ns (run notes, manifests, \_csv/)],
 
   [#strong[The write-path cost: a single value becomes a bracket]],
   [Not run. #emph[Stated earlier in this revision:] the write-burst deficit as single values - DDR5 1.507x faster than 1T1R SLC, 1.671x than 1S1R SLC, 2.185x and 2.787x against the two MLC tracks - with the ReRAM side declared a lower bound and no upper end measured],

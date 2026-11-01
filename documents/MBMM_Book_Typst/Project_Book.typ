@@ -312,8 +312,8 @@ wall-clock window.
 
 The results in this book come from frozen datasets, not from a live
 working directory: a 120-run primary matrix of twenty configurations
-against six workloads, plus eight sensitivity series that each change
-one flag or one characterization line, a 1024-organization axis and a one-channel control run. The
+against six workloads, plus twelve sensitivity series that each change
+one flag or one configuration line, a 1024-organization axis and a one-channel control run. The
 write-pulse bounding run and the close-page baseline run carry a
 manifest of their flags and provenance columns on every processed row;
 the primary matrix and the other series are recorded by their run
@@ -806,7 +806,8 @@ on STREAM, where the open-page baseline serves 45% of requests from the
 open row, close-page makes the baseline slower. The baseline carries
 its JEDEC timings, write path and refresh blocking (Section 2.3), while
 the ReRAM subarray reads in 10.12 ns (1T1R) or 4.70 ns (1S1R) and
-precharges in one 1.25 ns cycle. The 0.797 W DDR5 power figure that
+precharges in one 1.25 ns cycle, a placeholder that Table 4c shows is
+worth under 1% on CPU traffic. The 0.797 W DDR5 power figure that
 Table 5 retains comes from the open-page run; the close-page runs are
 used only for the latency margin. Their power column is not quoted:
 under NVMain's current-mode model the shorter active-standby time
@@ -844,6 +845,73 @@ interface clock. 1T1R SLC falls 41.4, 27.9, 19.0 ns and 1S1R SLC 36.8,
 baseline of 83.1 ns. Only tRCD plus tCAS are NVSim device time; every
 other protocol timing is a constant in interface cycles and therefore
 scales with the clock.]]
+]
+
+Two of the untested conditions behind that margin were then run as
+sensitivities, each a one-line change to the four full-DIMM
+configurations (Table 4c). #strong[The precharge placeholder is worth
+under 1% on CPU traffic.] Raising tRP from the one-cycle placeholder to
+4 and 8 cycles (5 and 10 ns) moves the three CPU averages by at most
+0.7 ns, because under the close-page policy an access completes before
+its precharge and only a later access to the same bank waits for it,
+and with 64 banks per module that is rare on sparse traffic; the
+one-row AI bursts, where every access returns to the same bank, rise 10
+to 26%. #strong[A decoder on every read adds its latency times the
+read fraction.] Adding 20 and 40 ns of fixed delay to the read data
+path, a pipelined stand-in for the BCH decoder of Section 5.3, raises
+the CPU averages by 11.3 to 14.1 ns and 19.5 to 25.0 ns, the decode
+time times the 57 to 67% read share, leaves the all-write burst
+untouched and lengthens the read bursts by exactly the decode time
+without changing their drain. The direction survives: at 40 ns on
+every read the SLC tracks average 58.4 to 66.0 ns on the CPU traces
+against 78.3 to 83.1 ns for the open-page baseline (1.20x to 1.41x) and
+69.9 to 93.5 ns for the close-page one (1.12x to 1.53x), and the
+worst combination in the dataset, 1T1R MLC under LBM at 40 ns against
+the close-page baseline, keeps 1.06x. The latency axis therefore has
+its own band, 41.4 to 63.4 ns for 1T1R SLC under GCC and 36.8 to 58.9
+for 1S1R SLC, whose lower end is the primary matrix and whose upper
+end is a 40 ns decoder; the interface clock of Figure 2 remains the
+larger lever.
+
+#block(breakable: false)[
+#strong[Table 4c: precharge and read-decode sensitivities (ns), SLC
+tracks, full DIMM, one line changed per run.]
+
+#align(center)[#text(size: 9.5pt)[#table(
+  columns: (1.6fr, 0.8fr, 0.8fr, 0.8fr, 1fr, 1fr, 0.8fr),
+  align: (col, row) => (left,right,right,right,right,right,right,).at(col),
+  inset: 4pt,
+  table.header(
+    [#strong[Track, trace]],
+    [#strong[Primary]],
+    [#strong[tRP 4]],
+    [#strong[tRP 8]],
+    [#strong[+20 ns decode]],
+    [#strong[+40 ns decode]],
+    [#strong[DDR5]],
+  ),
+  [1T1R SLC, GCC], [41.4], [41.4], [41.5], [52.9], [63.4], [83.1],
+  [1T1R SLC, LBM], [43.1], [42.6], [42.7], [54.7], [62.6], [78.3],
+  [1T1R SLC, STREAM], [42.3], [42.3], [42.3], [55.6], [66.0], [79.4],
+  [1T1R SLC, AlexNet IFMAP (sat.)], [143.6], [158.1], [179.4], [163.6], [183.6], [212.3],
+  [1S1R SLC, GCC], [36.8], [36.8], [36.8], [48.3], [58.9], [83.1],
+  [1S1R SLC, LBM], [38.1], [38.2], [38.1], [49.4], [58.4], [78.3],
+  [1S1R SLC, STREAM], [37.3], [37.4], [37.3], [50.6], [61.0], [79.4],
+  [1S1R SLC, AlexNet IFMAP (sat.)], [130.0], [144.2], [164.5], [150.0], [170.0], [212.3],
+)]
+]
+
+#emph[Average total latency as in Table 4; the MLC tracks move by the
+same amounts within 2 ns (1T1R MLC under GCC 44.5, 44.6, 44.7, 56.1,
+67.0; 1S1R MLC 37.9, 37.9, 38.0, 49.4, 60.4). The decode variants add
+16 and 32 interface cycles to tCAS, which NVMain applies to the data
+return and read completion of every read and to the read-to-write
+turnaround on the same subarray; writes carry no decode, so the
+output-map column is unchanged and is omitted. Completed request
+counts are identical to the primary in every run. Sources:
+results/system\_rev2026-09\_precharge\_trp4, \_precharge\_trp8,
+\_eccdecode\_20ns and \_eccdecode\_40ns, each with its run note,
+manifest and \_csv/.]
 ]
 
 The write-dominated burst reverses the verdict, and it is a throughput
@@ -1727,7 +1795,10 @@ rate. And, plainly: #strong[the modeled latencies exclude ECC decode.]
 The generated configurations carry no coding block and no decoder, so
 every latency in Chapter 4 is optimistic by exactly the decode time a code of
 that class would add, on top of being a media rather than a
-device number.
+device number. Section 4.1 prices that decode at 20 and 40 ns of fixed
+read-path delay (Table 4c): the CPU averages rise by the decode time
+times the read fraction, 11 to 25 ns, and the direction against DDR5
+survives at both values.
 
 == 5.4. Limits of the model
 
@@ -1756,9 +1827,10 @@ and the ReRAM power-down energy is a no-savings placeholder
 NVSim's low-operating-power profile sets the 6.94 W floor and its
 low-standby-power profile removes it, the two ends of the power axis
 differ by two orders of magnitude, and nothing in the model or the
-literature read here decides between them (Sections 2.2, 4.2). #strong[No ECC decode sits on the read path], as
-Section 5.3 states, and no coding overhead is charged against the
-density figures. #strong[Endurance rests on stationarity]\: every
+literature read here decides between them (Sections 2.2, 4.2). #strong[No ECC decode sits on the primary read path]\: Section 4.1
+brackets it at 20 and 40 ns of fixed delay (Table 4c) and Table 8's
+usable-density column charges the 27% capacity cost, but no code-level
+model ties the two together. #strong[Endurance rests on stationarity]\: every
 lifetime extrapolates a write distribution measured inside a 250 ms
 window to years, and the leveling schemes are modeled analytically
 rather than simulated end to end (Section 4.3). #strong[Every ReRAM
@@ -1815,7 +1887,11 @@ near the idealized 4F²; at twice that area 22nm SLC falls below DDR5
 parity (Section 4.5). And the latency advantage becomes a statement
 about hardware only when a ReRAM array and interface at the assumed
 800 MHz exist: at published silicon timings the same DIMM averages
-11.9 us and 379 us under GCC (Section 4.1). Two thresholds sit on the
+11.9 us and 379 us under GCC (Section 4.1). A decoder does not overturn
+it: at 40 ns on every read the SLC tracks stay 1.2x to 1.4x below the
+open-page baseline and 1.1x to 1.5x below the close-page one, and the
+one-cycle precharge placeholder is worth under 1% on CPU traffic
+(Table 4c). Two thresholds sit on the
 baseline side: the latency margin is 1.9 to 2.1 to one, not two to one,
 once DDR5 runs the ReRAM configurations' close-page policy, and a
 typical-current DDR5 module would widen the power deficit rather than
@@ -1849,11 +1925,13 @@ settle.
   Table 9, with this project's own rows measured rather than
   positioned.
 
-- #strong[ECC decode on the read path.] Section 5.3 leaves the largest
-  disclosed optimism in the read path. Pricing it needs a decoder
-  latency model on the read path and a 27% total capacity cost applied to the
-  density figures, and the latency and density verdicts then have to be
-  re-derived together, because the two move in opposite directions.
+- #strong[ECC decode on the read path, code-level.] Section 4.1 now
+  brackets the decoder at 20 and 40 ns of fixed delay and Table 8
+  applies the 27% capacity cost, each from a separate assumption. What
+  remains is a code-level model in which the decode latency and the
+  capacity cost come from the same code, with a verify-read cost on
+  writes, so that the latency and density verdicts are re-derived
+  together rather than bracketed apart.
 
 - #strong[Endurance-aware scheduling.] Wear-leveling algorithms at the
   controller level, simulated end to end rather than modeled
