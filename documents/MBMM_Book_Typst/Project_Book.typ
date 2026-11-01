@@ -45,28 +45,37 @@ DDR5-4800 baseline on the three CPU traces at both ends of the
 write-pulse bracket, 41.4 to 48.3 ns for
 1T1R SLC and 36.8 to 47.4 ns for 1S1R SLC against 83.1 ns under GCC
 (78.2 ns when the baseline runs the same close-page policy as the ReRAM
-configurations), and slower on
-the write-dominated AlexNet output-map burst by 1.5x to 3.0x for 1T1R
-SLC, with the counterweight that the identical DIMM built from
+configurations), and lower in
+sustained write throughput on the write-dominated AlexNet output-map
+burst, which 1T1R SLC drains in 1.02 ms against 0.49 ms for DDR5 (1.5x
+to 3.0x by the queue-dominated average latency), with the counterweight that the identical DIMM built from
 published silicon timings averages 11.9 us and 379 us under GCC.
-#strong[Power:] per gigabyte the module costs 12.7x to 17.4x DDR5 for
-the SLC tracks, a device-only figure that is an upper bound on the
-ReRAM side and a lower bound on the DDR5 side, with gating break-even
-at 94.3% of the static component, which lies inside the 94 to 98%
-idleness band inferred from the 2 to 6% memory-bandwidth utilization
-reported for web-search and data-analytics servers.
+#strong[Power:] per gigabyte the module's power is set by the
+periphery transistor class the device model is told to build, not by
+the cell: with the low-operating-power periphery of the primary
+characterization the SLC module costs 12.7x to 17.4x DDR5, almost all
+of it a 6.94 W leakage floor, and with a low-standby-power periphery,
+re-run end to end, 0.26x to 0.94x, both device-only point estimates;
+nothing in the model or the literature read here says which periphery
+a DIMM-class part would carry, so the power axis is open within that
+band.
 #strong[Endurance:] every lifetime here is a projection, and the wear
 leveling rather than the cell decides it, ideal uniform leveling at
 64 GiB and 10#super[6] cycles per cell giving 38.6 years under GCC, 3.6
 under LBM and 4.3 under STREAM. #strong[Density:] the selector-gated
 cross-point reaches 1.24x DDR5’s die-level density as SLC and 2.47x as
-MLC, conditional on selector quality (Section 4.2), against 0.36x and 0.73x for the transistor-gated cell, which does
+MLC, conditional on selector quality (Section 4.2) and on a cell near the
+idealized 4F², which fabricated single-layer parts have not reached
+(Section 4.5), against 0.36x and 0.73x for the transistor-gated cell, which does
 not clear parity at the 20F² cell assumed here, nor at the fabricated
 part's 6F². Selector-gated 22nm SLC ReRAM is therefore a density
-play with competitive projected latency and a large, honest power
-deficit per gigabyte, while the transistor-gated variant matches it on
-leakage and loses on area; #emph[neither is a drop-in DDR5 replacement
-at 22nm.]
+play with competitive projected latency and a power cost per gigabyte
+that the device model leaves open, while the transistor-gated variant
+matches it on leakage and loses on area; #emph[neither is a drop-in
+DDR5 replacement at 22nm], and what decides that is endurance under
+leveling, selector validity at the simulated tile, the error-correction
+cost and the absence of any fabricated part near the projected timings,
+not power.
 
 = 1. Introduction
 
@@ -177,7 +186,8 @@ measurement and are never compared as though they were.
 
 The claim is a balanced verdict, not an advocacy case. Selector-gated
 22nm SLC ReRAM is a density play with competitive projected latency and
-a large, honest power deficit per gigabyte; the transistor-gated
+a power cost per gigabyte that the device model leaves open between two
+periphery choices (Section 4.2); the transistor-gated
 variant matches it on leakage and loses on area; write endurance is the
 binding constraint and wear leveling, not the cell, decides it. The
 extended book states the conclusion in one line, and this book keeps
@@ -220,9 +230,14 @@ timings instead averages 11.9 us (1T1R) and 379 us (1S1R) under GCC and
 does not finish the LBM window at all, completing 18.2% and 1.0% of it.
 Third, on the write-dominated AlexNet output-map burst the projected
 DIMM is #emph[slower] than DDR5, 353.1 ns for 1T1R SLC and 391.5 ns for
-1S1R SLC against 234.3 ns. The latency verdict of this book therefore
+1S1R SLC against 234.3 ns; those are queue-dominated averages under a
+saturated controller, and the throughput reading is the same, a burst
+drained in 1.02 and 1.14 ms against 0.49 ms (Table 4b). The latency verdict of this book therefore
 belongs to a projected device, and every reading of it is incomplete
-without its silicon counterweight.
+without its silicon counterweight. A baseline-side condition belongs
+beside these three: the DDR5 figures come from an open-page run while
+the ReRAM configurations run close-page, and at matched policy the GCC
+margin is 1.9 to 2.1 to one rather than two to one (Section 4.1).
 ]
 
 Two further reading rules follow from the same discipline. Every ReRAM
@@ -297,13 +312,13 @@ wall-clock window.
 
 The results in this book come from frozen datasets, not from a live
 working directory: a 120-run primary matrix of twenty configurations
-against six workloads, plus seven sensitivity series that each change
-one flag, a 1024-organization axis and a one-channel control run, each
-with provenance columns on every processed row; the write-pulse
-bounding run also carries a manifest of its flags, and the primary
-matrix and the sensitivity series are recorded by their run logs, the
-revision tracker and the NVMain command line in every stats-file
-header.
+against six workloads, plus eight sensitivity series that each change
+one flag or one characterization line, a 1024-organization axis and a one-channel control run. The
+write-pulse bounding run and the close-page baseline run carry a
+manifest of their flags and provenance columns on every processed row;
+the primary matrix and the other series are recorded by their run
+logs, the revision tracker and the NVMain command line in every
+stats-file header.
 The controller's queue depth is one of those axes, and the write-queue
 sizing question it answers is reported in Section 4.4. The Python layer
 is covered by a test suite, 903 tests at the October 2026 revision,
@@ -359,6 +374,19 @@ the EMBER macro's own published measurements, the journal report
 #strong[\[10\]] and its conference precursor #strong[\[11\]]\; leakage
 and die area are unchanged, because the array is the same array.
 
+The periphery transistor class is a second choice the characterization
+makes, and Section 4.2 shows it is the decisive one for power. NVSim
+builds the peripheral circuits from one of three ITRS transistor
+roadmaps; the primary characterization uses the low-operating-power
+(LOP) profile at 350 K, and a second characterization with the
+low-standby-power (LSTP) profile, one line changed in each cell
+configuration (`configs/reram_22nm_*_slc_lstp.cfg`), was run end to end
+as a sensitivity series in the October revision. It cuts the chip's
+peripheral leakage from 108.384 to 1.599 mW, raises the device read
+time by 5% (10.12 to 10.60 ns for 1T1R, 4.70 to 4.97 ns for 1S1R) and
+leaves the die area within 0.3%. No fabricated ReRAM die located gives
+a leakage figure that would choose between the two.
+
 == 2.3. Baselines
 
 #strong[DDR5-4800.] The primary baseline is a conventional 16 GiB
@@ -366,10 +394,13 @@ DDR5-4800 RDIMM built from eight 16 Gb x8 devices, modeled with DDR5’s
 defining architectural feature: two independent 32-bit subchannels per
 DIMM, each with its own command bus and 32 banks, serving a 64-byte
 access as a 16-beat burst on its 32-bit bus. Its timings are the
-JESD79-5 values for the 4800B bin #strong[\[16\]], read through a
-vendor's transcription (Micron's DDR5 core data sheet) and two
-DDR5-4800 module datasheets, all of which agree; the JEDEC text itself
-is access-gated and was not consulted. The scope of that statement is
+JESD79-5 values for the 4800B bin #strong[\[16\]], transcribed from a
+third-party mirror of the JESD79-5 PDF (retrieved 2026-09-21, with the
+table and page recorded against every key in the configuration file)
+and cross-checked against a vendor's transcription (Micron's DDR5 core
+data sheet) and two DDR5-4800 module datasheets, all of which agree;
+the official JEDEC copy is access-gated, and the values have not been
+verified against it. The scope of that statement is
 exact: #emph[every DDR5-4800 device timing is taken from JESD79-5, with
 three documented short-value choices that favor the baseline (tCCD,
 tWTR, tRRD) and a handful of NVMain-specific keys with no DDR5
@@ -385,8 +416,13 @@ the baseline under both policies. The two modules also differ in
 geometry: the ReRAM DIMM runs 4 ranks of 8 banks per channel with
 64 KiB rows against DDR5’s 1 rank of 32 banks with 4 KiB rows, under
 different address mappings, and both use one FRFCFS queue of 32
-entries; the one-channel control and the rank-depth bound of
-Section 4.4 limit what those differences can be worth. One more
+entries; the baseline interleaves its two subchannels above the column
+bits, one 4 KiB row at a time, while the ReRAM configurations
+interleave their two channels at 64 B, and the ReRAM configurations
+carry NVMain's default protocol constants at 800 MHz, whose off-chip
+term alone is 12.5 ns against the baseline's 4.2 ns, a default that
+works against ReRAM; the one-channel control and the rank-depth bound
+of Section 4.4 limit what the geometry differences can be worth. One more
 disclosure belongs with the power model:
 the DDR5 power model uses SK hynix's published 16 Gb DDR5-4800 IDD
 limits, the lower of the two vendor
@@ -671,9 +707,9 @@ Section 1.3.]
     [#strong[GCC]],
     [#strong[LBM]],
     [#strong[STREAM]],
-    [#strong[GPT-2]],
-    [#strong[AlexNet IFMAP]],
-    [#strong[AlexNet OFMAP]],
+    [#strong[GPT-2 (sat.)]],
+    [#strong[AlexNet IFMAP (sat.)]],
+    [#strong[AlexNet OFMAP (sat.)]],
   ),
   [#strong[DDR5-4800]],
   [83.1], [78.3], [79.4], [222.1], [212.3], [234.3],
@@ -700,17 +736,63 @@ completion, the like-for-like device comparison. The four ReRAM rows
 above PCM are NVSim-projected device timings at the matched
 2048 x 2048 organization; the last two rows replay the identical traces
 at published fabricated-chip timings. DDR5 and all four
-projected tracks complete every workload in full (the three AI bursts
-to all but their final request); PCM, 1T1R SILICON and
+projected tracks complete every request the 250 ms window admits, one
+short of the admitted count on every trace (the last admitted request
+is still in flight at the cut), and the window holds 95%, 52% and 12%
+of the gcc, lbm and stream trace files (Table 2); PCM, 1T1R SILICON and
 1S1R SILICON complete as little as 46.1%, 9.2% and 0.5% of STREAM, and
 a latency
 average over a service-limited run covers only that run's completed
 prefix, which is why end-to-end latency is the saturation measure. The
 PCM row charges its 150 ns write pulse on the request path, unlike the
 ReRAM default (Section 4.1), so its latencies sit on a different
-write-path convention.
+write-path convention. The DDR5 row runs the open-page policy and the
+ReRAM rows the relaxed close-page policy (Section 2.3); under the same
+close-page policy the baseline reads 78.2, 69.9 and 93.5 ns on the
+three CPU traces. The three AI columns, marked "sat.", are
+saturated-queue averages: each burst fills the 32-entry controller
+queue, queue time is 80 to 90% of the figure, and the average equals
+queue depth over service rate rather than a device latency; Table 4b
+gives the time each configuration takes to drain the burst, which is
+the throughput measure those columns stand for.
 Source: results/rev2026-09\_primary\_csv/processed\_bar\_chart\_metrics.csv,
 column Latency\_ns.]
+
+#block(breakable: false)[
+#strong[Table 4b: burst drain time (ms), first request to last
+completion, the throughput measure behind the three saturated columns
+of Table 4.]
+
+#align(center)[#text(size: 10pt)[#table(
+  columns: (1.5fr, 1fr, 1.15fr, 1.15fr),
+  align: (col, row) => (left,right,right,right,).at(col),
+  inset: 5pt,
+  table.header(
+    [#strong[Technology]],
+    [#strong[GPT-2]],
+    [#strong[AlexNet IFMAP]],
+    [#strong[AlexNet OFMAP]],
+  ),
+  [#strong[DDR5-4800]], [0.28], [4.26], [0.49],
+  [#strong[1T1R SLC]], [0.21], [4.22], [1.02],
+  [#strong[1S1R SLC]], [0.20], [3.87], [1.14],
+  [#strong[1T1R MLC]], [0.23], [4.43], [1.54],
+  [#strong[1S1R MLC]], [0.20], [3.91], [1.98],
+  [#strong[PCM (legacy)]], [3.58], [70.6], [25.1],
+  [#strong[1T1R SILICON]], [15.6], [cut at 250 (76.7%)], [250.0],
+  [#strong[1S1R SILICON]], [cut at 250 (89.1%)], [cut at 250 (4.5%)], [cut at 250 (5.5%)],
+)]
+]
+
+#emph[Drain time is the "Exiting at cycle" value of each run at the
+3 GHz global clock; "cut at 250" marks runs the 250 ms window ended
+first, with the completed share in parentheses. On the two read bursts
+DDR5 and the projected tracks drain within 10% of one another although
+Table 4 shows 212 against 144 ns on the input map: the lower ReRAM
+averages there reflect a shallower queue, not a faster device. On the
+write burst the projected tracks take 2.1x to 4.0x longer than DDR5.
+Source: the stats files of results/system\_rev2026-09\_primary.]
+]
 
 On the three CPU traces the projected ReRAM DIMM has lower average
 memory latency than the DDR5-4800 baseline, and under GCC the margin is
@@ -746,9 +828,10 @@ interface clocks measured here. #strong[Its magnitude is
 model-dependent], and 41.4 against 83.1 ns is the outcome of one clock
 choice rather than a device ratio; Figure 2 shows what the choice is
 worth. The sweep runs only upward. Extrapolating the same decomposition
-downward, 1T1R SLC would average about 73 ns at 400 MHz, and the two SLC
-cells would cross the 83.1 ns baseline around 330 MHz by linear
-extrapolation, so
+downward, 1T1R SLC would average about 72 to 75 ns at 400 MHz, and the
+two SLC cells would cross the 83.1 ns baseline between about 325 and
+360 MHz, depending on whether the device-plus-protocol decomposition or
+a linear fit of the three measured points is extrapolated, so
 the direction holds only while the interface runs faster than roughly a
 third of the assumed clock; no run below 800 MHz was made.
 
@@ -763,11 +846,17 @@ other protocol timing is a constant in interface cycles and therefore
 scales with the clock.]]
 ]
 
-The write-dominated burst reverses the verdict. On the AlexNet output
-map DDR5 averages 234.3 ns against 353.1 ns for 1T1R SLC, 391.5 for
-1S1R SLC, 512.0 for 1T1R MLC and 652.9 for 1S1R MLC, so DDR5 is
-1.507x and 1.671x faster than the two SLC tracks and 2.185x and 2.787x
-faster than the two MLC tracks. Those ratios are a #emph[lower] bound
+The write-dominated burst reverses the verdict, and it is a throughput
+result: the burst saturates every controller, so the averages are
+queue depth over service rate. DDR5 drains the AlexNet output map in
+0.49 ms against 1.02 ms for 1T1R SLC, 1.14 for 1S1R SLC, 1.54 for 1T1R
+MLC and 1.98 for 1S1R MLC (Table 4b), 2.1x to 4.0x longer. By the
+queue-dominated averages, 234.3 ns against 353.1, 391.5, 512.0 and
+652.9 ns, DDR5 is 1.507x and 1.671x faster than the two SLC tracks and
+2.185x and 2.787x faster than the two MLC tracks. On the two read
+bursts the drain times are equal within 10% (4.26 against 4.22 and
+3.87 ms on the input map), so the lower ReRAM averages in those columns
+reflect a shallower queue, not a faster device. Those ratios are a #emph[lower] bound
 on the deficit, because in the default configuration the cell write
 pulse does not delay the write's own completion at all.
 
@@ -936,19 +1025,74 @@ a statement about both cell types equally.
 
 #align(center)[#emph[Figure 3: system power breakdown under GCC. All
 four ReRAM tracks sit on one shared leakage floor near 6.94 W for 8 GiB
-(SLC) or 16 GiB (MLC), against a 16 GiB DDR5 module. The chart is a
+(SLC) or 16 GiB (MLC), against a 16 GiB DDR5 module; that floor is the
+LOP periphery of the primary characterization, and the LSTP
+re-characterization of Table 5b puts it at 0.10 W. The chart is a
 module-level view; the per-gigabyte normalization, which is the only
 form in which these modules are comparable, exists only in Table 5.]]
 ]
 
-That deficit is not the end of the arithmetic, because a non-volatile
-module can in principle gate the periphery a DRAM module cannot. Gating
+#strong[The floor is a transistor choice, not a cell result.] NVSim
+builds the periphery from one of three ITRS transistor roadmaps, and
+the primary characterization uses the low-operating-power (LOP) profile
+at 350 K (Section 2.2). Re-characterized with the low-standby-power
+(LSTP) profile, with that one line changed and everything else
+identical, the chip's peripheral leakage falls from 108.384 to
+1.599 mW, the device read time rises 5% and the die area moves 0.3%;
+carried through the same pipeline into the same 24 full-DIMM runs, the
+module's static floor is 0.102 W instead of 6.937 W, and Table 5b is
+the result. Per gigabyte ReRAM SLC then draws 0.26x to 0.29x of DDR5 on
+the CPU traces and 0.48x to 0.94x on the AI bursts, MLC 0.14x to
+0.54x, with every CPU latency within 2% of Table 4 and the write burst
+at most 4% slower from the longer write recovery. Nothing in the model
+says which periphery a DIMM-class ReRAM would carry: NVSim's own
+non-volatile memory examples use LOP, commodity DRAM periphery is built
+for standby current, and no fabricated ReRAM die located reports a
+leakage figure that decides it. #strong[The power axis of this
+comparison is therefore open within two orders of magnitude], and the
+ratios of Table 5 are its LOP end, not its value.
+
+#block[
+#strong[Table 5b: the same module accounting with the low-standby-power
+(LSTP) periphery, full-DIMM, the four ReRAM tracks.]
+
+#align(center)[#text(size: 10pt)[#table(
+  columns: (1.3fr, 0.5fr, 0.8fr, 1.1fr, 0.9fr, 1.2fr),
+  align: (col, row) => (left,right,right,right,right,right,).at(col),
+  inset: 5pt,
+  table.header(
+    [#strong[Technology]],
+    [#strong[GiB]],
+    [#strong[GCC (W)]],
+    [#strong[Suite range (W)]],
+    [#strong[GCC (W/GiB)]],
+    [#strong[Per GiB vs DDR5, suite]],
+  ),
+  [#strong[1T1R SLC]], [8], [0.106], [0.106 to 0.476], [0.0133], [0.26x to 0.89x],
+  [#strong[1S1R SLC]], [8], [0.106], [0.106 to 0.502], [0.0132], [0.26x to 0.94x],
+  [#strong[1T1R MLC]], [16], [0.108], [0.108 to 0.485], [0.0068], [0.14x to 0.45x],
+  [#strong[1S1R MLC]], [16], [0.108], [0.108 to 0.573], [0.0068], [0.14x to 0.54x],
+)]
+]
+
+#emph[Same semantics as Table 5, DDR5 side unchanged. The static floor
+is 64 chips at 1.599 mW; the dynamic term rises only slightly because
+the per-access burst-read energy is NVMain's default in both series and
+only the activate, write and standby energies carry the
+re-characterization. Source:
+results/system\_rev2026-09\_periphery\_lstp/\_csv/processed\_bar\_chart\_metrics.csv,
+full\_dimm rows, against the primary CSV.]
+]
+
+At the LOP end the deficit is not the end of the arithmetic either,
+because a non-volatile module can in principle gate the periphery a
+DRAM module cannot. Gating
 the static component for an idle fraction $f$ leaves
 $(1-f) times 6.937 + 0.003$ W, so reaching DDR5’s 0.399 W for the same
 8 GiB requires $f = 94.3%$. #strong[That threshold sits inside, not
 above, the idleness band this project cites]\: the 2 to 6%
-memory-bandwidth utilization reported for web-search and
-data-analytics servers #strong[\[24\]] corresponds to 94 to 98% of time
+memory-bandwidth utilization that #strong[\[24\]] cites from an earlier
+characterization of web-search and data-analytics servers corresponds to 94 to 98% of time
 with no memory traffic in aggregate; that band is compatible with,
 though not evidence of, a gateable fraction of that size, and taken at
 face value it brackets break-even, 0.142 W against DDR5’s 0.399 W at
@@ -964,7 +1108,9 @@ gating fraction #emph[rises] with $O$, 94.3% at $O = 0$,
 #strong[97.9% at $O = 0.5$ W per module], and beyond
 #strong[$O = 0.79$ W] parity is out of reach at any gating fraction.
 The same overhead compresses the ungated ratio and tightens the gated
-comparison, and the parity claim rests on the second.
+comparison, and the parity claim rests on the second. At the LSTP end
+none of this arithmetic is needed: the ungated module already sits
+below DDR5 per gigabyte on every CPU trace.
 
 Two device-level results complete the picture. #strong[The leakage
 figure is an organization result, not a cell result.] At a 1024 x 1024
@@ -1019,7 +1165,7 @@ per line per request).]
   [2.6 × 10#super[5]],
   [#strong[LBM]], [9.54 M/s], [23.2 h], [0.20 yr], [3.6 yr],
   [2.8 × 10#super[6]],
-  [#strong[STREAM]], [7.99 M/s], [69.5 h], [0.96 yr], [4.3 yr],
+  [#strong[STREAM]], [7.99 M/s], [69.4 h], [0.96 yr], [4.3 yr],
   [2.3 × 10#super[6]],
 )]
 ]
@@ -1070,6 +1216,18 @@ because the rotation period grows with the region while the gap still
 advances one line per hundred writes: projected under randomized
 Start-Gap, GCC survives 0.69 years at 8 GiB but only 7.7 hours at
 64 GiB.
+
+Two levers the projection does not price are visible in the same
+table. A write-absorbing cache in front of the module, the pattern of
+Optane's Memory Mode (Section 5.2), cuts $W$: at a 4.5x write reduction
+the randomized Start-Gap projection for GCC at 8 GiB rises from 0.69 to
+3.1 years and the ideal 64 GiB figure from 38.6 to 173 years
+(results/endurance\_table.csv, write\_reduction 4.5), while the
+single-region failure at 64 GiB remains. And every leveling scheme
+carries metadata, remapping traffic and energy that the analytic model
+does not charge: the Start-Gap moves are counted, the data they move is
+not, and the simulator runs are identical with and without the decoder
+(Section 4.4), so the cost of leveling is unpriced here.
 
 The arithmetic is one equation. With ideal leveling the $N$ lines of
 the module share the write rate $W$ equally, so a cell endurance $E$
@@ -1219,6 +1377,21 @@ to the cross-point. Those columns are geometry, not characterization,
 and are linear in an assumed cell area: a realized 1S1R cell at twice
 the idealized 4F² would drop 22nm SLC below parity.
 
+Fabricated silicon says where a realized cell sits. The only
+cross-point ReRAM die at this capacity, the 2-layer 32 Gb part at 24 nm
+#strong[\[13\]], is 130.7 mm² for 32 Gb: 4.1 mm² per Gb with both layers
+and 8.2 mm² per Gb per layer, or about 6.9 mm² per Gb per layer scaled
+quadratically to 22 nm, which is 0.64x DDR5’s die-level density for one
+layer and 1.3x for two, against the 3.54 mm² per Gb (1.24x) the
+idealized single-layer cell gives here. The modeled 1S1R figure is
+therefore about twice as dense per layer as the fabricated part, and
+the parity reported above for one idealized layer is what the
+fabricated part reaches with two. Usable capacity reads the same way:
+the 27% storage overhead of the NVM error-correction design point of
+Section 5.3, applied to the ReRAM side only, takes 1S1R SLC from 1.24x
+to 0.98x and 1S1R MLC from 2.47x to 1.94x (Table 8, last density
+column).
+
 #block(breakable: false)[
 #align(center)[#block(clip: true, height: 1.87in)[
 #image("media/media/image23.png", width: 3.61in)]]
@@ -1244,8 +1417,8 @@ Table 8 puts every axis side by side.
 #strong[Table 8: cross-technology summary, full-DIMM configurations.]
 
 #align(center)[#text(size: 9.5pt)[#table(
-  columns: (1.15fr, 0.85fr, 1.15fr, 0.85fr, 0.8fr, 0.95fr),
-  align: (col, row) => (left,right,right,right,right,right,).at(col),
+  columns: (1.1fr, 0.75fr, 1.1fr, 0.75fr, 0.7fr, 0.8fr, 0.95fr),
+  align: (col, row) => (left,right,right,right,right,right,right,).at(col),
   inset: 4pt,
   table.header(
     [#strong[Technology]],
@@ -1253,19 +1426,21 @@ Table 8 puts every axis side by side.
     [#strong[GCC power (W / W per GiB)]],
     [#strong[Geo-mean PDP]],
     [#strong[Die density]],
+    [#strong[Usable density (27% ECC)]],
     [#strong[LBM lifetime \@64 GiB (ideal / rand.)]],
   ),
-  [#strong[DDR5-4800]], [83.1], [0.797 / 0.0498], [136.2], [1.00],
+  [#strong[DDR5-4800]], [83.1], [0.797 / 0.0498], [136.2], [1.00], [1.00],
   [n/a (volatile)],
   [#strong[PCM (legacy)]], [12,168.2], [0.046 / 0.0115], [173.6], [1.25\*],
+  [n/a],
   [not evaluated],
-  [#strong[1T1R SLC]], [41.4], [6.939 / 0.8674], [641.0], [0.36],
+  [#strong[1T1R SLC]], [41.4], [6.939 / 0.8674], [641.0], [0.36], [0.28],
   [3.6 / 0.20 yr],
-  [#strong[1S1R SLC]], [36.8], [6.940 / 0.8674], [594.5], [1.24],
+  [#strong[1S1R SLC]], [36.8], [6.940 / 0.8674], [594.5], [1.24], [0.98],
   [3.6 / 0.20 yr],
-  [#strong[1T1R MLC]], [44.5], [6.941 / 0.4338], [722.8], [0.73],
+  [#strong[1T1R MLC]], [44.5], [6.941 / 0.4338], [722.8], [0.73], [0.57],
   [3.6 / 0.20 yr],
-  [#strong[1S1R MLC]], [37.9], [6.941 / 0.4338], [645.4], [2.47],
+  [#strong[1S1R MLC]], [37.9], [6.941 / 0.4338], [645.4], [2.47], [1.94],
   [3.6 / 0.20 yr],
 )]
 ]
@@ -1273,7 +1448,16 @@ Table 8 puts every axis side by side.
 #emph[Power is module watts / watts per gigabyte; only the second is
 comparable, because the modules are 16 GiB (DDR5, ReRAM MLC), 8 GiB
 (ReRAM SLC) and 4 GiB (PCM), and both sides count memory devices only.
-Geo-mean PDP is W·ns over the six workloads. #strong[\*] The PCM
+Geo-mean PDP is W·ns over the six workloads. DDR5 latency and power
+come from the open-page baseline run; at the ReRAM configurations'
+close-page policy its GCC latency is 78.2 ns (Section 4.1). The GCC
+power column is the LOP end of the periphery band; at the LSTP end
+every ReRAM track reads 0.106 to 0.108 W, 0.0133 (SLC) and 0.0068 (MLC)
+W per GiB (Table 5b). Usable
+density applies the 27% total storage overhead of the NVM
+error-correction design point of Section 5.3 to the ReRAM die figures
+(raw divided by 1.27); DDR5's on-die ECC is already inside its 16 Gb
+user capacity. #strong[\*] The PCM
 density figure is a fixed constant in the metrics pipeline with no
 device or datasheet source behind it, not a characterized die area; it
 is reported here for completeness and should be read as #emph[not
@@ -1307,15 +1491,17 @@ and the transistor-gated cell does not at the 20F² cell assumed here
 (Section 4.5). Neither magnitude is robust in the way
 its direction is.
 
-#strong[What is disclosed is the power deficit, and what is bounded is
-the write burst.] The
-per-gigabyte penalty counts memory devices only on both sides and is
-measured against a baseline that realizes its JEDEC power-down credit
-while ReRAM’s is a no-savings placeholder; gating break-even sits
-inside the idleness band inferred from the cited utilization figures
+#strong[What is open is the power axis, and what is bounded is the
+write burst.] The per-gigabyte figure counts memory devices only on
+both sides and is set by the periphery transistor class the
+characterization assumes: 12.7x to 17.4x DDR5 with the
+low-operating-power periphery, 0.26x to 0.94x with the
+low-standby-power one, and the model cannot choose between them
+(Section 4.2). At the first end gating break-even sits inside the
+idleness band inferred from the cited utilization figures
 #strong[\[24\]], a band compatible with, but not evidence of, a gateable
 fraction that large, so the arithmetic locates parity for that class
-without pricing it. The
+without pricing it; at the second end no gating is needed. The
 upper end of the output-map bracket is an upper end of the write-path
 cost inside this model, not a prediction of a device.
 
@@ -1457,8 +1643,10 @@ results/rev2026-09\_primary\_csv/processed\_bar\_chart\_metrics.csv and,
 for the second figure of each range, of
 results/system\_rev2026-09\_writepulse/\_csv/processed\_bar\_chart\_metrics.csv;
 "burst" is the AlexNet output map. DDR5 appears twice on purpose: as
-the modeled media number this book compares against, and as the
-measured device latency of a real server, about a third higher.
+the modeled media number this book compares against (open-page run;
+78.2 ns at the ReRAM configurations' close-page policy, Section 4.1),
+and as the measured device latency of a real server, about a third
+higher.
 #strong[No ReRAM row here is a device number, and no device row is a
 prediction for ReRAM.]]
 
@@ -1543,7 +1731,7 @@ device number.
 
 == 5.4. Limits of the model
 
-Eight limits bound every number in this book, and all eight are
+Nine limits bound every number in this book, and all nine are
 disclosed rather than discovered.
 
 #strong[The 800 MHz interface is assumed]\: it carries no ReRAM
@@ -1564,7 +1752,11 @@ an MLC part actually runs (Section 4.1). #strong[Power is
 device-only]\: both sides count memory devices, with no register clock
 driver, power-management IC, PHY, termination or ReRAM-side controller,
 and the ReRAM power-down energy is a no-savings placeholder
-(Section 4.2). #strong[No ECC decode sits on the read path], as
+(Section 4.2). #strong[The periphery transistor class is a choice]\:
+NVSim's low-operating-power profile sets the 6.94 W floor and its
+low-standby-power profile removes it, the two ends of the power axis
+differ by two orders of magnitude, and nothing in the model or the
+literature read here decides between them (Sections 2.2, 4.2). #strong[No ECC decode sits on the read path], as
 Section 5.3 states, and no coding overhead is charged against the
 density figures. #strong[Endurance rests on stationarity]\: every
 lifetime extrapolates a write distribution measured inside a 250 ms
@@ -1580,30 +1772,38 @@ media against measured devices; it does not simulate one.
 
 At 22nm, on a matched 2048 x 2048 organization and six workloads, the
 projected ReRAM DIMM has lower average memory latency than a DDR5-4800
-baseline on CPU traffic and higher on the write-dominated AlexNet
-output-map burst, a single 4.5 us burst, denser than DDR5 as a
+baseline on CPU traffic and lower sustained write throughput on the
+write-dominated AlexNet output-map burst, a single 4.5 us burst that it
+drains in 1.02 ms against DDR5's 0.49 ms, denser than DDR5 as a
 selector-gated cross-point and less dense as a transistor-gated cell at
-the 20F² cell assumed here, and more expensive per gigabyte in power
-by 12.7x to 17.4x as SLC, device for device, an upper bound on the
-ReRAM side and a lower bound on the DDR5 side. Write endurance is the binding
+the 20F² cell assumed here, and, per gigabyte in power, device for
+device, either 12.7x to 17.4x more expensive as SLC or 0.26x to 0.94x
+as cheap, depending on which periphery transistor class the device
+model is told to build, a choice nothing in this book can settle. Write
+endurance is the binding
 constraint and the wear leveling, not the cell, decides it. Every
 latency here is a media number for a projected array that no fabricated
 part has matched: the same DIMM built from published silicon timings
 averages 11.9 us and 379 us under GCC. #emph[Neither cell is a drop-in
 DDR5 replacement at 22nm]\; the selector-gated cross-point is a density
-play with competitive projected latency and a large, honest power
-deficit per gigabyte, and the transistor-gated variant matches it on
-leakage and loses on area.
+play with competitive projected latency and a power cost per gigabyte
+the model leaves open, and the transistor-gated variant matches it on
+leakage and loses on area; what decides the verdict is endurance under
+leveling, selector validity at the simulated tile, the error-correction
+cost and the absence of a fabricated part near the projected timings.
 
 #strong[What would overturn this verdict.] Each negative result above
 carries the threshold that would reverse it, and stating them together
-is the most useful thing a negative result can do. The power deficit
-closes only if idle gating removes at least 94.3% of the static
-component with no module overhead, or if a larger 1T1R subarray cuts
-the peripheral leakage floor that gating would otherwise have to hide,
-the lever the future-work list below names; no gating fraction closes
-it once the ReRAM module's own register, PMIC and PHY overhead exceeds
-0.79 W (Section 4.2). The 1S1R results hold at the simulated 2048 x
+is the most useful thing a negative result can do. The power deficit of
+the primary characterization closes if the periphery is built from
+low-standby-power transistors, which the LSTP series shows directly,
+or, at the low-operating-power end, only if idle gating removes at
+least 94.3% of the static component with no module overhead or a larger
+1T1R subarray cuts the peripheral leakage floor, and no gating fraction
+closes it there once the module's own register, PMIC and PHY overhead
+exceeds 0.79 W; what would settle the axis is a leakage figure from a
+fabricated ReRAM die of DIMM class, which the literature read here
+does not contain (Section 4.2). The 1S1R results hold at the simulated 2048 x
 2048 tile only with a selector that supports that tile side, which a
 production ovonic threshold switch, at 1666 cells, does not and a
 FAST-class selector does (Section 4.2). A ten-year life at 64 GiB needs

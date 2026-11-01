@@ -63,12 +63,21 @@ device effect; it was an artifact of two different array organizations
 6.94 W, essentially all static, for 8 GiB, against 0.797 W for a 16 GiB
 DDR5 module under GCC: 17.4x more power per gigabyte, and 12.7x to 17.4x
 across the suite for the SLC tracks (6.4x to 8.7x for MLC, which puts
-twice the capacity behind the same chips). Both module figures count the memory devices only:
+twice the capacity behind the same chips). Those ratios belong to the
+low-operating-power (LOP) periphery the characterization assumes:
+re-characterized with NVSim's low-standby-power (LSTP) profile, one
+line changed in each cell configuration and the four full-DIMM tracks
+re-run end to end on every trace (the October periphery series,
+`results/system_rev2026-09_periphery_lstp/`), the chip's leakage falls
+from 108.384 to 1.599 mW, the module floor from 6.94 to 0.10 W, and the
+same per-gigabyte figures read 0.26x to 0.94x (SLC) and 0.14x to 0.54x
+(MLC), with the CPU latencies unchanged; the power axis is set by that
+transistor choice, which neither the model nor the literature read here
+settles. Both module figures count the memory devices only:
 register clock driver, power-management IC, PHY and termination, and any
 ReRAM-side controller, are outside the model on both sides, and a fixed
 per-module overhead would compress this per-gigabyte ratio - while
-tightening, not relaxing, the gating comparison of Section 3.3. That ratio is also an
-#emph[upper bound], measured against
+tightening, not relaxing, the gating comparison of Section 3.3. That ratio is also a point estimate rather than a bound, measured against
 a DDR5 baseline that realizes its JEDEC power-down credit while ReRAM\'s
 power-down energy is an explicit no-savings placeholder, so the model
 cannot price a ReRAM module that gates its periphery. Break-even needs
@@ -131,9 +140,10 @@ re-measured, because the static share of module power is now 99.96%
 The resulting picture is narrower and better grounded than the one this
 book carried in its 3 September version. Selector-gated 22nm SLC ReRAM
 is a density play (1.24x DDR5\'s die-level density as SLC, 2.47x as MLC)
-with competitive projected latency and a large, honest power deficit per
-gigabyte; the transistor-gated variant matches it on leakage and loses
-on area. Neither is a drop-in DDR5 replacement at 22nm. What changed
+with competitive projected latency and a power cost per gigabyte that
+the periphery transistor choice leaves open (12.7x to 17.4x DDR5 at the
+LOP periphery, 0.26x to 0.94x at the LSTP periphery); the
+transistor-gated variant matches it on leakage and loses on area. Neither is a drop-in DDR5 replacement at 22nm. What changed
 since the 3 September version, claim by claim, is tabulated in the
 change appendix.
 
@@ -1553,7 +1563,12 @@ deficit, because in this model the cell write time is booked as write
 recovery and so reaches the request path only when a write closes its
 row, never delaying the write\'s own completion (above); the bounding
 run of the subsection above supplies the matching upper end, which is
-where the second figure in each bracket comes from. The DDR5 side now carries JEDEC write recovery and write
+where the second figure in each bracket comes from. Both ends are
+throughput readings: the burst saturates every controller, so each
+average is queue depth over service rate, and the drain times say the
+same thing, 0.49 ms for DDR5 against 1.02, 1.14, 1.54 and 1.98 ms for
+the four projected tracks (the "Exiting at cycle" line of each run at
+the 3 GHz global clock). The DDR5 side now carries JEDEC write recovery and write
 latency rather than the DDR3-template cycle counts earlier versions of
 this configuration used, which is why the deficit reported here is
 smaller than the one this book quoted before the correction of
@@ -2132,9 +2147,12 @@ the corrected current-mode background accounting of Appendix A;
 ReRAM\'s power-down mechanism is mechanically live but its power-down
 energy is an explicit, disclosed placeholder equal to existing standby
 energy, so no ReRAM figure claims a gating benefit and every per-GiB
-ratio here is an upper bound on the gap a gated ReRAM module would show;
-break-even against DDR5 needs 94.3% of the static component gated
-(Section 3.1.2). The analytic selector layer adds
+ratio here is a point estimate at the low-operating-power periphery of
+the primary characterization; the low-standby-power periphery series of
+the October revision puts the same ratios at 0.26x to 0.94x (SLC) and
+0.14x to 0.54x (MLC) (`results/system_rev2026-09_periphery_lstp/`, module
+floor 0.10 W); break-even against DDR5 at the LOP end needs 94.3% of the
+static component gated (Section 3.1.2). The analytic selector layer adds
 #strong[zero] to any standby figure in this table. Source:
 results/rev2026-09\_primary\_csv/processed\_bar\_chart\_metrics.csv;
 results/selector\_layer.json.]
@@ -2417,7 +2435,7 @@ line per request).]
   [9.54 M/s], [23.2 h], [23.2 h], [0.20 yr], [3.6 yr],
   [2.8 × 10#super[6]], [6.5 × 10#super[6]],
   [#strong[STREAM]],
-  [7.99 M/s], [69.5 h], [69.5 h], [0.96 yr], [4.3 yr],
+  [7.99 M/s], [69.4 h], [69.4 h], [0.96 yr], [4.3 yr],
   [2.3 × 10#super[6]], [4.3 × 10#super[6]],
   [#strong[AlexNet OFMAP†]],
   [132.5 M/s†], [0.27 min], [0.27-0.53 min], [0.27-0.53 min], [0.26 yr],
@@ -2846,8 +2864,10 @@ would experience a smaller end-to-end penalty; additionally, the
 completed-request and trace-player mechanism audit that exposed item
 (11) confirms that, after the matched-host correction, every
 configuration admits the identical request population per workload: DDR5
-and the four projected ReRAM tracks complete every workload in full, so
-their latency averages compare identical populations, while PCM and the
+and the four projected ReRAM tracks complete every request the 250 ms
+window admits (one short of the admitted count on every trace; the
+window holds 95%, 52% and 12% of the gcc, lbm and stream trace files),
+so their latency averages compare identical populations, while PCM and the
 two published-silicon configurations are service-limited on the heavier
 traces (down to 50.2%, 18.2% and 1.0% of LBM and 46.1%, 9.2% and 0.5%
 of STREAM, the sustained-throughput ordering of Section 3.1.1), so
@@ -3298,7 +3318,19 @@ number in this revision moves: those were measured at two different
 array organizations, which changed the periphery-to-array ratio on each
 die. A 20F² access-transistor cell fabricated at 22nm still cannot
 compete with 10 nm-class DRAM on area, but the margin against it is
-2.7x rather than 4.5x. At the cell level, the comparison becomes
+2.7x rather than 4.5x. Fabricated silicon says where a realized
+cross-point cell sits: the only cross-point ReRAM die at this capacity,
+the 2-layer 32 Gb part at 24 nm \[48\], is 130.7 mm² for 32 Gb, 4.1 mm²
+per Gb with both layers and 8.2 mm² per Gb per layer, or about 6.9 mm²
+per Gb per layer scaled quadratically to 22 nm, which is 0.64x DDR5's
+die-level density for one layer and 1.3x for two, against the 3.54 mm²
+per Gb (1.24x) the idealized single-layer cell gives here; the modeled
+1S1R figure is about twice as dense per layer as the fabricated part,
+and the parity reported for one idealized layer is what the fabricated
+part reaches with two. Usable capacity reads the same way: the 27%
+storage overhead of the NVM error-correction design point of the
+bit-error section, applied to the ReRAM side only, takes 1S1R SLC from
+1.24x to 0.98x and 1S1R MLC from 2.47x to 1.94x. At the cell level, the comparison becomes
 node-independent and exact: DRAM stores one bit per 6F², 1T1R one per
 20F² (Appendix A), and the selector
 cross-point one per 4F² (two per 4F² as MLC) - so at any matched process
@@ -3591,8 +3623,8 @@ forbids this book from claiming it is that #strong[ReRAM\'s power-down
 energy is an explicit no-savings placeholder] (Section 4.1): the model
 cannot price a gated ReRAM module, and no citable ReRAM power-gating
 characterization exists to price it with. Every per-gigabyte ratio in
-this book is therefore an upper bound on the gap a gated module would
-show, and closing it is a measurement this project could not make rather
+this book is therefore the low-operating-power end of the periphery
+band and an upper bound on the gap a gated module would show, and closing it is a measurement this project could not make rather
 than a possibility it has excluded - and equally, the parity these lines
 bracket is arithmetic rather than a result. Two
 honesty bounds and one physical asymmetry frame this: bandwidth
@@ -4021,7 +4053,9 @@ transistor-versus-selector leakage gap this book previously called its
 deciding architectural fact #emph[does not exist as a device effect]\;
 it was an organization artifact (Appendix D). The full ReRAM DIMM draws 6.94 W for
 8 GiB, 99.96% static, which is 12.7x to 17.4x DDR5’s power per gigabyte
-for the SLC tracks and 6.4x to 8.7x as MLC, while DDR5 spends 6.5-9.1% of its own module power
+for the SLC tracks and 6.4x to 8.7x as MLC at the LOP periphery of the
+primary characterization (0.10 W and 0.26x to 0.94x at the LSTP
+periphery of the October series), while DDR5 spends 6.5-9.1% of its own module power
 on refresh it can never shed. Both module figures count memory devices
 only, with no register clock driver, power-management IC, PHY,
 termination or ReRAM-side controller on either side, so a fixed
@@ -4050,10 +4084,15 @@ its impossibility is demonstrated here (Sections 3.1.2, 3.3,
 from a measured write distribution, and it is decided by the wear
 leveling rather than by the cell. At 64 GiB and 10#super[6] cycles,
 ideal uniform leveling gives 38.6 years (GCC), 3.6 (LBM) and 4.3
-(STREAM), while no leveling gives 7.7, 23.2 and 69.5 hours, and a
+(STREAM), while no leveling gives 7.7, 23.2 and 69.4 hours, and a
 faithful single-region Start-Gap remapper recovers none of that gap
 because the hottest line fails before the gap rotates once. Randomizing
-the region recovers part of it (0.20 and 0.96 years). The endurance a
+the region recovers part of it (0.20 and 0.96 years). A write-absorbing
+cache in front of the module is a lever the same table holds: at a 4.5x
+write reduction the randomized Start-Gap projection for GCC at 8 GiB
+rises from 0.69 to 3.1 years (results/endurance_table.csv,
+write_reduction 4.5); the cost of leveling itself, metadata, remapping
+traffic and energy, is unpriced in every projection. The endurance a
 cell would need for a ten-year life at 64 GiB is 2.6 x 10#super[5] to
 2.8 x 10#super[6] under ideal leveling and 4.3 to 6.5 x 10#super[6]
 under randomized Start-Gap, against a best-sourced production planning
@@ -4093,10 +4132,10 @@ quarters of the modeled figure, and the published-silicon counterweight
 is three to four
 orders of magnitude away. Power (3.1.2): leakage is identical between
 access devices at a matched organization, it is 99.96% of the module
-total, and per gigabyte it is 12.7x to 17.4x DDR5 for the SLC tracks,
-device-for-device - the
-central negative
-result of this evaluation. Efficiency (3.1.3): with leakage equal, the
+total, and per gigabyte it is 12.7x to 17.4x DDR5 for the SLC tracks at the
+LOP periphery and 0.26x to 0.94x at the LSTP periphery,
+device-for-device - the axis the device model leaves open, where the
+September version had its central negative result. Efficiency (3.1.3): with leakage equal, the
 four ReRAM tracks fall within 1.2x of one another and 4.4x behind
 DDR5 at module level, 4.7x to 9.4x behind per gigabyte. Endurance
 (3.1.4):
@@ -5520,6 +5559,12 @@ quantity to be compared arithmetically against the new one.
   [Booked as tWR, the cell write time reaches the request path #emph[only when a write closes its row]: a write-with-precharge adds tWR to that subarray's next activation and maxes its next precharge, next read and next write against it, while a write followed by another queued request to the same open row charges nothing beyond the burst and tWTR. Neither branch delays the write's own completion, and the unit that waits is the write's own subarray, not the whole bank],
   [The earlier wording was read off NVMain's tWP default alone. The source was then traced in full (MemoryController::IsLastRequest under ClosePage, the SubArray WRITE\_PRECHARGE and WRITE branches, and nextActivate / nextPrecharge / nextRead / nextWrite as SubArray members): the answer is branch-conditional, and two earlier attempts at this correction were themselves wrong - the first because it said the write time delays only the next precharge, the second because it made the completion effect unconditional],
   [Section 2.3; Section 3.1.1; Section 3.1.3; configs/CLAUDE.md, "What the two write modes actually differ in, and for which writes"],
+
+  [#strong[Periphery transistor class (October 2026)]],
+  [Not run. The 6.94 W static floor, 99.96% of the module power, was reported as a property of the matched organization, with gating at 94.3% as the overturn condition],
+  [NVSim re-characterized with `-DeviceRoadmap: LSTP` instead of LOP (one line in each cell configuration) and the four full-DIMM tracks re-run on all six traces: chip leakage 1.599 mW instead of 108.384, module floor 0.10 W instead of 6.94, per-GiB power 0.26x to 0.94x of DDR5 (SLC) and 0.14x to 0.54x (MLC) instead of 12.7x to 17.4x and 6.4x to 8.7x; CPU latencies within 2%, write burst at most 4% slower, die area within 0.3%],
+  [New measurement, not a correction: the floor is a transistor-roadmap choice the model exposes as a knob, and nothing in the model or the literature read decides between the two profiles. The book reports both ends as a band and names the choice as a limit],
+  [Book Sections 2.2, 4.2 (Table 5b), 5.4; results/system\_rev2026-09\_periphery\_lstp/ (RUN\_NOTE.md, run\_manifest.json, \_csv/)],
 
   [#strong[The write-path cost: a single value becomes a bracket]],
   [Not run. #emph[Stated earlier in this revision:] the write-burst deficit as single values - DDR5 1.507x faster than 1T1R SLC, 1.671x than 1S1R SLC, 2.185x and 2.787x against the two MLC tracks - with the ReRAM side declared a lower bound and no upper end measured],

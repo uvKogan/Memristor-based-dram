@@ -1,9 +1,9 @@
 # MBMM Project Book - Typst edition
 
 There are now two books. `Project_Book.typ` is the short, reader-facing
-project book: 29 printed pages (30 sheets), Chapters 1-6 (Introduction,
+project book: 31 printed pages (32 sheets), Chapters 1-6 (Introduction,
 Method, "What the pipeline taught me," Results, Discussion, Conclusion and
-Future Work), Figures 1-6, Tables 1-9, 49 references. It reviewed with 336
+Future Work), Figures 1-6, Tables 1-9 plus 4b and 5b, 49 references. It reviewed with 336
 numeric claims traced to source with zero mismatches (2026-09-23). Two
 conventions run through it that are worth knowing before you read it: every
 number is labelled **media** (what this project's own simulated ReRAM/PCM

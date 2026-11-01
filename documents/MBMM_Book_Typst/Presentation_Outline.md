@@ -29,7 +29,7 @@ boxes on slide 3 rather than embedded, because the source is an SVG.
    the counterweight. Every Optane or CXL latency is a **device** number, measured on a product.
 2. Every lifetime figure is a **projection** from a write distribution measured inside a 250 ms
    window and assumed stationary, never a measured lifetime.
-3. The per-gigabyte power gap is an **upper bound**: DDR5 gets its power-down credit, ReRAM's
+3. The per-gigabyte power gap is a **point estimate at the LOP periphery**, reversed by the LSTP periphery (book Table 5b): DDR5 gets its power-down credit, ReRAM's
    power-down energy is a disclosed no-savings placeholder.
 
 **The projection caveat is printed on the slide, not left to the speaker.** The rule is the
@@ -90,7 +90,7 @@ assumed clock.
 | # | Slide | Chart | Headline | Book |
 |---|---|---|---|---|
 | 12 | Where the Watts Are | `image6.png` | No transistor-versus-selector leakage gap; one shared static floor of 6.937 W; dynamic power 2.9 to 4.9 mW under GCC, 346 to 417 mW under the AI bursts | 4.2, **Figure 3** |
-| 13 | Power per Gigabyte, and the Gating Break-Even | (table) | Table 5; 12.7x to 17.4x SLC and 6.4x to 8.7x MLC per gigabyte, an upper bound, memory devices only; gating break-even 94.3%, inside the 94 to 98% idleness band; 0.142 W and 0.419 W against 0.399 W at the two ends | 4.2, **Table 5** |
+| 13 | Power per Gigabyte, and the Gating Break-Even | (table) | Table 5; 12.7x to 17.4x SLC and 6.4x to 8.7x MLC per gigabyte with the LOP periphery, 0.26x to 0.94x and 0.14x to 0.54x with the LSTP periphery (Table 5b), memory devices only; gating break-even 94.3% at the LOP end, inside the 94 to 98% idleness band; 0.142 W and 0.419 W against 0.399 W at the two ends | 4.2, **Table 5** |
 | 14 | Overhead, Organization and the Selector | (text) | Overhead raises the threshold: 97.9% at 0.5 W, no parity beyond 0.79 W; leakage is an organization result (224.138 and 220.224 mW at 1024, within 2%); selector adds 0 to standby, 7.56 / 0.076 mW during an access; **OTS tile ceiling 1666 cells a side** against the 2048 simulated | 4.2, `results/selector_layer.json` |
 
 ### Endurance (slides 15, 16)
@@ -117,7 +117,7 @@ assumed clock.
 | 20 | Near and Far Memory: the Window | Local DDR5 111 to 114 ns idle, CXL DRAM devices 214 / 239 / 271 / about 394 ns, all device numbers; no blanket threshold survives the workload data; this work's two lines sit on opposite sides of the window; page placement, not per-request routing; the bandwidth framing | 5.2 |
 | 21 | The Device Reference Table | Table 9: four media rows, DDR5 twice (modeled media and measured device), CXL devices, Optane PMem 305 / 169 ns; the conditional statement, and which half of the problem is open | **Table 9** |
 | 22 | Bit Errors and Error Correction | Three layers kept apart: the channel model against measured 1T1R macros; the selector's own contribution; the 2e-4 with BCH design point at about 27% overhead against DRAM SECDED; SSD-class rather than DRAM-class correction; modeled latencies exclude ECC decode | 5.3 |
-| 23 | Limits of the Model | The seven disclosed limits, in the book's own order | 5.4 |
+| 23 | Limits of the Model | The nine disclosed limits, in the book's own order | 5.4 |
 | 24 | The Verdict | What holds is direction, what is bounded is the power deficit and the write burst, what is projected is every lifetime and the latency advantage; the one-line conclusion. **Caveat block** | 5.1, Chapter 6 |
 
 ---
