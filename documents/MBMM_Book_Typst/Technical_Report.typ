@@ -1164,7 +1164,7 @@ citation behind it. So roughly three quarters of the ReRAM figure is an
 interface assumption rather than a device measurement, and the same is
 true in the other direction of the DDR5 figure, whose protocol timings
 are JEDEC\'s. #strong[The direction of the comparison is robust]: ReRAM
-is below DDR5 at all three interface clocks this book measures
+is below DDR5 at all four interface clocks (400 MHz included, where the GCC margin is 1.1x to 1.2x) this book measures
 (Section 2.3), and it stays below the corrected, slower DDR5 baseline.
 #strong[Its magnitude is model-dependent], and a reader should treat
 41.4 against 83.1 ns as the outcome of one clock choice, not as a device
@@ -4330,10 +4330,14 @@ confidence.
   configuration (two channels), so what remains open is the clock:
   800 MHz against the DDR4-2666 electricals that carried Optane's DDR-T
   protocol \[53\], and against DDR5-4800 itself. That axis has now been
-  run, at 800 / 1333 / 2400 MHz, and it quantifies the choice rather
-  than leaving it open (Section 2.3): the full DIMM's 1T1R SLC average
-  under GCC falls from 41.4 ns to 27.9 and then to 19.0, and 1S1R SLC
-  from 36.8 to 23.6 to 14.9, against a DDR5 baseline of 83.1 ns; on the
+  run, at 400 / 800 / 1333 / 2400 MHz, and it quantifies the choice
+  rather than leaving it open (Section 2.3): the full DIMM's 1T1R SLC
+  average under GCC is 75.1 ns at 400 MHz and falls from 41.4 ns to 27.9
+  and then to 19.0 above it, and 1S1R SLC 69.8 then 36.8, 23.6 and 14.9,
+  against a DDR5 baseline of 83.1 ns (at 400 MHz, the November point,
+  1T1R SLC is at parity with the baseline under LBM, 79.2 against
+  78.3 ns, and the fitted crossover sits near 335 to 360 MHz;
+  `results/system_rev2026-09_freq400/`); on the
   write-dominated AlexNet output-map burst the same triple gives 353.1 /
   263.1 / 200.4 ns in the controller and 486.1 / 366.5 / 283.3 µs end to
   end. So the interface is worth 2.2x on compute-bound traffic and only
@@ -5227,7 +5231,9 @@ same day, each the same command with one axis flag changed and with
 three traces rather than six (gcc, lbm and the AlexNet output map: one
 light, one heavy, one write-dominated burst), 54 runs each, three and a
 half hours in total: decoder Default, one channel, the DDR5 64 B
-cross-check, interface clock 1333 and 2400 MHz, and queue depth 8 and
+cross-check, interface clock 1333 and 2400 MHz (the 400 MHz point of
+2026-11-01 was generated and run into its own folder,
+`results/system_rev2026-09_freq400/`), and queue depth 8 and
 128. Two further runs stand outside that series because they need their
 own staging: the 1024 x 1024 organization axis (`--organization 1024`,
 54 runs, half an hour) and a two-trace one-channel control on the AI
@@ -5581,6 +5587,12 @@ quantity to be compared arithmetically against the new one.
   [NVSim re-characterized with `-DeviceRoadmap: LSTP` instead of LOP (one line in each cell configuration) and the four full-DIMM tracks re-run on all six traces: chip leakage 1.599 mW instead of 108.384, module floor 0.10 W instead of 6.94, per-GiB power 0.26x to 0.94x of DDR5 (SLC) and 0.14x to 0.54x (MLC) instead of 12.7x to 17.4x and 6.4x to 8.7x; CPU latencies within 2%, write burst at most 4% slower, die area within 0.3%],
   [New measurement, not a correction: the floor is a transistor-roadmap choice the model exposes as a knob, and nothing in the model or the literature read decides between the two profiles. The book reports both ends as a band and names the choice as a limit],
   [Book Sections 2.2, 4.2 (Table 5b), 5.4; results/system\_rev2026-09\_periphery\_lstp/ (RUN\_NOTE.md, run\_manifest.json, \_csv/)],
+
+  [#strong[Interface clock, downward point (November 2026)]],
+  [The clock sweep ran only upward (800 / 1333 / 2400 MHz); the sub-800 MHz behaviour was a linear extrapolation (crossover "around 330 MHz")],
+  [Configs regenerated at 400 MHz by 3_gen_nvmain_config.py --freq 400 with the primary flags and run on all six traces (24 runs): 1T1R SLC 75.1 ns and 1S1R SLC 69.8 ns under GCC (1.11x and 1.19x below the 83.1 ns baseline), 79.2 and 74.2 ns under LBM (1T1R SLC at parity with 78.3 ns), AI bursts behind DDR5 at the halved bandwidth; two-point fit puts the crossover near 358 MHz (1T1R) and 333 MHz (1S1R)],
+  [New measurement confirming the extrapolation: the direction holds down to about 40% of the assumed clock and is gone on one CPU trace at half of it. The book's Figure 2 now carries the 400 MHz point],
+  [Book Sections 2.3, 4.1 (Figure 2), 5.4, Chapter 6; results/system\_rev2026-09\_freq400/ (RUN\_NOTE.md, run\_manifest.json, \_csv/)],
 
   [#strong[Precharge and read-decode sensitivities (November 2026)]],
   [Not run. tRP was a one-cycle placeholder and the latencies excluded ECC decode, both disclosed as untested conditions],

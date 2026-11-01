@@ -3,7 +3,7 @@
 Two new figures for the MBMM book, Project_Book.typ (task E2):
 
   F3  fig_clock_sensitivity.png  -- GCC average total latency versus the
-      assumed ReRAM interface clock (800/1333/2400 MHz), 1T1R_SLC and
+      assumed ReRAM interface clock (400/800/1333/2400 MHz), 1T1R_SLC and
       1S1R_SLC, full DIMM, with a DDR5-4800 reference line.
   F5  fig_endurance_policy.png   -- projected lifetime at 64 GiB and 1e6
       cycles per cell, grouped by trace and wear-leveling scheme.
@@ -92,9 +92,10 @@ def load_clock_series(paths):
 
     Reads Latency_ns for Technology in {1T1R_SLC, 1S1R_SLC}, Architecture ==
     full_dimm, Benchmark == gcc_spec2017, from each frozen CSV in `paths`,
-    in ascending MHz order. DDR5_4800 is read once, from the file at the
-    lowest MHz key (the dispatch's primary CSV), since it does not depend on
-    the ReRAM interface clock.
+    in ascending MHz order. DDR5_4800 is read once, from the 800 MHz file
+    (the dispatch's primary CSV, the only one that carries the static DDR5
+    rows) when that key is present, else from the lowest MHz key, since it
+    does not depend on the ReRAM interface clock.
     """
     mhz_order = sorted(paths)
     result = {'1T1R_SLC': [], '1S1R_SLC': [], 'mhz': mhz_order}
@@ -104,7 +105,7 @@ def load_clock_series(paths):
         for tech in ('1T1R_SLC', '1S1R_SLC'):
             result[tech].append(_bar_chart_value(
                 rows, tech, 'full_dimm', 'gcc_spec2017', 'Latency_ns', path))
-    ddr5_path = paths[mhz_order[0]]
+    ddr5_path = paths[800] if 800 in paths else paths[mhz_order[0]]
     ddr5_rows = _read_bar_chart_csv(ddr5_path)
     result['DDR5_4800'] = _bar_chart_value(
         ddr5_rows, 'DDR5_4800', 'full_dimm', 'gcc_spec2017', 'Latency_ns', ddr5_path)
@@ -320,6 +321,8 @@ def plot_endurance(rows, out_path, dpi=200):
 
 def _default_paths(repo_root):
     return {
+        400: os.path.join(repo_root, 'results', 'system_rev2026-09_freq400',
+                           '_csv', 'processed_bar_chart_metrics.csv'),
         800: os.path.join(repo_root, 'results', 'rev2026-09_primary_csv',
                            'processed_bar_chart_metrics.csv'),
         1333: os.path.join(repo_root, 'results', 'system_rev2026-09_freq1333',

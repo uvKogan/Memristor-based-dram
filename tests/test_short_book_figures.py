@@ -21,6 +21,7 @@ import plot_short_book_figures as fig  # noqa: E402
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 CLOCK_PATHS = {
+    400: REPO_ROOT / "results" / "system_rev2026-09_freq400" / "_csv" / "processed_bar_chart_metrics.csv",
     800: REPO_ROOT / "results" / "rev2026-09_primary_csv" / "processed_bar_chart_metrics.csv",
     1333: REPO_ROOT / "results" / "system_rev2026-09_freq1333" / "_csv" / "processed_bar_chart_metrics.csv",
     2400: REPO_ROOT / "results" / "system_rev2026-09_freq2400" / "_csv" / "processed_bar_chart_metrics.csv",
@@ -64,9 +65,9 @@ def test_load_clock_series_keys():
     _require_frozen(*CLOCK_PATHS.values())
     series = fig.load_clock_series(CLOCK_PATHS)
     assert set(series) == {'1T1R_SLC', '1S1R_SLC', 'DDR5_4800', 'mhz'}
-    assert series['mhz'] == [800, 1333, 2400]
-    assert len(series['1T1R_SLC']) == 3
-    assert len(series['1S1R_SLC']) == 3
+    assert series['mhz'] == [400, 800, 1333, 2400]
+    assert len(series['1T1R_SLC']) == 4
+    assert len(series['1S1R_SLC']) == 4
 
 
 def test_load_clock_series_matches_frozen_csvs():
@@ -90,8 +91,8 @@ def test_load_clock_series_expected_values_from_dispatch():
     if the loader and the independent re-read above agreed with each other."""
     _require_frozen(*CLOCK_PATHS.values())
     series = fig.load_clock_series(CLOCK_PATHS)
-    assert series['1T1R_SLC'] == pytest.approx([41.4, 27.9, 19.0], abs=0.05)
-    assert series['1S1R_SLC'] == pytest.approx([36.8, 23.6, 14.9], abs=0.05)
+    assert series['1T1R_SLC'] == pytest.approx([75.1, 41.4, 27.9, 19.0], abs=0.05)
+    assert series['1S1R_SLC'] == pytest.approx([69.8, 36.8, 23.6, 14.9], abs=0.05)
     assert series['DDR5_4800'] == pytest.approx(83.1, abs=0.05)
 
 

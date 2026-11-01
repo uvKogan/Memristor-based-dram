@@ -312,7 +312,7 @@ wall-clock window.
 
 The results in this book come from frozen datasets, not from a live
 working directory: a 120-run primary matrix of twenty configurations
-against six workloads, plus twelve sensitivity series that each change
+against six workloads, plus thirteen sensitivity series that each change
 one flag or one configuration line, a 1024-organization axis and a one-channel control run. The
 write-pulse bounding run and the close-page baseline run carry a
 manifest of their flags and provenance columns on every processed row;
@@ -485,7 +485,8 @@ than merely failing to support it. The figure is positioned only
 between two precedents, twice the 400 MHz basis of NVMain's PCM lineage
 and below the DDR4-2666 electrical interface that carried the DDR-T
 protocol on Intel's shipped Optane DIMMs. Chapter 4 quantifies what the
-assumption is worth by re-running the same media at 1333 and 2400 MHz.
+assumption is worth by re-running the same media at 400, 1333 and
+2400 MHz.
 
 == 2.4. Traces
 
@@ -824,25 +825,29 @@ Section 2.3 records as carrying no ReRAM citation. Roughly three
 quarters of the ReRAM figure is therefore an interface assumption
 rather than a device measurement, as is the DDR5 figure in the other
 direction, whose protocol timings are JEDEC's. #strong[The direction of
-the comparison is robust]\: ReRAM stays below DDR5 at all three
-interface clocks measured here. #strong[Its magnitude is
+the comparison is robust]\: ReRAM stays below DDR5 under GCC at all four interface
+clocks measured here, by 1.1x to 1.2x at the lowest. #strong[Its magnitude is
 model-dependent], and 41.4 against 83.1 ns is the outcome of one clock
 choice rather than a device ratio; Figure 2 shows what the choice is
-worth. The sweep runs only upward. Extrapolating the same decomposition
-downward, 1T1R SLC would average about 72 to 75 ns at 400 MHz, and the
-two SLC cells would cross the 83.1 ns baseline between about 325 and
-360 MHz, depending on whether the device-plus-protocol decomposition or
-a linear fit of the three measured points is extrapolated, so
-the direction holds only while the interface runs faster than roughly a
-third of the assumed clock; no run below 800 MHz was made.
+worth. Run at 400 MHz, half the assumed clock, the same media average
+75.1 ns (1T1R SLC) and 69.8 ns (1S1R SLC) under GCC, 1.11x and 1.19x
+below the open-page baseline, and 79.2 and 74.2 ns under LBM, where
+1T1R SLC is at parity with the baseline's 78.3 ns and behind the
+close-page baseline's 69.9 ns; on the AI bursts the halved bandwidth
+puts every track behind DDR5 (0.81x to 0.91x). Fitting the measured
+points as a device term plus a protocol term in cycles, the two SLC
+cells cross the 83.1 ns baseline near 360 MHz (1T1R) and 335 MHz
+(1S1R), so the direction holds only while the interface runs faster
+than roughly 40% of the assumed clock, and at half of it the margin is
+gone on one of the three CPU traces.
 
 #block(breakable: false)[
 #align(center)[#image("media/short_book/fig_clock_sensitivity.png", width: 3.8in)]
 
 #align(center)[#emph[Figure 2: GCC latency against the assumed ReRAM
-interface clock. 1T1R SLC falls 41.4, 27.9, 19.0 ns and 1S1R SLC 36.8,
-23.6, 14.9 ns at 800, 1333 and 2400 MHz, against the modeled DDR5
-baseline of 83.1 ns. Only tRCD plus tCAS are NVSim device time; every
+interface clock. 1T1R SLC falls 75.1, 41.4, 27.9, 19.0 ns and 1S1R SLC
+69.8, 36.8, 23.6, 14.9 ns at 400, 800, 1333 and 2400 MHz, against the
+modeled DDR5 baseline of 83.1 ns. Only tRCD plus tCAS are NVSim device time; every
 other protocol timing is a constant in interface cycles and therefore
 scales with the clock.]]
 ]
@@ -871,7 +876,7 @@ the close-page baseline, keeps 1.06x. The latency axis therefore has
 its own band, 41.4 to 63.4 ns for 1T1R SLC under GCC and 36.8 to 58.9
 for 1S1R SLC, whose lower end is the primary matrix and whose upper
 end is a 40 ns decoder; the interface clock of Figure 2 remains the
-larger lever.
+larger lever, worth 33.7 ns between 800 and 400 MHz on the same trace.
 
 #block(breakable: false)[
 #strong[Table 4c: precharge and read-decode sensitivities (ns), SLC
@@ -1808,9 +1813,7 @@ disclosed rather than discovered.
 #strong[The 800 MHz interface is assumed]\: it carries no ReRAM
 citation, the only datasheet-verified ReRAM chip I/O clocks located run
 80 to 160x slower, and roughly three quarters of every ReRAM latency
-average is protocol cycles at that clock; the clock sweep runs only
-upward, and by the same decomposition the latency advantage would
-invert around 330 MHz by linear extrapolation (Sections 2.3, 4.1).
+average is protocol cycles at that clock; the clock sweep now runs down to 400 MHz, where the GCC margin is 1.1x to 1.2x and the LBM margin is gone, and the fitted crossover sits near 335 to 360 MHz (Sections 2.3, 4.1).
 #strong[The baseline's page policy and refresh model are choices]\: the
 DDR5 baseline runs open-page with all-bank refresh while the ReRAM
 configurations run close-page, so the GCC margin is 1.9 to 2.1 to one
@@ -1887,7 +1890,8 @@ near the idealized 4F²; at twice that area 22nm SLC falls below DDR5
 parity (Section 4.5). And the latency advantage becomes a statement
 about hardware only when a ReRAM array and interface at the assumed
 800 MHz exist: at published silicon timings the same DIMM averages
-11.9 us and 379 us under GCC (Section 4.1). A decoder does not overturn
+11.9 us and 379 us under GCC, and at a 400 MHz interface the margin is
+1.1x to 1.2x under GCC and gone under LBM (Section 4.1). A decoder does not overturn
 it: at 40 ns on every read the SLC tracks stay 1.2x to 1.4x below the
 open-page baseline and 1.1x to 1.5x below the close-page one, and the
 one-cycle precharge placeholder is worth under 1% on CPU traffic
