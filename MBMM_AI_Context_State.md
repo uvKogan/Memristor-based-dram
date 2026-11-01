@@ -26,6 +26,20 @@ extended book, the project's complete record and knowledge base. **Updated 2026-
 short, reader-facing `Project_Book.typ` (tasks E4-E7) is now written, reviewed and part of the
 document set - see Section 7 below.
 
+**Updated 2026-11-01 (post-review audit, documents-only pass).** Since 2026-10-22: the repository history
+was rewritten to purge private reviewer notes (now git-ignored under `documents/MBMM_Book_Typst/private/`);
+PR #1 fixed the Start-Gap region, repository links and submodule records; a wrap-up review (2026-10-23 to
+10-26), an independent judge (2026-10-28) and an adversarial review (2026-10-31 to 11-01) were applied to the
+book, the extended book and the deck (reports git-ignored at the repository root as `wrap-up-review*.md`).
+The book `Project_Book.typ` is the summary of the whole work and, with `Technical_Report.typ`, the source
+of truth for every number here. The material changes this file now carries: the **power axis is a
+LOP/LSTP periphery band**, not a deficit result (Finding 2); the AI-trace latency columns are **saturation
+figures** with drain times (Finding 1); the density headline carries a **fabricated-silicon anchor and a
+usable-after-ECC column** (Finding 5); the latency axis has a **measured decode band, a precharge check and
+a 400 MHz point** (Finding 1); the endurance verdict is stated as a **10^6 planning-value statement with the
+10^7 sensitivity shown** (Finding 4); nine disclosed limits. Reference numbers in this file follow the
+extended book's numbering except where marked "book".
+
 **Supersedes:** the 2026-08-22 version of this file, now archived byte-identical at
 `archive/root_docs/MBMM_AI_Context_State_pre-hardfork_2026-09-20.md`. Do not cite that file, or
 anything it describes, for any of the following (all corrected in Appendix D of the 2026-09 book,
@@ -114,11 +128,25 @@ one reversal is the write-dominated AlexNet OFMAP burst, where DDR5 (234.3 ns) b
 (1T1R SLC 353.1, 1S1R SLC 391.5, 1T1R MLC 512.0, 1S1R MLC 652.9 ns; DDR5 is 1.507x faster than 1T1R
 SLC and 1.671x faster than 1S1R SLC, 2.185x and 2.787x against the MLC tracks): DRAM reads and writes
 at the same cost, a resistive cell does not. ReRAM still loses this regime, but by less than before
-the DDR5 timing correction. **Why the projected array is faster is itself model-dependent:** of the
+the DDR5 timing correction. **Those AI-trace averages are saturation figures, not device latencies:**
+the one-row footprints fill the 32-entry queue, so 80 to 90% of each figure is queue time; the book
+marks the columns "(sat.)" and gives drain times in Table 4b (DDR5 0.28 / 4.26 / 0.49 ms against 1T1R
+SLC 0.21 / 4.22 / 1.02 ms for GPT-2 / AlexNet IFMAP / OFMAP), and the output-map statement is a
+throughput statement (1.02 against 0.49 ms), never "1.5x to 3.0x slower" as a latency.
+**The latency axis also carries its own measured band (book Table 4c, 2026-11-01):** a 20 / 40 ns
+read-decode delay (16 / 32 cycles added to tCAS) raises the CPU averages by 11.3 to 14.1 / 19.5 to
+25.0 ns and leaves the write burst untouched; at 40 ns the SLC tracks average 58.4 to 66.0 ns, 1.20x to
+1.41x below the open-page baseline and 1.12x to 1.53x below the close-page one (worst 1T1R MLC under LBM,
+1.06x); raising tRP from the one-cycle placeholder to 4 and 8 cycles moves the CPU averages by at most
+0.7 ns (the one-row AI bursts rise 10 to 26%). The 1T1R SLC GCC band is therefore 41.4 to 63.4 ns
+(primary to 40 ns decoder), 36.8 to 58.9 for 1S1R SLC. **Why the projected array is faster is itself model-dependent:** of the
 41.40 ns 1T1R SLC GCC average only 11.25 ns is NVSim device time, charged once as tRCD + tCAS; the
 other 30.2 ns is NVMain's default protocol cycle counts at the assumed 800 MHz interface, so roughly
 three quarters of the ReRAM figure is an interface assumption, not a device measurement. The
-*direction* is robust (ReRAM is below DDR5 at all three measured clocks) and the *magnitude* is
+*direction* is robust (ReRAM is below DDR5 under GCC at all four measured interface clocks, 400 / 800 / 1333 / 2400 MHz:
+1T1R SLC 75.1 / 41.4 / 27.9 / 19.0 ns, 1S1R SLC 69.8 / 36.8 / 23.6 / 14.9 ns against 83.1 ns; at 400 MHz
+the GCC margin is 1.1x to 1.2x, 1T1R SLC is at parity under LBM (79.2 vs 78.3 ns) while the other tracks
+keep 1.05x to 1.16x, and the fitted crossover sits near 335 to 360 MHz, book Section 4.1 and Figure 2) and the *magnitude* is
 model-dependent. **The cell write time is branch-conditional, never simply "off the request path":**
 in default mode it is charged to `tWR`, which reaches the request path only when a write closes its
 row (`WRITE_PRECHARGE`, the last queued request to that row, charges `tWR` to the subarray's next
@@ -156,30 +184,31 @@ vs. `averageTotalLatency`'s queue-entry to completion) is the saturation measure
 keeps up the two agree to a fraction of a cycle; where it does not (PCM, both silicon rows) they
 diverge by up to six orders of magnitude.
 
-**Finding 2, Power: there is no transistor-versus-selector leakage gap.** At the matched organization
-NVSim gives both cell types identical peripheral leakage, 108.384 mW per 1 Gb chip (NVSim assigns
-memristor cells zero leakage; chip leakage is entirely peripheral circuitry and scales with mat count).
-The full 8 GiB ReRAM DIMM draws 6.94 W under GCC, 99.96% static, against **0.797 W** for a 16 GiB DDR5
-module (the corrected current-mode background accounting, four times the figure NVMain printed):
-**about 17.4x more power per gigabyte under GCC, 12.7 to 17.4x across the suite for SLC and 6.4 to
-8.7x for MLC**. This ratio is an **upper bound**: DDR5's figure carries a real, restored JEDEC
-power-down credit, while ReRAM's power-down energy is an explicit, disclosed no-savings placeholder (no
-NVSim datapoint decomposes ReRAM leakage into gatable-periphery vs. ungatable-crossbar, and no citable
-ReRAM power-gating figure exists), so the model cannot price a gated ReRAM module at all.
-**The power argument changed direction as well as size with the DDR5 correction.** Break-even now
-needs **94.3%** of the static component gated at 22nm (80.8% at a 12nm-class port), which sits
-*inside*, not above, the 94-98% idleness implied by Malladi et al.'s reported 2-6% memory-bandwidth
-utilization for web-serving/data-analytics servers [21]: at f = 0.98 the gated module would draw
-0.142 W against DDR5's 0.399 W for the same 8 GiB, a ratio of 0.36x - *below* DDR5 - and at f = 0.94
-it would draw 0.419 W, 1.05x. **The cited band brackets break-even**, so the arithmetic no longer
-forbids parity for that deployment class; what forbids the book from claiming it is the unpriceable
-placeholder above. Two scope bounds must travel with all of this. **Both module figures count memory
-devices only** - no register clock driver, power-management IC, PHY, termination or ReRAM-side
-controller on either side. And a fixed per-module overhead O points the two statements in *opposite*
-directions: it *compresses* the ungated per-GiB ratio (17.4x falling toward an asymptote of 2x) while
-*raising* the gating fraction parity needs - 97.9% at O = 0.5 W per module, and beyond **O = 0.79 W**
-no gating fraction reaches parity at all. The overhead flatters the ratio and moves the gated
-comparison *against* ReRAM. A dedicated analytic selector layer (NVSim models no selector physics) finds the sneak-current
+**Finding 2, Power: the per-gigabyte figure is set by the periphery transistor class NVSim is told to
+build, and the model cannot choose it.** At the matched organization NVSim gives both cell types identical
+peripheral leakage (108.384 mW per 1 Gb chip under the low-operating-power, LOP, profile at 350 K; memristor
+cells carry zero leakage, chip leakage is peripheral and scales with mat count), so there is no
+transistor-versus-selector leakage gap. With that LOP periphery the 8 GiB ReRAM DIMM draws 6.94 W under GCC,
+99.96% static, against **0.797 W** for the 16 GiB DDR5 module: 12.7x to 17.4x DDR5's power per gigabyte for
+SLC and 6.4x to 8.7x for MLC. Re-characterized with the low-standby-power (LSTP) profile, one line changed in
+each cell configuration (`configs/reram_22nm_*_slc_lstp.cfg`) and the four full-DIMM tracks re-run on all
+six traces (`results/system_rev2026-09_periphery_lstp/`, book Table 5b, 2026-11-01), the chip leakage is
+1.599 mW, the module floor 0.102 W, and the same ratios read **0.26x to 0.94x (SLC) and 0.14x to 0.54x
+(MLC)**, with CPU latencies within 2% and the write burst at most 4% slower. Both ends are device-only
+**point estimates**, not bounds (the "upper bound" wording was retired by the judge's review of 2026-10-28);
+nothing in the model or the literature read decides which periphery a DIMM-class part would carry, so the
+book reports the band, names the choice as its ninth limit, and retires the power deficit as a verdict. The
+gating arithmetic applies at the LOP end only: break-even needs **94.3%** of the static component gated
+(97.9% at 0.5 W per-module overhead, none beyond 0.79 W), inside the 94 to 98% idleness the cited 2 to 6%
+memory-bandwidth utilization implies, a band compatible with, but not evidence of, such a fraction; at the
+LSTP end no gating is needed. Both module figures count memory devices only (no register clock driver,
+PMIC, PHY, termination or ReRAM-side controller). The DDR5 side is a worst-case-current figure
+(specification-limit IDDs) and is at the same time **low by its activate energy, which the model clamps to
+zero** (datasheet EIDD0 below EIDD3N): about 1% under GCC, 6 to 8% under STREAM and LBM and 12 to 27% on
+the AI bursts at the datasheet-derived per-activate energy, a bias in ReRAM's favor on every ratio (book
+Section 2.3). Both 22 nm transistor rows carry NVSim's own source comment that they were translated from
+the 32 nm node; the LOP row's off-current is about four times the ITRS LOP target and the LSTP row within
+a factor of two of its target (extended book Appendix A), so the LOP end is the less calibrated of the two. A dedicated analytic selector layer (NVSim models no selector physics) finds the sneak-current
 budget adds **zero** to standby power at either bound and 7.56 mW/chip (present-day OTS) or 0.076
 mW/chip (best-published FAST selector [9]) during an access; but tile validity, not leakage, binds:
 the OTS bound supports only a 1,666-cell tile side, so **the simulated 2048 x 2048 organization is not
@@ -208,9 +237,17 @@ region recovers essentially none of that gap for these footprints (the hottest l
 gap rotates once); randomizing the region recovers part of it (0.20 yr LBM, 0.96 yr STREAM, still
 nothing on GCC). Required endurance for a ten-year life at 64 GiB: 2.6x10^5 (GCC), 2.8x10^6 (LBM),
 2.3x10^6 (STREAM) cycles under ideal leveling, 6.3/6.5/4.3x10^6 under randomized Start-Gap, against the
-10^6 planning value. The claim that the selector variant outlives the transistor variant is
+10^6 planning value. **The rating decides as much as the policy:** at 10^7 the same table
+(`results/endurance_table.csv`, endurance 1e7, 64 GiB) gives 386 / 36 / 43 yr ideal and 59 / 19 / 30 yr
+under randomized Start-Gap (3 to 29 days without leveling), so "leveling, not the cell, decides it" is a
+10^6 statement; the book shows the 10^7 line as a sensitivity (Chapter 6) and leaves the
+planning value open. Which value to plan on (10^6 per Chen 2020; 10^7 as the literature's upper rating for
+shipped parts; the advisor's recalled 10^9) is the pending item of the Kvatinsky conversation. The book
+also discloses the write-absorbing-cache lever (write_reduction 4.5 rows: GCC at 8 GiB under randomized
+Start-Gap 0.69 to 3.1 yr) and that the cost of leveling itself is unpriced (book Section 4.3). The claim that the selector variant outlives the transistor variant is
 **withdrawn**: it was an artifact of the slower configuration completing fewer writes inside a
-service-limited window; all four tracks now wear identically (7.1 yr at 128 GiB, ideal leveling). MLC
+service-limited window; all four tracks now wear identically (book Table 8: 3.6 yr ideal / 0.20 yr randomized Start-Gap at 64 GiB
+under LBM). MLC
 does not "live longer" than SLC either. AlexNet OFMAP's 132.5 M/s figure is a burst rate (a 4.5 us
 burst spread over its 1.022 ms drain time), never a sustained requirement, and is flagged as such
 wherever used.
@@ -223,6 +260,12 @@ and 0.73x (up from 0.22x/0.44x). Cell-level, node-independent bound: DRAM 6F²/b
 1.24x die-level SLC figure now falls *short* of that bound (sense-amp/decoder/mux overhead at a
 2048-cell tile), which is the expected, credible direction. A factor-of-two miss on the idealized 4F²
 cell area would drop 22nm SLC *below* DDR5 parity (0.62x); MLC is what carries the density case.
+**Fabricated-silicon anchor and usable capacity (book Section 4.5 and Table 8, 2026-11-01):** the only
+fabricated cross-point die located, the 2-layer 32 Gb part at 24 nm (130.7 mm²), is 8.2 mm²/Gb per layer,
+about 6.9 at 22 nm, 0.64x DDR5 for one layer and 1.3x for two, against the modeled 3.54 mm²/Gb for one
+idealized layer; applying the 27% ECC storage overhead of the book's Section 5.3, usable density is
+0.98x / 1.94x (1S1R SLC / MLC) and 0.28x / 0.57x (1T1R SLC / MLC). The density claim is conditional on
+selector quality and on a cell near the idealized 4F², which fabricated single-layer parts have not reached.
 
 **Finding 6, Simulation-Fidelity Audit: fourteen silent failure modes found, thirteen repaired.** See
 Section 5 below. The one unrepaired item is the GPT-2 trace's generator configuration (its SCALE-Sim
@@ -275,26 +318,26 @@ rate of **2e-4 corrected with BCH(2312,2048,22), at about 27% coding overhead** 
 built on published raw ReRAM error rates is possible, but needs SSD-class rather than DRAM-class
 correction (DRAM's on-die SECDED tolerates only about 1e-6 raw [75]), at roughly that 27% cost in bits.
 
-### 1.3 Cross-Technology Summary (book Table 7, full-DIMM)
+### 1.3 Cross-Technology Summary (book Table 8, full-DIMM)
 
-| Technology | GCC latency (ns) | GCC power (W / W per GiB) | Geo-mean PDP (W·ns) | Die density (× DDR5) | Projected lifetime @128 GiB (ideal) | Role |
-|---|---|---|---|---|---|---|
-| DDR5-4800 | 83.1 | 0.797 / 0.0498 | 136.21 | 1.00 | n/a (volatile) | commodity baseline; sets every bar |
-| PCM (legacy) | 12,168.2 | 0.046 / 0.0115 | 173.6 | 1.25* | not evaluated | floor-power reference; two service-limited workloads; loses on latency by ~150x |
-| 1T1R SLC | 41.4 | 6.939 / 0.8674 | 641.0 | 0.36 | 7.1 yr | most write-symmetric ReRAM track |
-| **1S1R SLC** | 36.8 | 6.940 / 0.8674 | 594.5 | 1.24 | 7.1 yr | fastest reader, 3.4x smaller die; conditional on selector quality |
-| 1T1R MLC | 44.5 | 6.941 / 0.4338 | 722.8 | 0.73 | 7.1 yr | capacity tier; halves the per-GiB power penalty |
-| 1S1R MLC | 37.9 | 6.941 / 0.4338 | 645.4 | 2.47 | 7.1 yr | densest configuration; read-dominant roles only |
+| Technology | GCC latency (ns) | GCC power (W / W per GiB, LOP end) | Geo-mean PDP (W·ns) | Die density (× DDR5) | Usable density (27% ECC) | LBM lifetime @64 GiB (ideal / rand. Start-Gap) | Role |
+|---|---|---|---|---|---|---|---|
+| DDR5-4800 | 83.1 | 0.797 / 0.0498 | 136.2 | 1.00 | 1.00 | n/a (volatile) | commodity baseline; sets every bar |
+| PCM (legacy) | 12,168.2 | 0.046 / 0.0115 | 173.6 | 1.25* | n/a | not evaluated | floor-power reference; two service-limited workloads |
+| 1T1R SLC | 41.4 | 6.939 / 0.8674 | 641.0 | 0.36 | 0.28 | 3.6 / 0.20 yr | most write-symmetric ReRAM track |
+| **1S1R SLC** | 36.8 | 6.940 / 0.8674 | 594.5 | 1.24 | 0.98 | 3.6 / 0.20 yr | fastest reader, 3.4x smaller die; conditional on selector quality |
+| 1T1R MLC | 44.5 | 6.941 / 0.4338 | 722.8 | 0.73 | 0.57 | 3.6 / 0.20 yr | capacity tier |
+| 1S1R MLC | 37.9 | 6.941 / 0.4338 | 645.4 | 2.47 | 1.94 | 3.6 / 0.20 yr | densest configuration; read-dominant roles only |
 
-Under single-region Start-Gap the same lifetime projection is 23.2 hours, not 7.1 years (Table 5); the
-ideal-leveling number above is an upper bound, not the realistic case. Two published-silicon rows (11.9
-us / 379 us under GCC) are deliberately excluded from this table; no row here describes a fabricated
-part. **Power is comparable only in the per-GiB column** (the modules are 16, 8 and 4 GiB), and both
-sides count memory devices only, with no RCD, PMIC, PHY, termination or ReRAM controller (book
-Section 3.1.2). **\*** The PCM density figure is a fixed constant in the metrics pipeline with no
-device or datasheet source behind it - read it as *not characterized*, like the lifetime cell beside
-it. Source: `results/rev2026-09_primary_csv/processed_bar_chart_metrics.csv`,
-`processed_geometric_means.csv`.
+The power column is the LOP end of the periphery band; at the LSTP end every ReRAM track reads 0.106 to
+0.108 W, 0.0133 (SLC) and 0.0068 (MLC) W per GiB (book Table 5b). DDR5 latency and power come from the
+open-page baseline run; at the ReRAM configurations' close-page policy its GCC latency is 78.2 ns. Two
+published-silicon rows (11.9 us / 379 us under GCC) are deliberately excluded from this table; no row here
+describes a fabricated part. **Power is comparable only in the per-GiB column** (the modules are 16, 8 and
+4 GiB), and both sides count memory devices only. **\*** The PCM density figure is a fixed constant in the
+metrics pipeline with no device or datasheet source behind it. Source:
+`results/rev2026-09_primary_csv/processed_bar_chart_metrics.csv`, `processed_geometric_means.csv`,
+`results/system_rev2026-09_periphery_lstp/_csv/`.
 
 ---
 
@@ -315,8 +358,9 @@ it. Source: `results/rev2026-09_primary_csv/processed_bar_chart_metrics.csv`,
   2026-09-21. Four safeguards go with them, so that a folder can never be mislabelled: the manifest
   carries an `expected_stats_files` list and `process_metrics.py` gives the `Run_*` values ONLY to
   stats files on that list (any other file, and every file in a folder whose manifest has no list,
-  reads `unknown` with a WARNING; the frozen `results/system_rev2026-09_*` datasets predate the
-  manifest and therefore read `unknown`); before Stage 4 the master moves a previous run's stats,
+  reads `unknown` with a WARNING; the frozen `results/system_rev2026-09_*` datasets of September predate the
+  manifest and therefore read `unknown`, while the write-pulse, close-page and the six November 2026 series
+  carry manifests and real `Run_*` values); before Stage 4 the master moves a previous run's stats,
   partial or failed outputs and old manifest out of `results/system` into
   `results/system_previous_<timestamp>/` (never deletes); Stage 3 lists the configs it generated,
   older generated ReRAM configs are moved aside, and Stage 4 refuses any generated model not on this
@@ -367,7 +411,7 @@ it. Source: `results/rev2026-09_primary_csv/processed_bar_chart_metrics.csv`,
   DDR5_4800_DRAM_subchannel --channels 2 --decoder StartGap --endurance-model RowModel --silicon`
   (120 runs: 4 ReRAM cell tracks x 4 chip-count architectures x 6 traces, plus DDR5, PCM and the two
   silicon configs). Other flags used for sensitivity axes: `--organization {2048,1024}`, `--freq`
-  (800/1333/2400 MHz), `--queue-size` (8/32/128), `--models` (scopes `4_execute_simulation.py` only,
+  (400/800/1333/2400 MHz), `--queue-size` (8/32/128), `--models` (scopes `4_execute_simulation.py` only,
   not `mbmm_master.py`'s own `--models`/`--all` path).
 - **Trace tools:** `parse_gem5_memctrl.py` (new gem5 MemCtrl parser, provenance sidecar,
   `--cpufreq-mhz 3000 --region o3 --skip-ns 10000000`); `parse_trace.py` (SCALE-Sim parser, fixed to
@@ -389,7 +433,16 @@ it. Source: `results/rev2026-09_primary_csv/processed_bar_chart_metrics.csv`,
   freq1333, freq2400, queue8, queue128, org1024}; **the write-pulse bounding run (task T3, added
   2026-09-22) at `results/system_rev2026-09_writepulse/` (120 stats files, CSVs in its own `_csv/`,
   `run_manifest.json`) - the source of every bracket number in Findings 1 and the withdrawn-wordings
-  entry above**; book figures in `results/book_figures_rev2026-09/`; deck charts in
+  entry above**; the DDR5 close-page re-run (2026-10-24) at `results/system_rev2026-09_ddr5_closepage1/` with its
+  reproduction check `_ddr5_repro_check/`; **the six series of 2026-11-01**, each with `run_manifest.json`,
+  `RUN_NOTE.md`, `Config/`, `config_diffs/` and `_csv/` (24 stats files each): `_periphery_lstp/` (NVSim
+  re-characterized with `-DeviceRoadmap LSTP`, its own `hardware/` and `hardware_metrics.json`),
+  `_precharge_trp4/`, `_precharge_trp8/`, `_eccdecode_20ns/`, `_eccdecode_40ns/` (one-line variants of the
+  live full-DIMM configs) and `_freq400/` (configs regenerated at 400 MHz), with their comparison tables and
+  the manifest and comparison scripts in `results/_sens_tools_2026-11/`; the Zenodo deposit
+  `results/zenodo_rev2026-09/` (tarball rev2026-09.3, CONTENTS.txt, SHA256SUMS, README.md,
+  zenodo_metadata.json; upload pending); book figures in `results/book_figures_rev2026-09/` and
+  `documents/MBMM_Book_Typst/media/short_book/` (`tools/plot_short_book_figures.py`); deck charts in
   `results/slide_graphs_rev2026-09/`. The pre-revision dataset is preserved at
   `results/archive_2026-09_pre_revision/`.
 - **MLC analytical model:** NVSim's native MLC logic FPEs in `Mat.cpp`'s ISPV sensing; MLC metrics are
@@ -415,18 +468,24 @@ it. Source: `results/rev2026-09_primary_csv/processed_bar_chart_metrics.csv`,
 - **Latency magnitude is an interface assumption, not a device result:** only tRCD + tCAS come from
   NVSim (11.25 ns of the 41.40 ns 1T1R SLC GCC average); the remaining 30.2 ns is NVMain's default
   protocol cycle counts at the assumed 800 MHz clock, which has no ReRAM citation behind it. State the
-  direction as robust and the magnitude as model-dependent. **The cell write time is branch-conditional**
+  direction as robust and the magnitude as model-dependent. The direction is now measured down to 400 MHz
+  (GCC margin 1.1x to 1.2x; 1T1R SLC at parity under LBM, the other tracks 1.05x to 1.16x), through a 40 ns
+  read decoder (SLC 1.20x to 1.41x below the open-page baseline) and against a 4- and 8-cycle precharge
+  (at most 0.7 ns on CPU traffic); the fitted crossover is near 335 to 360 MHz (book Sections 4.1, 5.4). **The cell write time is branch-conditional**
   (default mode charges it to `tWR`, which reaches the request path only when a write closes its row -
   never state this as the pulse being simply "off the request path"), so **MLC latencies are lower
   bounds** and MLC's near-parity with SLC is a consequence of this project's generator, never a device
   finding. See Section 1.2 Finding 1 for the measured bracket (default value, bounding value) on all
   four projected tracks.
-- **Power per GiB (12.7-17.4x DDR5 for SLC, 6.4-8.7x for MLC):** an **upper bound**, not a settled gap.
-  DDR5's number carries a real power-down credit; ReRAM's does not (disclosed no-savings placeholder).
-  Break-even needs **94.3%** gating at 22nm, which sits *inside* the 94-98% idleness the cited
-  web-serving deployment class implies - the band **brackets** break-even (0.36x DDR5 at f = 0.98,
-  1.05x at f = 0.94). Never state the power gap as closed or as unclosable; both overclaims are wrong,
-  and the parity the band brackets is arithmetic, not a result.
+- **Power per GiB is a LOP/LSTP band, not a settled gap:** 12.7x to 17.4x DDR5 (SLC) and 6.4x to 8.7x (MLC)
+  with NVSim's low-operating-power periphery, 0.26x to 0.94x and 0.14x to 0.54x with its low-standby-power
+  periphery, both device-only point estimates (never "upper bound"), and the model cannot choose between
+  them; state both ends or neither. Gating arithmetic (94.3% break-even, inside the cited 94-98% idleness
+  band, which brackets it but is not evidence of it) applies at the LOP end only. The DDR5 side is low by
+  its clamped activate energy (about 1% under GCC, up to 27% on the AI bursts), a bias in ReRAM's favor.
+  Never state the power gap as closed, as unclosable, or as the reason ReRAM is not a drop-in replacement;
+  the book's stated reasons are endurance under leveling, selector validity at the simulated tile, the
+  error-correction cost and the absence of a fabricated part near the projected timings.
 - **Both module power figures are memory-device-only:** no register clock driver, PMIC, PHY,
   termination or ReRAM-side controller on either side. Quote this scope wherever a per-module ratio is
   quoted. A fixed per-module overhead moves the two statements in opposite directions: it *compresses*
@@ -489,8 +548,8 @@ None should be used again, even as a paraphrase, without the correction attached
   choices* (tCCD, tWTR, tRRD) and a handful of NVMain-specific keys, on values transcribed through a
   public mirror and verified 2026-10-19 against Micron's core data sheet. See the four-label provenance in Section 2.
 - **"40 to 55x DDR5 power per GiB"** (and the 20-27x MLC companion). Retired with the background-power
-  correction: the figures are **12.7 to 17.4x** for SLC and **6.4 to 8.7x** for MLC, and they are
-  upper bounds.
+  correction: the figures are **12.7 to 17.4x** for SLC and **6.4 to 8.7x** for MLC at the LOP end of the
+  periphery band (0.26x to 0.94x and 0.14x to 0.54x at the LSTP end), point estimates, not bounds.
 - **"Break-even needs 98.2% of the static component gated."** Retired with the same correction: it is
   **94.3%** at 22nm (80.8% at a 12nm-class port), which lands *inside* the cited idleness band instead
   of above it. Any sentence built on 98.2% has the direction of the power argument backwards.
@@ -510,6 +569,20 @@ None should be used again, even as a paraphrase, without the correction attached
   falling toward 2x) but *raises the gating fraction parity requires* - 97.9% at 0.5 W, no parity at
   all beyond 0.79 W - because 8 GiB of ReRAM carries the same overhead as 16 GiB of DDR5. The first
   flatters ReRAM, the second does not, and the two must never be conflated.
+- **"12.7x to 17.4x more power per gigabyte" as the result, "a large, honest power deficit", "an upper
+  bound on the ReRAM side", and "94.3% gating" as the overturn condition.** Retired 2026-11-01: the
+  figures are the LOP end of a periphery band whose LSTP end is 0.26x to 0.94x; both are point estimates;
+  the periphery class is the ninth disclosed limit (book Abstract, Sections 4.2, 5.1, 5.4, Chapter 6).
+- **"Eight disclosed limits."** Nine since 2026-11-01 (the periphery transistor class).
+- **"1.5x to 3.0x slower on the AlexNet output-map burst" as a latency statement, and the AI-trace
+  averages read as latencies.** They are saturation figures under a full queue; the burst is a throughput
+  statement (drain 1.02 against 0.49 ms, book Table 4b).
+- **"About 73 ns at 400 MHz" and "crossover around 330 MHz" as extrapolations.** Measured 2026-11-01:
+  75.1 / 69.8 ns under GCC at 400 MHz; crossover fitted near 335 to 360 MHz.
+- **"The JEDEC text was not consulted."** The config header records a transcription through a public
+  mirror of the JEDEC PDF, cross-checked against Micron's data sheet; the official copy was not obtained.
+- **"Provenance columns on every processed row."** Only the manifest-bearing series (write-pulse,
+  close-page, the six November 2026 series) carry real `Run_*` values; the September series read `unknown`.
 
 ---
 
@@ -602,13 +675,27 @@ starving the power-down entry condition; not yet root-caused to full confidence)
    1T1R, 4F² for 1S1R) rather than a measured value; a factor-of-two miss on cell area would drop
    22nm SLC 1S1R below DDR5 parity.
 9. **No known active blocking bug** in the pipeline itself as of this hardfork.
+10. **The periphery transistor class is a model choice** (book limit nine): NVSim's LOP profile sets the
+    6.94 W floor, its LSTP profile 0.10 W; both 22 nm rows are translated from the 32 nm node per NVSim's
+    own source comment and neither is calibrated to a fabricated ReRAM die; the LOP row is about four
+    times the ITRS LOP target. Which class a DIMM-class part would carry is open (advisor input).
+11. **No ECC decode on the primary read path**: bracketed at 20 and 40 ns of fixed delay (book Table 4c)
+    and the 27% capacity cost applied in Table 8, from separate assumptions; no code-level model ties them.
+12. **DDR5 activate energy is zero in the model** (the EIDD0 < EIDD3N clamp, nvmain/CLAUDE.md item 3):
+    the baseline is low by about 1% under GCC, 6 to 8% under STREAM and LBM and 12 to 27% on the AI
+    bursts; fixing it in C++ would require a golden re-record and a DDR5 re-run, so it is disclosed, not
+    repaired (book Section 2.3).
+13. **The endurance planning value is unsettled between 10^6 and 10^7** (and the advisor's recalled 10^9);
+    the book carries 10^6 with the 10^7 sensitivity shown; pending the Kvatinsky conversation.
 
 ---
 
 ## 7. Where Things Live
 
-- **Book (source of truth):** `documents/MBMM_Book_Typst/Technical_Report.typ` (122 pages, compiles
-  clean; the extended book, the complete record and knowledge base, 101 references).
+- **Extended book:** `documents/MBMM_Book_Typst/Technical_Report.typ` (124 pages, compiles
+  clean; the complete record and knowledge base, 101 references; its Appendix D change table carries the
+  October and November 2026 rows: periphery transistor class, precharge and read-decode sensitivities,
+  interface clock downward point).
   Key sections: Abstract; 1 Introduction; 2 Infrastructure & Methodology; 3.1.1-3.1.6 latency/power/PDP
   /endurance/robustness/fidelity-audit (3.1.1 also holds the write-pulse bounding-run subsection and
   Table 9; 3.1.2 also holds the "Bit errors and error correction" subsection); 3.2 scaling; 3.3 global
@@ -616,10 +703,11 @@ starving the power-down entry condition; not yet root-caused to full confidence)
   Conclusion & Future Work; Appendix A (simulation parameters and literature grounding); Appendix B
   (pipeline CLI); Appendix C (reproducibility); Appendix D (what changed since 3 September, the only
   place old headline values are tabulated).
-- **The book (added 2026-09-23):** `documents/MBMM_Book_Typst/Project_Book.typ`, the summary of the whole work with the references it rests on (24
-  printed pages / 25 sheets, Chapters 1-6, Figures 1-6, Tables 1-9, 48 references - its own, separate
-  numbering from the extended book's). Reviewed with 336 numeric claims traced to source, zero
-  mismatches. Uses the same media-versus-device labelling and write-pulse-bracket conventions as this
+- **The book (added 2026-09-23):** `documents/MBMM_Book_Typst/Project_Book.typ`, the summary of the whole work with the references it rests on (32
+  printed pages / 33 sheets, Chapters 1-6, Figures 1-6, Tables 1-9 plus 4b, 4c and 5b, 49 references -
+  its own, separate numbering from the extended book's). Reviewed with 336 numeric claims traced to
+  source, zero mismatches (September), then by the wrap-up review, an independent judge and an adversarial
+  review (October to November 2026; reports git-ignored at the repository root as `wrap-up-review*.md`). Uses the same media-versus-device labelling and write-pulse-bracket conventions as this
   file (see Findings 1, 7 above). Start here for a new reader; come to `Technical_Report.typ` for full
   depth, Section 3.4 and the bit-errors subsection, which the book carries condensed as its Sections 5.2 and 5.3.
 - **Outside-reviewer research note (added 2026-09-23):**
@@ -655,17 +743,17 @@ starving the power-down entry condition; not yet root-caused to full confidence)
   write-path, power-down and activate-window values in both DDR5 configs against regression).
 - **Subdirectory CLAUDE.md files** (domain knowledge, still the right first stop before reading source):
   `simulators/nvsim/CLAUDE.md`, `simulators/nvmain/CLAUDE.md`, `configs/CLAUDE.md`.
-- **Deck / one-pager:** `documents/MBMM_Book_Typst/presentation_deck.html` (rebuilt this cycle on the
-  corrected book: 60 slides, 15 data-driven charts from `visualize_slides.py`, guarded by
-  `tests/test_presentation_deck.py`; outline in `Presentation_Outline.md`); `private/Shahar_Review_Evidence.typ`/`.pdf` (one-pager, rewritten and
+- **Deck / one-pager:** `documents/MBMM_Book_Typst/presentation_deck.html` (27 slides following the book, inline charts, guarded by the 117 tests of
+  `tests/test_presentation_deck.py`; outline in `Presentation_Outline.md`; published copy at
+  https://claude.ai/artifact/JNkDWiTsMyon5XHF1mALpa); `private/Shahar_Review_Evidence.typ`/`.pdf` (one-pager, rewritten and
   reviewed this cycle); `private/Note_to_Shahar_2026-09.md` (drafted, reviewed, not sent).
 
 ---
 
 ## 8. Operating Rules for AI Assistants on This Project (carried forward, updated where facts changed)
 
-- **Every number cited about this project's results must trace to `Technical_Report.typ` (the 2026-09
-  revision) or to a file it cites** (a `results/rev2026-09_*` CSV, `results/system_rev2026-09_*` stats,
+- **Every number cited about this project's results must trace to `Project_Book.typ` or
+  `Technical_Report.typ` (the 2026-09 revision as amended through 2026-11-01) or to a file they cite** (a `results/rev2026-09_*` CSV, `results/system_rev2026-09_*` stats,
   a `.sidecar.json`), never to memory or to a prior version of this context file.
 - **Projected endurance figures are projections, never "measured".** Say "projected lifetime" or
   "required endurance", not "measured lifetime" or "the cell survives X years".
@@ -732,6 +820,23 @@ Section 3.4 and the bit-errors subsection; the check is recorded in
 (`README.md`, `Reading_Guide.md`, `Reference_Guide.md`) and one stale value in
 `Technical_Report.typ` (a rounding slip at the "2.4 to 6.5x" endurance-ratio sentence, corrected to
 "2.3 to 6.5x" against `results/endurance_table.csv`) were updated to match (task E9, 2026-09-23).
+
+**October to November 2026.** The repository history was rewritten on 2026-10-22 to remove reviewer
+correspondence (now in the git-ignored `private/` folder) and force-pushed; PR #1 (`book-fixes-2026-10`,
+merged 67b930c) fixed the Start-Gap region, the repository links and `.gitmodules`. A wrap-up review
+(2026-10-23 to 10-26) made the data-availability and manifest claims true, conditioned the density verdict,
+completed the bibliography, made a fresh clone's test suite green, prepared the Zenodo deposit and pruned
+the book's references from 58 to 49; an independent judge's fifteen findings were applied on 2026-10-28
+("point estimate, not a bound"; 6F² rescaling; utilization is not evidence of idleness). The adversarial
+review of 2026-10-31 found the 6.937 W floor to be NVSim's LOP periphery; the Lead authorized the LSTP
+series (24 runs), then the precharge and read-decode sensitivities (96 runs) and the 400 MHz point (24
+runs), all on 2026-11-01 (commits b9378a3, 68ab0ef, bb40e52), and the book, extended book and deck now
+carry the power band, Table 4b, 4c and 5b, the fabricated-silicon density anchor, the usable-density
+column, nine limits and the ten-item provenance bundle. A post-review audit of 2026-11-01 (read-only)
+confirmed every series number and added the disclosures of Finding 2 (activate-energy clamp, 22 nm table
+caveat), the 10^7 endurance sensitivity, one attribution fix (book Section 5.2: the DDR4 two-socket
+latencies are Pond's) and this file's update. Pending: push, Zenodo upload and DOI, the Kvatinsky
+conversation.
 
 Earlier session history (Sessions 1-26, the 2026-07-22 fidelity audit, the
 2026-08-16/08-22 bibliography-verification cycles that produced the *previous* hardfork of this file)

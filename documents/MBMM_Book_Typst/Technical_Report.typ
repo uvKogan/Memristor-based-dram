@@ -1772,9 +1772,8 @@ bounds it.
 That ratio is measured against a DDR5 baseline which realizes its
 JEDEC-datasheet power-down credit, while ReRAM\'s power-down energy is
 an explicit no-savings placeholder (Section 3.1.6, item 5), so it is
-also an
-#strong[upper bound] on the gap a ReRAM module that gates its periphery
-would show. Zero refresh does not begin to pay for it on its own, and
+a point estimate rather than a bound: what a ReRAM module that gates
+its periphery would show is unpriced. Zero refresh does not begin to pay for it on its own, and
 the gating the model would need is substantial - but it is no longer
 out of range. Gating the whole static component for an
 idle fraction $f$ leaves $(1-f) times 6.937 + 0.003$ W, so reaching
@@ -2162,7 +2161,8 @@ ReRAM\'s power-down mechanism is mechanically live but its power-down
 energy is an explicit, disclosed placeholder equal to existing standby
 energy, so no ReRAM figure claims a gating benefit and every per-GiB
 ratio here is a point estimate at the low-operating-power periphery of
-the primary characterization; the low-standby-power periphery series of
+the primary characterization, against a DDR5 side that is low by its
+clamped activate energy (Section 3.1.6, item 8); the low-standby-power periphery series of
 the October revision puts the same ratios at 0.26x to 0.94x (SLC) and
 0.14x to 0.54x (MLC) (`results/system_rev2026-09_periphery_lstp/`, module
 floor 0.10 W); break-even against DDR5 at the LOP end needs 94.3% of the
@@ -2806,7 +2806,7 @@ are scaled from Micron's by the IDD2N and IDD3N ratios) - with a
 documented caveat that datasheet IDD values are specification limits rather than typicals (vendors publish no typical DDR5 IDD figure to use instead, Section 3.1.2); calibrating with real currents also exposed and
 forced the repair of a sign artifact in NVMain\'s activate-energy
 formula (clamped at zero, worst case 2.8% of module power before the
-fix). (9) Found and fixed: the PCM baseline\'s cycle timings were
+fix); the clamp also removes the baseline's whole activate energy, which at the per-activate energy the same datasheet implies (IDD0 minus IDD2N over tRC, about 4.8 nJ for the eight devices of a rank) is about 1% of the DDR5 module power under GCC, 6 to 8% under STREAM and LBM and 12 to 27% on the AI bursts by the activate counts of the frozen statistics, a bias toward the baseline that every per-gigabyte ratio in this book carries. (9) Found and fixed: the PCM baseline\'s cycle timings were
 derived for its cited 400 MHz basis, but a stray trailing clock override
 ran it at 800 MHz - twice as fast as Lee et al.\'s parameters intend -
 and a second instance of the same bug sat in the reporting layer\'s
@@ -3638,7 +3638,7 @@ energy is an explicit no-savings placeholder] (Section 4.1): the model
 cannot price a gated ReRAM module, and no citable ReRAM power-gating
 characterization exists to price it with. Every per-gigabyte ratio in
 this book is therefore the low-operating-power end of the periphery
-band and an upper bound on the gap a gated module would show, and closing it is a measurement this project could not make rather
+band and a point estimate rather than a bound, since what a gated module would show is unpriced, and closing it is a measurement this project could not make rather
 than a possibility it has excluded - and equally, the parity these lines
 bracket is arithmetic rather than a result. Two
 honesty bounds and one physical asymmetry frame this: bandwidth
@@ -4075,8 +4075,8 @@ only, with no register clock driver, power-management IC, PHY,
 termination or ReRAM-side controller on either side, so a fixed
 per-module overhead would compress this per-gigabyte ratio - and, being
 carried by half as much ReRAM capacity as DDR5 capacity, would at the
-same time raise the gating fraction break-even needs (Section 3.3). That ratio is also an
-#strong[upper bound]: the
+same time raise the gating fraction break-even needs (Section 3.3). That ratio is also a
+#strong[point estimate rather than a bound]: the
 DDR5 figure carries its JEDEC power-down credit while ReRAM's
 power-down energy is an explicit no-savings placeholder, so the model
 cannot price a ReRAM module that gates its periphery. Gating is no
@@ -4110,7 +4110,10 @@ traffic and energy, is unpriced in every projection. The endurance a
 cell would need for a ten-year life at 64 GiB is 2.6 x 10#super[5] to
 2.8 x 10#super[6] under ideal leveling and 4.3 to 6.5 x 10#super[6]
 under randomized Start-Gap, against a best-sourced production planning
-value of 10#super[6] (Section 3.1.4). #strong[Density:] the selector
+value of 10#super[6] (Section 3.1.4); at 10#super[7] the same table
+gives 386, 36 and 43 years with ideal leveling and 59, 19 and 30 years
+under randomized Start-Gap, so the leveling verdict is tied to the
+planning value. #strong[Density:] the selector
 cross-point delivers 1.24x DDR5’s die-level density as SLC and 2.47x as
 MLC at 22nm, compounding quadratically under node scaling and
 multiplicatively under deck stacking (Table 6); the transistor-gated
@@ -4710,7 +4713,14 @@ Appendix C gives the full statement.
   against 2 for 1S1R. At a matched organization the two cells leak
   identically (108.384 mW per 1 Gb chip). \[43\] and \[44\] remain
   correct as external statements about transistor leakage; they simply
-  do not corroborate a number NVSim never computed from them. The
+  do not corroborate a number NVSim never computed from them. They do
+  bear on the periphery band of the October series: NVSim's own 22nm
+  transistor table, whose rows carry the source comment that their
+  values were translated from the 32nm node, puts the LOP off-current
+  at 21 nA/µm at 300 K, about four times the ITRS LOP target of \[43\],
+  and the LSTP off-current at 16 pA/µm, within a factor of two of the
+  LSTP target, so of the two ends of the band the LOP end is the less
+  calibrated. The
   physical question they speak to - what an unselected 1T1R access
   transistor actually leaks in a real array - is #emph[not modeled by
   NVSim at all], and remains open.
@@ -5591,7 +5601,7 @@ quantity to be compared arithmetically against the new one.
   [#strong[Interface clock, downward point (November 2026)]],
   [The clock sweep ran only upward (800 / 1333 / 2400 MHz); the sub-800 MHz behaviour was a linear extrapolation (crossover "around 330 MHz")],
   [Configs regenerated at 400 MHz by 3_gen_nvmain_config.py --freq 400 with the primary flags and run on all six traces (24 runs): 1T1R SLC 75.1 ns and 1S1R SLC 69.8 ns under GCC (1.11x and 1.19x below the 83.1 ns baseline), 79.2 and 74.2 ns under LBM (1T1R SLC at parity with 78.3 ns), AI bursts behind DDR5 at the halved bandwidth; two-point fit puts the crossover near 358 MHz (1T1R) and 333 MHz (1S1R)],
-  [New measurement confirming the extrapolation: the direction holds down to about 40% of the assumed clock and is gone on one CPU trace at half of it. The book's Figure 2 now carries the 400 MHz point],
+  [New measurement confirming the extrapolation: the direction holds down to about 40% of the assumed clock and is gone for 1T1R SLC on one CPU trace at half of it. The book's Figure 2 now carries the 400 MHz point],
   [Book Sections 2.3, 4.1 (Figure 2), 5.4, Chapter 6; results/system\_rev2026-09\_freq400/ (RUN\_NOTE.md, run\_manifest.json, \_csv/)],
 
   [#strong[Precharge and read-decode sensitivities (November 2026)]],

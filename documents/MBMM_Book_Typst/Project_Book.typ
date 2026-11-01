@@ -314,14 +314,15 @@ The results in this book come from frozen datasets, not from a live
 working directory: a 120-run primary matrix of twenty configurations
 against six workloads, plus thirteen sensitivity series that each change
 one flag or one configuration line, a 1024-organization axis and a one-channel control run. The
-write-pulse bounding run and the close-page baseline run carry a
-manifest of their flags and provenance columns on every processed row;
-the primary matrix and the other series are recorded by their run
+write-pulse bounding run, the close-page baseline run and the six
+November 2026 series carry a manifest of their flags and provenance
+columns on every processed row; the primary matrix and the earlier
+series are recorded by their run
 logs, the revision tracker and the NVMain command line in every
 stats-file header.
 The controller's queue depth is one of those axes, and the write-queue
 sizing question it answers is reported in Section 4.4. The Python layer
-is covered by a test suite, 903 tests at the October 2026 revision,
+is covered by a test suite, 914 tests at the November 2026 revision,
 and by a regression harness that re-runs a fixed
 configuration against a stored reference. Both are part of the gate: a
 pipeline change is not considered to have worked until the suite, the
@@ -385,7 +386,11 @@ as a sensitivity series in the October revision. It cuts the chip's
 peripheral leakage from 108.384 to 1.599 mW, raises the device read
 time by 5% (10.12 to 10.60 ns for 1T1R, 4.70 to 4.97 ns for 1S1R) and
 leaves the die area within 0.3%. No fabricated ReRAM die located gives
-a leakage figure that would choose between the two.
+a leakage figure that would choose between the two. Both 22nm rows
+also carry NVSim's own comment that their values were translated from
+the 32nm node, so neither end is a calibrated 22nm periphery; against
+the ITRS targets (extended book, Appendix A) the LOP row is about four
+times high and the LSTP row within a factor of two.
 
 == 2.3. Baselines
 
@@ -433,7 +438,16 @@ published to use instead, so the 0.797 W of Table 5 is a
 worst-case-current figure for the lower-current vendor, not a typical
 power. A typical-current module would draw less than 0.797 W, so the
 DDR5 side of every per-gigabyte power ratio in Section 4.2 is a lower
-bound, and a typical module would widen every ratio.
+bound, and a typical module would widen every ratio. The same side is
+low in the other direction by its activate energy, which the model
+clamps to zero because the datasheet IDD0 falls below IDD3N (Section
+4.1). At the per-activate energy the same datasheet implies (IDD0 minus
+IDD2N over tRC, about 4.8 nJ per eight-device rank activate), the
+omission is about 1% of the DDR5 module power under GCC, 6 to 8% under
+STREAM and LBM and 12 to 27% on the AI bursts, from the activate counts
+in the frozen statistics; restoring it would move every per-gigabyte
+ratio of Section 4.2 in ReRAM's favor and the 94.3% gating threshold to
+94.2%.
 
 #strong[PCM.] A legacy non-volatile baseline, named for its
 architectural framing in Lee et al. #strong[\[17\]], is carried as the
@@ -1075,7 +1089,8 @@ disclosed placeholder equal to existing standby energy, so no ReRAM
 figure claims a gating benefit; every per-GiB ratio here is a point
 estimate whose ReRAM side would fall with gating and whose DDR5 side
 would fall with typical currents or the matched close-page policy
-(Sections 2.3, 4.1). Source:
+(Sections 2.3, 4.1), and would rise with the clamped activate energy,
+1% under GCC and up to 27% on the AI bursts (Section 2.3). Source:
 results/rev2026-09\_primary\_csv/processed\_bar\_chart\_metrics.csv.]
 
 Read per gigabyte, #strong[ReRAM SLC costs 12.7x to 17.4x DDR5’s power
@@ -1148,7 +1163,8 @@ ratios of Table 5 are its LOP end, not its value.
 )]
 ]
 
-#emph[Same semantics as Table 5, DDR5 side unchanged. The static floor
+#emph[Same semantics as Table 5, DDR5 side unchanged, clamped activate
+energy included (Section 2.3). The static floor
 is 64 chips at 1.599 mW; the dynamic term rises only slightly because
 the per-access burst-read energy is NVMain's default in both series and
 only the activate, write and standby energies carry the
@@ -1599,8 +1615,7 @@ The window real systems accept is narrow and it is measured. Local DRAM
 at idle sits well below it: DDR5 measures 111 to 114 ns on two-socket
 servers, where the far socket of the same machine costs 191 to 193 ns
 #strong[\[27\]], and earlier DDR4 two-socket platforms measure 78 to
-115 ns locally and 142 to 255 ns to the far socket #strong[\[27\]],
-#strong[\[28\]]. Shipped CXL-attached DRAM expanders measure about 214,
+115 ns locally and 142 to 255 ns to the far socket #strong[\[28\]]. Shipped CXL-attached DRAM expanders measure about 214,
 239 and 271 ns idle load-to-use for ASIC-based devices and about 394 ns
 for an FPGA-based one #strong[\[27\]], a band #strong[\[29\]]
 corroborates as ratios. What does #emph[not] survive contact with that
@@ -1813,7 +1828,7 @@ disclosed rather than discovered.
 #strong[The 800 MHz interface is assumed]\: it carries no ReRAM
 citation, the only datasheet-verified ReRAM chip I/O clocks located run
 80 to 160x slower, and roughly three quarters of every ReRAM latency
-average is protocol cycles at that clock; the clock sweep now runs down to 400 MHz, where the GCC margin is 1.1x to 1.2x and the LBM margin is gone, and the fitted crossover sits near 335 to 360 MHz (Sections 2.3, 4.1).
+average is protocol cycles at that clock; the clock sweep now runs down to 400 MHz, where the GCC margin is 1.1x to 1.2x and the LBM margin is gone for 1T1R SLC (0.99x) and 1.05x to 1.16x for the other tracks, and the fitted crossover sits near 335 to 360 MHz (Sections 2.3, 4.1).
 #strong[The baseline's page policy and refresh model are choices]\: the
 DDR5 baseline runs open-page with all-bank refresh while the ReRAM
 configurations run close-page, so the GCC margin is 1.9 to 2.1 to one
@@ -1829,7 +1844,8 @@ and the ReRAM power-down energy is a no-savings placeholder
 (Section 4.2). #strong[The periphery transistor class is a choice]\:
 NVSim's low-operating-power profile sets the 6.94 W floor and its
 low-standby-power profile removes it, the two ends of the power axis
-differ by two orders of magnitude, and nothing in the model or the
+differ by two orders of magnitude, both rows are NVSim's own
+translation from the 32nm node, and nothing in the model or the
 literature read here decides between them (Sections 2.2, 4.2). #strong[No ECC decode sits on the primary read path]\: Section 4.1
 brackets it at 20 and 40 ns of fixed delay (Table 4c) and Table 8's
 usable-density column charges the 27% capacity cost, but no code-level
@@ -1884,14 +1900,17 @@ production ovonic threshold switch, at 1666 cells, does not and a
 FAST-class selector does (Section 4.2). A ten-year life at 64 GiB needs
 a cell rated for 2.6 x 10#super[5] cycles under GCC and
 2.8 x 10#super[6] under LBM with ideal leveling, or 4.3 to
-6.5 x 10#super[6] under randomized Start-Gap (Section 4.3). The
+6.5 x 10#super[6] under randomized Start-Gap (Section 4.3); at a
+10#super[7] rating the same table gives 386, 36 and 43 years ideal and
+59, 19 and 30 years under randomized Start-Gap, so the leveling verdict
+is a 10#super[6] statement and the planning value is open. The
 cross-point's density lead holds only while the realized cell stays
 near the idealized 4F²; at twice that area 22nm SLC falls below DDR5
 parity (Section 4.5). And the latency advantage becomes a statement
 about hardware only when a ReRAM array and interface at the assumed
 800 MHz exist: at published silicon timings the same DIMM averages
 11.9 us and 379 us under GCC, and at a 400 MHz interface the margin is
-1.1x to 1.2x under GCC and gone under LBM (Section 4.1). A decoder does not overturn
+1.1x to 1.2x under GCC and 0.99x to 1.16x under LBM (Section 4.1). A decoder does not overturn
 it: at 40 ns on every read the SLC tracks stay 1.2x to 1.4x below the
 open-page baseline and 1.1x to 1.5x below the close-page one, and the
 one-cycle precharge placeholder is worth under 1% on CPU traffic
