@@ -26,6 +26,37 @@ extended book, the project's complete record and knowledge base. **Updated 2026-
 short, reader-facing `Project_Book.typ` (tasks E4-E7) is now written, reviewed and part of the
 document set - see Section 7 below.
 
+**Updated 2026-11-03 (wording and disclosure passes, documents only; nothing committed).** A claim check of
+2026-11-02 (`wrap-up-review-claimcheck-2026-11-02.md`) and three text passes replaced the endurance headline with a
+two-condition statement (at the 10^6 planning value a ten-year life needs a leveling scheme and, on the streaming
+traces, a higher-rated cell), replaced the unsupported validation wording with the repository's brute-force test
+references and the 2026-09-20 review record, narrowed the NVSim 22 nm caveat to the rows that carry it and stated
+the ITRS comparison at 300 K with the 350 K table entries, reconciled the sensitivity-series counts, named the
+400 MHz crossover as a two-point fit, added provenance statements (manifest-backed runs against those recorded by
+statistics headers and the tracker) and an omissions paragraph (variability, retention, temperature, cost,
+non-volatility), corrected the LBM no-leveling hours to 23.1 (365-day year) and wrapped Table 6 with its caption.
+Book: 33 printed pages, 34 sheets; extended book 126 sheets. Checks of 2026-11-03: both builds exit 0, deck tests
+117, quick suite 913, live configs OK, readme print-only path exit 0. Deck slides 16 and 24 overflowed slightly at
+1920 x 1080 on 2026-11-03 and received inline layout fixes the same day; the supplied screenshots were reviewed on
+2026-11-04 and showed both repaired slides fitting at 1920 x 1080 and 1366 x 768 (a visual check of those two sizes
+only, not a technical sign-off). Slide 24, third bullet, reworded 2026-11-04 to "The lifetime projection depends on
+both the wear-leveling mechanism and the assumed cell endurance"; the two book passages that contradicted it were
+reworded the same day: book Section 5.1 (sheet 25) now reads "The lifetime projection depends on both the
+wear-leveling mechanism and the assumed cell endurance" and extended book Section 3.1.4 (sheet 54) "Endurance
+viability is decided by the wear-leveling mechanism and the assumed cell endurance together, not by either alone";
+both PDFs rebuilt, 34 and 126 sheets unchanged. The three shorter "wear leveling, not the cell" lines were aligned
+on 2026-11-04 as well: book Section 1.3 (sheet 4) now reads "the wear-leveling mechanism and the assumed cell
+endurance together decide it", book Section 4.3 (sheet 20) carries the Section 3.1.4 sentence, and the extended
+book conclusion (sheet 88) "the wear-leveling mechanism and the assumed cell endurance together decide
+viability"; rebuilt again, 34 and 126 sheets, one-line reflow across extended sheets 88 to 94. The only remaining
+"not the cell" phrase (extended book Section 3.1.2, "circuitry, not the cell, is what leaks") is about leakage and
+was kept. Figure labels, corrected 2026-11-03: `fig_endurance_policy.png` was regenerated
+under the 365-day year convention (`HOURS_PER_YEAR = 365 * 24` in `tools/plot_short_book_figures.py`) and now
+labels 7.7 h (GCC) / 23.1 h (LBM) / 69.4 h (STREAM), matching book Table 6 and deck slide 15; the deck's slide-16
+embedded copy was replaced with the new PNG; `Presentation_Outline.md` line 100 updated to 7.7 / 23.1 / 69.4.
+Pending unchanged: push,
+Zenodo upload and DOI, the Kvatinsky conversation (periphery class, endurance planning value).
+
 **Updated 2026-11-01 (post-review audit, documents-only pass).** Since 2026-10-22: the repository history
 was rewritten to purge private reviewer notes (now git-ignored under `documents/MBMM_Book_Typst/private/`);
 PR #1 fixed the Start-Gap region, repository links and submodule records; a wrap-up review (2026-10-23 to
@@ -231,7 +262,7 @@ configuration constant, not a characterized device.
 projection.** Rating basis corrected to 10^6 cycles/cell (Chen 2020 [47]; Wong et al. [14], previously
 cited for 10^7 SLC/10^6 MLC, gives no such rating at all and has been withdrawn for that purpose). At
 64 GiB, ideal uniform leveling gives 38.6 yr (GCC), 3.6 yr (LBM), 4.3 yr (STREAM); **no leveling at all
-gives 7.7, 23.2 and 69.5 hours** (these traces are sparse: GCC touches 577 row locations out of
+gives 7.7, 23.1 and 69.4 hours** (these traces are sparse: GCC touches 577 row locations out of
 131,072 at 8 GiB). A faithful, newly-added deterministic Start-Gap remapper [52] over one whole-module
 region recovers essentially none of that gap for these footprints (the hottest line fails before the
 gap rotates once); randomizing the region recovers part of it (0.20 yr LBM, 0.96 yr STREAM, still
@@ -239,7 +270,7 @@ nothing on GCC). Required endurance for a ten-year life at 64 GiB: 2.6x10^5 (GCC
 2.3x10^6 (STREAM) cycles under ideal leveling, 6.3/6.5/4.3x10^6 under randomized Start-Gap, against the
 10^6 planning value. **The rating decides as much as the policy:** at 10^7 the same table
 (`results/endurance_table.csv`, endurance 1e7, 64 GiB) gives 386 / 36 / 43 yr ideal and 59 / 19 / 30 yr
-under randomized Start-Gap (3 to 29 days without leveling), so "leveling, not the cell, decides it" is a
+under randomized Start-Gap (3 to 29 days without leveling), so the former headline "leveling, not the cell, decides it" was a
 10^6 statement; the book shows the 10^7 line as a sensitivity (Chapter 6) and leaves the
 planning value open. Which value to plan on (10^6 per Chen 2020; 10^7 as the literature's upper rating for
 shipped parts; the advisor's recalled 10^9) is the pending item of the Kvatinsky conversation. The book
@@ -692,7 +723,7 @@ starving the power-down entry condition; not yet root-caused to full confidence)
 
 ## 7. Where Things Live
 
-- **Extended book:** `documents/MBMM_Book_Typst/Technical_Report.typ` (124 pages, compiles
+- **Extended book:** `documents/MBMM_Book_Typst/Technical_Report.typ` (126 sheets, compiles
   clean; the complete record and knowledge base, 101 references; its Appendix D change table carries the
   October and November 2026 rows: periphery transistor class, precharge and read-decode sensitivities,
   interface clock downward point).
@@ -703,8 +734,8 @@ starving the power-down entry condition; not yet root-caused to full confidence)
   Conclusion & Future Work; Appendix A (simulation parameters and literature grounding); Appendix B
   (pipeline CLI); Appendix C (reproducibility); Appendix D (what changed since 3 September, the only
   place old headline values are tabulated).
-- **The book (added 2026-09-23):** `documents/MBMM_Book_Typst/Project_Book.typ`, the summary of the whole work with the references it rests on (32
-  printed pages / 33 sheets, Chapters 1-6, Figures 1-6, Tables 1-9 plus 4b, 4c and 5b, 49 references -
+- **The book (added 2026-09-23):** `documents/MBMM_Book_Typst/Project_Book.typ`, the summary of the whole work with the references it rests on (33
+  printed pages / 34 sheets, Chapters 1-6, Figures 1-6, Tables 1-9 plus 4b, 4c and 5b, 49 references -
   its own, separate numbering from the extended book's). Reviewed with 336 numeric claims traced to
   source, zero mismatches (September), then by the wrap-up review, an independent judge and an adversarial
   review (October to November 2026; reports git-ignored at the repository root as `wrap-up-review*.md`). Uses the same media-versus-device labelling and write-pulse-bracket conventions as this
@@ -835,7 +866,12 @@ carry the power band, Table 4b, 4c and 5b, the fabricated-silicon density anchor
 column, nine limits and the ten-item provenance bundle. A post-review audit of 2026-11-01 (read-only)
 confirmed every series number and added the disclosures of Finding 2 (activate-energy clamp, 22 nm table
 caveat), the 10^7 endurance sensitivity, one attribution fix (book Section 5.2: the DDR4 two-socket
-latencies are Pond's) and this file's update. Pending: push, Zenodo upload and DOI, the Kvatinsky
+latencies are Pond's) and this file's update. On 2026-11-02 and 11-03 a claim check and three wording passes
+(reports `wrap-up-review-claimcheck-2026-11-02.md`, `wrap-up-review-wordingpass-2026-11-02.md`,
+`wrap-up-review-wordingpass-followup-2026-11-02.md`, `wrap-up-review-build-2026-11-02.md`,
+`wrap-up-review-final-2026-11-02.md`, all git-ignored) made the text-only changes summarized in the header
+paragraph of this file and in the tracker's 2026-11-02 to 2026-11-03 entry; all remain uncommitted in the
+working tree. Pending: push, Zenodo upload and DOI, the Kvatinsky
 conversation.
 
 Earlier session history (Sessions 1-26, the 2026-07-22 fidelity audit, the

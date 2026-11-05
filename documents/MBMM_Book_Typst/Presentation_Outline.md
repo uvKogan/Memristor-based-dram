@@ -97,7 +97,7 @@ assumed clock.
 
 | # | Slide | Chart | Headline | Book |
 |---|---|---|---|---|
-| 15 | Endurance: the Projection and the Requirement | (table) | Table 6: no leveling 7.7 / 23.2 / 69.5 hours, randomized Start-Gap, ideal 38.6 / 3.6 / 4.3 years, required endurance 2.6e5 / 2.8e6 / 2.3e6 ideal and 6.3 / 6.5 / 4.3e6 randomized; **stationarity stated on the slide** | **Table 6** |
+| 15 | Endurance: the Projection and the Requirement | (table) | Table 6: no leveling 7.7 / 23.1 / 69.4 hours, randomized Start-Gap, ideal 38.6 / 3.6 / 4.3 years, required endurance 2.6e5 / 2.8e6 / 2.3e6 ideal and 6.3 / 6.5 / 4.3e6 randomized; **stationarity stated on the slide** | **Table 6** |
 | 16 | The Leveling Decides It | `fig_endurance_policy.png` | The leveling decides it, not the cell; sparse footprints (577 / 826 / 1,954 locations); a larger module is worse over one region; the simulation cannot show leveling at work (2,207 and 23,848 gap moves), and the projection is validated to 0.3% | 4.3, **Figure 4** |
 
 ### Scaling, sensitivities, density (slides 17 to 19)

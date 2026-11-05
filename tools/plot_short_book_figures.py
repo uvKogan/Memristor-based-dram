@@ -69,10 +69,11 @@ TRACE_ORDER = [('gcc_spec2017', 'GCC'), ('lbm_spec2017', 'LBM'), ('stream', 'STR
 
 DDR5_LABEL = 'DDR5-4800 (modeled)'
 
-# Gregorian mean year, used only to render a sub-year lifetime as hours for
-# the bar annotation; matches the conversion visualize_slides.py uses for the
-# same endurance_table.csv numbers (slide_endurance_projection(), ~line 1180).
-HOURS_PER_YEAR = 365.2425 * 24
+# 365-day year, used only to render a sub-year lifetime as hours for the bar
+# annotation; matches endurance_sensitivity.py's DAYS_PER_YEAR = 365, the
+# convention endurance_table.csv was produced under (changed 2026-11-03 from the
+# 365.2425-day value, which labelled 23.148 h as 23.2 h and 69.444 h as 69.5 h).
+HOURS_PER_YEAR = 365 * 24
 
 
 # ---------------------------------------------------------------------------

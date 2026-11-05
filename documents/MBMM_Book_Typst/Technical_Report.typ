@@ -112,13 +112,16 @@ read/write latency and energy penalty multipliers attributed to a
 citation that does not support them (later found to include a further,
 independent data error in the MLC read-latency figure, also
 corrected) - of which this work repaired thirteen, validating every repair against device-level anchors (0.0% error) or exact predicted arithmetic, and re-running the affected simulations (with idle-gating restored, DDR5 realizes real power-down savings, ReRAM\'s power-down energy is a disclosed no-savings placeholder, and PCM shows no power-down activity). (3)
-Write endurance is the binding constraint, and wear leveling decides it.
+Write endurance is the binding constraint, and at the 10#super[6]
+planning value a ten-year life needs both a leveling scheme and, on the
+streaming traces, a higher-rated cell.
 Projecting the write distribution measured per line location in the
 simulation onto a 64 GiB module at the best-sourced 10#super[6] cycle
 rating #strong[\[47\]], ideal uniform leveling gives 38.6 years under
 GCC, 3.6 under LBM and 4.3 under STREAM, while no leveling at all gives
-7.7, 23.2 and 69.5 #emph[hours]: the whole lifetime claim lives in the
-leveling mechanism, not in the cell. A faithful deterministic Start-Gap
+7.7, 23.1 and 69.4 #emph[hours]: the spread between those columns lives
+in the leveling mechanism, and the shortfall of LBM and STREAM against
+ten years at 10#super[6] lives in the cell rating. A faithful deterministic Start-Gap
 remapper #strong[\[52\]] over one whole-module region recovers none of
 that gap for these sparse footprints, because the hottest line fails
 before the gap has rotated once; randomizing the region assignment
@@ -2446,7 +2449,7 @@ line per request).]
   [0.88 M/s], [7.7 h], [7.7-15.4 h], [7.7-15.4 h], [38.6 yr],
   [2.6 × 10#super[5]], [6.3 × 10#super[6]],
   [#strong[LBM]],
-  [9.54 M/s], [23.2 h], [23.2 h], [0.20 yr], [3.6 yr],
+  [9.54 M/s], [23.1 h], [23.1 h], [0.20 yr], [3.6 yr],
   [2.8 × 10#super[6]], [6.5 × 10#super[6]],
   [#strong[STREAM]],
   [7.99 M/s], [69.4 h], [69.4 h], [0.96 yr], [4.3 yr],
@@ -2485,7 +2488,8 @@ rate\_basis \= admitted.]
 
 The table\'s dominant feature is the distance between its columns, and
 that distance is the finding. #strong[Endurance viability is decided
-almost entirely by the wear-leveling mechanism, not by the cell.] With
+by the wear-leveling mechanism and the assumed cell endurance together,
+not by either alone.] With
 no leveling at all, a 64 GiB SLC module survives #emph[hours] under
 every sustained workload in the suite, because the traces are sparse:
 GCC touches 577 row locations, LBM 826 and STREAM 1,954, out of the
@@ -2508,7 +2512,7 @@ the projection of Table 5 but is #emph[not] issued as traffic in the
 simulation, so no latency or power figure anywhere in this book carries
 the cost of running Start-Gap. Projected over a single whole-module
 region the mechanism recovers essentially nothing: 7.7 hours
-under GCC against 7.7 without leveling, 23.2 under LBM against 23.2. The
+under GCC against 7.7 without leveling, 23.1 under LBM against 23.1. The
 mechanism is sound and the implementation is exact; the reason it fails
 here is structural. Start-Gap moves the gap one line per 100 writes, so
 rotating it once through a 64 GiB module of 1.07 billion lines takes
@@ -2573,8 +2577,8 @@ Start-Gap. Against the 10#super[6] planning value from \[47\], GCC
 clears the bar under ideal leveling by a factor of four and everything
 else fails it by factors of 2.3 to 6.5. Against a 10#super[4]
 array-qualified part, nothing clears it. Against an optimistic
-10#super[7], everything clears it under ideal leveling and the two
-streaming workloads clear it under randomized Start-Gap. The honest
+10#super[7], everything clears it under ideal leveling and all three
+clear it under randomized Start-Gap (59, 19 and 30 years). The honest
 summary is that #strong[a ten-year ReRAM main memory requires a cell
 rated at least in the high 10#super[6] range and a wear-leveling scheme
 substantially better than a single-region Start-Gap] - and that the
@@ -3763,7 +3767,7 @@ LBM worst case at 128 GiB under #emph[ideal] uniform leveling at
 tracks because every track now completes the identical request
 population and therefore wears at the same 9.54 M writes/s. It is an
 upper bound: under a single-region Start-Gap remapper the same
-projection is 23.2 hours (Table 5). The claim in earlier versions that
+projection is 23.1 hours (Table 5). The claim in earlier versions that
 the selector variant outlives the transistor variant has been
 withdrawn.]
 
@@ -4095,10 +4099,11 @@ the threshold; what it cannot state is a gated ReRAM number, because no
 citable power-gating characterization exists, so neither the parity nor
 its impossibility is demonstrated here (Sections 3.1.2, 3.3,
 4.1). #strong[Endurance:] every lifetime here is a projection
-from a measured write distribution, and it is decided by the wear
-leveling rather than by the cell. At 64 GiB and 10#super[6] cycles,
+from a measured write distribution, and at the 10#super[6] planning
+value a ten-year life needs both a leveling scheme and, on the
+streaming traces, a higher-rated cell. At 64 GiB and 10#super[6] cycles,
 ideal uniform leveling gives 38.6 years (GCC), 3.6 (LBM) and 4.3
-(STREAM), while no leveling gives 7.7, 23.2 and 69.4 hours, and a
+(STREAM), while no leveling gives 7.7, 23.1 and 69.4 hours, and a
 faithful single-region Start-Gap remapper recovers none of that gap
 because the hottest line fails before the gap rotates once. Randomizing
 the region recovers part of it (0.20 and 0.96 years). A write-absorbing
@@ -4156,7 +4161,8 @@ September version had its central negative result. Efficiency (3.1.3): with leak
 four ReRAM tracks fall within 1.2x of one another and 4.4x behind
 DDR5 at module level, 4.7x to 9.4x behind per gigabyte. Endurance
 (3.1.4):
-wear leveling, not the cell, decides viability, and a single-region
+the wear-leveling mechanism and the assumed cell endurance together
+decide viability, and a single-region
 Start-Gap is not enough. Robustness (3.1.5): read latency is invariant
 and system PDP moves under 4% across a ±20% ReadVoltage sweep, on the
 pre-revision dataset. Scaling (3.2): chip count buys capacity and pays
@@ -4185,6 +4191,20 @@ NVSim's timings there is no latency advantage, and without a wear
 leveling scheme substantially better than single-region Start-Gap there
 is no ten-year lifetime. That boundary is, by construction, the
 future-work agenda of Sections 4.1-4.2.
+
+Five further things are omissions rather than results, and belong beside
+the limits above. Device variability, cycle to cycle and device to
+device, is not modeled (Section 3.3 names it as the field's barrier to
+large arrays), and no number here carries it. Retention and drift enter
+only as an error class in the bit-error subsection of Section 3.1.2 and
+as the MLC caveat; no retention time is modeled. Temperature enters only
+as the single 350 K parameter of the NVSim characterization
+(`-Temperature (K): 350` in every cell configuration), with no thermal
+model behind it. Cost is outside the model: the density figures are its
+only proxy, and the far-memory cost bar of Section 3.4 is the one place
+a cost appears. Non-volatility enters only as the mechanism that would
+let the periphery be gated (Sections 3.1.2 and 3.3); no persistence or
+instant-on benefit is claimed.
 
 == 4.1. Future Work: Simulator and Infrastructure Enhancements
 <future-work-simulator-and-infrastructure-enhancements>
@@ -4446,7 +4466,13 @@ configurations) is public at
 The two simulators are git submodules of that repository, pinned at the
 NVMain fork `uvKogan/NVmain`, branch `ddr5-timing-fix`, commit
 `c89988d`, and the NVSim fork `uvKogan/MBMM`, commit `9a90d44`;
-Appendix C gives the full statement.
+Appendix C gives the full statement, including which frozen runs carry
+a run manifest with configuration and binary hashes (the close-page,
+periphery, precharge, read-decode and 400 MHz series), which carries a
+manifest of its flags, commits and configuration hashes but no binary
+hash (the write-pulse run), and which rest on the statistics headers,
+the revision tracker and file dates (the primary matrix, the nine
+September series and every NVSim characterization).
 
 #pagebreak()
 <section-2>
@@ -4715,12 +4741,18 @@ Appendix C gives the full statement.
   correct as external statements about transistor leakage; they simply
   do not corroborate a number NVSim never computed from them. They do
   bear on the periphery band of the October series: NVSim's own 22nm
-  transistor table, whose rows carry the source comment that their
-  values were translated from the 32nm node, puts the LOP off-current
-  at 21 nA/µm at 300 K, about four times the ITRS LOP target of \[43\],
-  and the LSTP off-current at 16 pA/µm, within a factor of two of the
-  LSTP target, so of the two ends of the band the LOP end is the less
-  calibrated. The
+  transistor table, whose LSTP off-current row carries the source
+  comment that its values were translated from the 32nm node and whose
+  PMOS values on every profile are marked as CACTI stand-ins, puts the
+  LOP off-current at 21 nA/µm and the LSTP off-current at 16 pA/µm at
+  300 K, about four times the ITRS LOP target of \[43\] and within a
+  factor of two of the LSTP target. Those are 300 K ratios; the
+  characterizations run at 350 K (`-Temperature (K): 350` in every cell
+  configuration) and read the table's 350 K entries, 44 nA/µm for LOP
+  and 96 pA/µm for LSTP (`Technology.cpp`, index 50 of each row), so
+  the two profiles differ by about 450x at the simulated temperature
+  against about 1,300x at 300 K. Of the two ends of the band the LOP
+  end is the less calibrated. The
   physical question they speak to - what an unselected 1T1R access
   transistor actually leaks in a real array - is #emph[not modeled by
   NVSim at all], and remains open.
@@ -5249,6 +5281,26 @@ own staging: the 1024 x 1024 organization axis (`--organization 1024`,
 54 runs, half an hour) and a two-trace one-channel control on the AI
 input maps (36 runs). Every run exited 0.
 
+#strong[What is recorded about each run.] The close-page baseline run
+(2026-10-24), the periphery series, the precharge and read-decode
+variants and the 400 MHz series (2026-11-01) carry a `run_manifest.json`
+recording the superproject commit and its dirty state, the submodule
+commits, the flags, the sha256 of every configuration they ran and of the
+NVMain executable. The primary matrix and the nine September series
+(the seven sensitivity axes, the one-channel control and the
+organization axis) predate that manifest (added 2026-09-21): their record is the command
+line printed at the top of every statistics file, the run log of the
+revision tracker (dates, flags, exit codes, durations) and the generator
+that produces their configurations from the frozen device metrics; the
+configurations they ran were written into the live `Config/` tree and
+have since been regenerated there. The write-pulse run (2026-09-22)
+carries the first version of the manifest, with its flags, the
+superproject and submodule commits and the sha256 of every configuration
+it ran, but no binary hash; it names a superproject commit from before
+the repository's history rewrite of 2026-10-22, which the rewrite's
+commit map resolves to the current history. No manifest records the NVSim executable's hash; its runs are
+tied to the tracked `.cfg` files and their exit codes.
+
 #strong[What the master produces, and what it does not.] The master
 executes NVSim characterization, metric extraction, configuration
 generation, NVMain execution, metric processing and three figure
@@ -5504,7 +5556,7 @@ quantity to be compared arithmetically against the new one.
 
   [#strong[Endurance projection]],
   [1.09 years at 8 GB and 8.7 years at 64 GB under LBM, assuming ideal uniform leveling, hot-spot exposure "bounded but not simulated"],
-  [At 64 GiB and 10#super[6]: 3.6 years ideal, 0.20 years randomized Start-Gap, 23.2 hours with no leveling or with single-region Start-Gap],
+  [At 64 GiB and 10#super[6]: 3.6 years ideal, 0.20 years randomized Start-Gap, 23.1 hours with no leveling or with single-region Start-Gap],
   [Wear is now counted per location in the simulator, and three leveling policies are projected from that distribution instead of one being assumed],
   [Section 3.1.4, Table 5; results/endurance\_table.csv],
 

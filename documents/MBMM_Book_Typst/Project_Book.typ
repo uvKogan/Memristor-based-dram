@@ -59,10 +59,13 @@ re-run end to end, 0.26x to 0.94x, both device-only point estimates;
 nothing in the model or the literature read here says which periphery
 a DIMM-class part would carry, so the power axis is open within that
 band.
-#strong[Endurance:] every lifetime here is a projection, and the wear
-leveling rather than the cell decides it, ideal uniform leveling at
-64 GiB and 10#super[6] cycles per cell giving 38.6 years under GCC, 3.6
-under LBM and 4.3 under STREAM. #strong[Density:] the selector-gated
+#strong[Endurance:] every lifetime here is a projection, and a ten-year
+life at 64 GiB needs two things at once: a wear-leveling scheme, since
+without one the hottest line lives hours under the measured 250 ms
+windows, and on the streaming traces a cell rated above the 10#super[6]
+planning value, since at 10#super[6] cycles even ideal uniform leveling
+gives 38.6 years under GCC but 3.6 under LBM and 4.3 under STREAM, which
+need about 2.8 and 2.3 x 10#super[6] cycles. #strong[Density:] the selector-gated
 cross-point reaches 1.24x DDR5’s die-level density as SLC and 2.47x as
 MLC, conditional on selector quality (Section 4.2) and on a cell near the
 idealized 4F², which fabricated single-layer parts have not reached
@@ -189,7 +192,8 @@ The claim is a balanced verdict, not an advocacy case. Selector-gated
 a power cost per gigabyte that the device model leaves open between two
 periphery choices (Section 4.2); the transistor-gated
 variant matches it on leakage and loses on area; write endurance is the
-binding constraint and wear leveling, not the cell, decides it. The
+binding constraint, and the wear-leveling mechanism and the assumed cell
+endurance together decide it. The
 extended book states the conclusion in one line, and this book keeps
 it: #emph[neither is a drop-in DDR5 replacement at 22nm.]
 
@@ -386,11 +390,13 @@ as a sensitivity series in the October revision. It cuts the chip's
 peripheral leakage from 108.384 to 1.599 mW, raises the device read
 time by 5% (10.12 to 10.60 ns for 1T1R, 4.70 to 4.97 ns for 1S1R) and
 leaves the die area within 0.3%. No fabricated ReRAM die located gives
-a leakage figure that would choose between the two. Both 22nm rows
-also carry NVSim's own comment that their values were translated from
-the 32nm node, so neither end is a calibrated 22nm periphery; against
-the ITRS targets (extended book, Appendix A) the LOP row is about four
-times high and the LSTP row within a factor of two.
+a leakage figure that would choose between the two. NVSim's own 22nm
+table carries its authors' caveats on both profiles: the LSTP
+off-current row is marked as translated from the 32nm node and every
+profile's PMOS values as CACTI stand-ins, so neither end is a
+calibrated 22nm periphery; against the ITRS targets, compared at
+300 K (extended book, Appendix A), the LOP row is about four times high
+and the LSTP row within a factor of two.
 
 == 2.3. Baselines
 
@@ -848,8 +854,9 @@ worth. Run at 400 MHz, half the assumed clock, the same media average
 below the open-page baseline, and 79.2 and 74.2 ns under LBM, where
 1T1R SLC is at parity with the baseline's 78.3 ns and behind the
 close-page baseline's 69.9 ns; on the AI bursts the halved bandwidth
-puts every track behind DDR5 (0.81x to 0.91x). Fitting the measured
-points as a device term plus a protocol term in cycles, the two SLC
+puts every track behind DDR5 (0.81x to 0.91x). Fitting the 400 and
+800 MHz points, a two-point fit, as a device term plus a protocol term
+in cycles, the two SLC
 cells cross the 83.1 ns baseline near 360 MHz (1T1R) and 335 MHz
 (1S1R), so the direction holds only while the interface runs faster
 than roughly 40% of the assumed clock, and at half of it the margin is
@@ -1234,6 +1241,7 @@ module at the best-sourced 10#super[6] cycle rating
 policies. Table 6 is that projection for the three sustained
 workloads, and Figure 4 is the same projection by policy.
 
+#block(breakable: false)[
 #strong[Table 6: projected lifetime and required endurance (1T1R SLC
 full DIMM, 64 GiB, 10#super[6] cycles/cell, 250 ms window, one write
 per line per request).]
@@ -1252,11 +1260,12 @@ per line per request).]
   ),
   [#strong[GCC]], [0.88 M/s], [7.7 h], [7.7 to 15.4 h], [38.6 yr],
   [2.6 × 10#super[5]],
-  [#strong[LBM]], [9.54 M/s], [23.2 h], [0.20 yr], [3.6 yr],
+  [#strong[LBM]], [9.54 M/s], [23.1 h], [0.20 yr], [3.6 yr],
   [2.8 × 10#super[6]],
   [#strong[STREAM]], [7.99 M/s], [69.4 h], [0.96 yr], [4.3 yr],
   [2.3 × 10#super[6]],
 )]
+]
 ]
 
 #emph[Ranges in the randomized Start-Gap column mark cases where the
@@ -1282,8 +1291,8 @@ never a measured lifetime.]]
 ]
 
 The distance between those columns is the finding. #strong[Endurance
-viability is decided almost entirely by the wear-leveling mechanism,
-not by the cell.] With no leveling the module survives #emph[hours]
+viability is decided by the wear-leveling mechanism and the assumed cell
+endurance together, not by either alone.] With no leveling the module survives #emph[hours]
 under every sustained workload, because the traces are sparse: GCC
 touches 577 row locations, LBM 826 and STREAM 1,954
 (results/wear\_1T1R\_SLC\_<trace>.json) out of the 131,072 rows of the simulated 8 GiB module, and of 1,048,576 at the 64 GiB
@@ -1355,15 +1364,21 @@ time under GCC, 2.1 hours, and about 700 s under LBM, 11.7 minutes:
 30,000 and 2,800 windows of 250 ms, far beyond any trace this pipeline
 could replay. Leveling's
 effect is carried entirely by the projection behind Table 6, whose
-sliding-window model was checked against a brute-force write-by-write
-reference in an independent review round; the record is
-research\_notes/endurance\_audit\_runs/ and
-tests/test\_endurance\_sensitivity.py.
+window maxima, weighted windows and minimal-rotation search are checked
+against the brute-force reference implementations in
+tests/test\_endurance\_sensitivity.py (3,000 seeded cases for the
+rotation search); the review round of 2026-09-20 that found and fixed
+two model defects is recorded in the header of
+endurance\_sensitivity.py.
 
 == 4.4. Scaling and sensitivities
 
-Seven sensitivity series each change one flag against the primary
-matrix, and a pre-revision NVSim voltage sweep sits beside them.
+Seven of the thirteen sensitivity series are reported here, each
+changing one flag against the primary matrix; the other six, the
+periphery series and the precharge, read-decode and 400 MHz series, are
+reported in Sections 4.1 and 4.2. Every series changes one factor at a
+time, and no combined margin is claimed anywhere in this book. A
+pre-revision NVSim voltage sweep sits beside them.
 Table 7 takes the chip-count axis at the two extremes of behavior.
 
 #strong[Table 7: chip-count scaling, 1T1R SLC, average total latency
@@ -1595,8 +1610,9 @@ upper end of the output-map bracket is an upper end of the write-path
 cost inside this model, not a prediction of a device.
 
 #strong[What is projected is every lifetime, and the latency advantage
-itself.] The endurance claim lives in the leveling mechanism, not the
-cell, and no figure here is a measured lifetime; the latency result is
+itself.] The lifetime projection depends on both the wear-leveling
+mechanism and the assumed cell endurance, and no figure here is a
+measured lifetime; the latency result is
 a projection in the strict sense of the caveat of Section 1.3, and the
 same DIMM at published silicon timings runs in microseconds.
 
@@ -1844,8 +1860,8 @@ and the ReRAM power-down energy is a no-savings placeholder
 (Section 4.2). #strong[The periphery transistor class is a choice]\:
 NVSim's low-operating-power profile sets the 6.94 W floor and its
 low-standby-power profile removes it, the two ends of the power axis
-differ by two orders of magnitude, both rows are NVSim's own
-translation from the 32nm node, and nothing in the model or the
+differ by two orders of magnitude, both profiles carry NVSim's
+own source caveats (Section 2.2), and nothing in the model or the
 literature read here decides between them (Sections 2.2, 4.2). #strong[No ECC decode sits on the primary read path]\: Section 4.1
 brackets it at 20 and 40 ns of fixed delay (Table 4c) and Table 8's
 usable-density column charges the 27% capacity cost, but no code-level
@@ -1858,6 +1874,19 @@ core, which is why the published-silicon counterweight accompanies
 every latency table. #strong[There is no CXL, controller or device
 model anywhere in this book]\: Section 5.2 positions the projected
 media against measured devices; it does not simulate one.
+
+Five further things are omissions rather than results. Device
+variability, cycle to cycle and device to device, is not modeled, and no
+number here carries it (the extended book's Section 3.3 names it as the
+field's barrier to large arrays). Retention and drift enter only as an
+error class in Section 5.3 and as the MLC caveat of Section 4.1; no
+retention time is modeled. Temperature enters only as the single 350 K
+parameter of the device characterization (Section 2.2), with no
+thermal model behind it. Cost is outside the model: the density figures
+are its only proxy, and the far-memory cost bar of Section 5.2 is the
+one place a cost appears. Non-volatility enters only as the mechanism
+that would let the periphery be gated (Section 4.2); no persistence or
+instant-on benefit is claimed.
 
 = 6. Conclusion and Future Work
 
@@ -1872,7 +1901,8 @@ device, either 12.7x to 17.4x more expensive as SLC or 0.26x to 0.94x
 as cheap, depending on which periphery transistor class the device
 model is told to build, a choice nothing in this book can settle. Write
 endurance is the binding
-constraint and the wear leveling, not the cell, decides it. Every
+constraint, and at the 10#super[6] planning value a ten-year life needs
+both a leveling scheme and, on the streaming traces, a higher-rated cell. Every
 latency here is a media number for a projected array that no fabricated
 part has matched: the same DIMM built from published silicon timings
 averages 11.9 us and 379 us under GCC. #emph[Neither cell is a drop-in
@@ -1980,7 +2010,21 @@ the `mbmm_master.py` orchestration script, the modified NVSim and
 NVMain C++ sources, the configuration generators and the tracked cell
 files and DDR5 configurations, is publicly available; the frozen result
 datasets this book reports are retained by the author and available on
-request. The six `.nvt` traces are not distributed either: regenerating
+request. Of those datasets, the close-page baseline run, the periphery
+series, the precharge and read-decode variants and the 400 MHz series
+carry run manifests recording the superproject commit, the
+configuration hashes and the NVMain binary hash. The primary matrix and
+the nine September series (seven sensitivity axes, the one-channel
+control and the organization axis) predate the manifest: they are
+recorded by the command line each statistics file prints, by the
+revision tracker's run log (dates, flags, exit codes, durations) and by
+the generator that produces their configurations from the frozen
+device metrics. The write-pulse run carries an earlier manifest with its
+flags, commits and configuration hashes but no binary hash, naming a
+commit from before the repository's history rewrite that the rewrite's
+commit map resolves. The NVSim executable's hash is recorded nowhere,
+so for those runs the executable and source revision rest on the
+tracker and on file dates rather than on a recorded hash. The six `.nvt` traces are not distributed either: regenerating
 gcc and lbm needs SPEC CPU2017 and gem5, STREAM needs gem5 and the
 three AI traces SCALE-Sim, with the exact commands recorded in each
 trace's tracked provenance sidecar.
